@@ -19,7 +19,12 @@ namespace BookBuddies.Net
 
         readonly ClientWebSocket ws = new ClientWebSocket();
         readonly CancellationTokenSource stop = new CancellationTokenSource();
-        readonly ConcurrentQueue<string> inbox = new ConcurrentQueue<string>();
+        readonly ConcurrentQueue<(string text, double at)> inbox = new ConcurrentQueue<(string, double)>();
+
+        /// <summary>A steady clock in ms, and when the message being handled reached the socket (not when a frame got to it).</summary>
+        public static double ClockMs => Clock.Elapsed.TotalMilliseconds;
+        public static double ArrivedMs { get; private set; }
+        static readonly System.Diagnostics.Stopwatch Clock = System.Diagnostics.Stopwatch.StartNew();
         readonly SemaphoreSlim sending = new SemaphoreSlim(1, 1);
         int closeCode = -1;
         bool closeReported;
@@ -30,7 +35,7 @@ namespace BookBuddies.Net
         {
             try
             {
-                await ws.ConnectAsync(new Uri(url), stop.Token);
+                await ws.ConnectAsync(new Uri(url), stop.Token).ConfigureAwait(false);
                 _ = ReceiveLoop();
             }
             catch (Exception)
@@ -42,7 +47,7 @@ namespace BookBuddies.Net
         /// <summary>Call every frame: delivers waiting messages, then the close notice if the socket ended.</summary>
         public void Poll()
         {
-            while (inbox.TryDequeue(out var text)) OnMessage?.Invoke(text);
+            while (inbox.TryDequeue(out var m)) { ArrivedMs = m.at; OnMessage?.Invoke(m.text); }
             if (closeCode >= 0 && !closeReported) { closeReported = true; OnClosed?.Invoke(closeCode); }
         }
 
@@ -54,8 +59,8 @@ namespace BookBuddies.Net
 
         async Task SendAsync(string json)
         {
-            await sending.WaitAsync();
-            try { await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(json)), WebSocketMessageType.Text, true, stop.Token); }
+            await sending.WaitAsync().ConfigureAwait(false);
+            try { await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(json)), WebSocketMessageType.Text, true, stop.Token).ConfigureAwait(false); }
             catch (Exception) { /* the receive loop reports the close */ }
             finally { sending.Release(); }
         }
@@ -68,7 +73,7 @@ namespace BookBuddies.Net
             {
                 while (ws.State == WebSocketState.Open)
                 {
-                    var result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), stop.Token);
+                    var result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), stop.Token).ConfigureAwait(false);
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
                         closeCode = (int)(result.CloseStatus ?? WebSocketCloseStatus.NormalClosure);
@@ -76,7 +81,7 @@ namespace BookBuddies.Net
                     }
                     message.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
                     if (!result.EndOfMessage) continue;
-                    inbox.Enqueue(message.ToString());
+                    inbox.Enqueue((message.ToString(), ClockMs));
                     message.Clear();
                 }
             }

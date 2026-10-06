@@ -29,6 +29,7 @@ namespace BookBuddies.Pets
         public readonly List<Vector2Int> Path = new List<Vector2Int>();
         public int Dir = 1;
         public float Pace;          // >0 speeds other players up or down so they arrive in sync
+        float pace = 1;             // the pace actually walked at, eased toward Pace
         public bool Sitting, Sleeping, WantSit, Hidden;
         public bool Hovered;        // the pointer is on it: lifts a little
         public bool NameShown = true; // storybook folk only show their names close by
@@ -172,7 +173,8 @@ namespace BookBuddies.Pets
                 var next = Path[0];
                 var target = new Vector2(next.x + .5f, next.y + .5f);
                 var delta = target - Pos;
-                float move = Speed * dt * (IsMe ? 1 : Pace > 0 ? Pace : 1.05f) * Easing(t, delta.magnitude);
+                pace = Mathf.MoveTowards(pace, IsMe ? 1 : Pace > 0 ? Pace : 1.05f, dt * 1.5f); // speed changes glide instead of jerking
+                float move = Speed * dt * pace * Easing(t, delta.magnitude);
                 if (Mathf.Abs(delta.x) > .05f) Dir = delta.x > 0 ? 1 : -1;
                 if (delta.magnitude <= move)
                 {

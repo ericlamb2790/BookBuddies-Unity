@@ -74,7 +74,7 @@ namespace BookBuddies.Live
             if (IsLive && Time.unscaledTime >= nextPing)
             {
                 nextPing = Time.unscaledTime + PingEvery;
-                Send(new Dictionary<string, object> { ["t"] = "ping", ["c"] = (double)(Time.realtimeSinceStartup * 1000) });
+                Send(new Dictionary<string, object> { ["t"] = "ping", ["c"] = WorldSocket.ClockMs });
             }
         }
 
@@ -138,7 +138,7 @@ namespace BookBuddies.Live
         {
             if (m.Str("t") == "pong")
             {
-                float rtt = Time.realtimeSinceStartup * 1000 - (float)m.Num("c");
+                float rtt = (float)(WorldSocket.ArrivedMs - m.Num("c")); // network time only, not the frames it waited for
                 if (rtt <= 0 || rtt >= 10000) return;
                 RoundTripMs = RoundTripMs > 0 ? RoundTripMs * .7f + rtt * .3f : rtt;
                 double offset = m.Num("now", LocalNow) + rtt / 2 - LocalNow;

@@ -755,13 +755,16 @@ namespace BookBuddies.Live
                 if (e.Hidden) { e.Hidden = false; e.Pos = start; }
                 else e.Teleport(start);
             }
-            var path = PathFinder.Find(Map, e.Tile, to);
-            if (path == null) { e.Path.Clear(); e.Pace = 0; e.Pos = new Vector2(to.x + .5f, to.y + .5f); return; }
+            // keep the step they're mid-way through, so a new course never yanks them back to a tile centre
+            var from = e.Walking ? e.Path[0] : e.Tile;
+            var path = PathFinder.Find(Map, from, to) ?? new List<Vector2Int> { to }; // nowhere to path: walk straight there rather than pop
+            if (e.Walking) path.Insert(0, from);
             e.Walk(path);
             var real = PathFinder.Find(Map, new Vector2Int(Mathf.FloorToInt(start.x), Mathf.FloorToInt(start.y)), to);
             float left = PathFinder.Length(start, real ?? path) / PetActor.Speed - lag;
             float ours = PathFinder.Length(e.Pos, path);
-            e.Pace = left > .2f ? Mathf.Clamp(ours / (PetActor.Speed * left), .7f, 2.4f) : 2.4f;
+            // catch up or hang back gently; the next message corrects what's left rather than a dash doing it
+            e.Pace = left > .2f ? Mathf.Clamp(ours / (PetActor.Speed * left), .85f, 1.5f) : 1.5f;
         }
 
         void OnAct(PetActor e, string kind, string to)

@@ -12,6 +12,11 @@ namespace BookBuddies.World
         const int SearchLimit = 9000;
         const float Diagonal = 1.414f;
 
+        // reused between searches (all on the main thread), so walking, folk and foes don't make garbage each call
+        static float[] cost = new float[0];
+        static int[] came = new int[0];
+        static bool[] closed = new bool[0];
+
         /// <summary>Tiles to walk through, not including the start. Empty when already there, null when unreachable.</summary>
         public static List<Vector2Int> Find(TownMap map, Vector2Int from, Vector2Int to)
         {
@@ -19,10 +24,8 @@ namespace BookBuddies.World
             if (from == to) return new List<Vector2Int>();
 
             int w = map.Width, n = w * map.Height;
-            var cost = new float[n];
-            var came = new int[n];
-            var closed = new bool[n];
-            for (int i = 0; i < n; i++) { cost[i] = float.MaxValue; came[i] = -1; }
+            if (cost.Length < n) { cost = new float[n]; came = new int[n]; closed = new bool[n]; }
+            for (int i = 0; i < n; i++) { cost[i] = float.MaxValue; came[i] = -1; closed[i] = false; }
 
             int start = from.y * w + from.x, goal = to.y * w + to.x;
             if (start < 0 || start >= n) return null;
