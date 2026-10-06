@@ -21,6 +21,17 @@ namespace BookBuddies.World
             ("Captain Pages", "{\"h\":190,\"s\":3,\"o\":{},\"sh\":\"dino\",\"z\":2,\"f\":\"derp\",\"e\":\"none\",\"pt\":\"spots\"}"),
         };
 
+        /// <summary>
+        /// Who sits about a town when you're offline (localVillagers): Pawtopia's villagers; in another town its
+        /// shopkeeper, its mayor and a wanderer, wearing the first three villagers' looks.
+        /// </summary>
+        public static (string name, string look)[] For(string townKey)
+        {
+            var t = TownBook.Current.Get(townKey);
+            if (townKey == "pawtopia" || t == null) return Villagers;
+            return new[] { (t.Keeper, Villagers[0].look), (t.Name + " Mayor", Villagers[1].look), ("Wanderer", Villagers[2].look) };
+        }
+
         static readonly string[] Moves = { "hop", "wave", "dance", "spin", "happy" };
         const float Roam = 9f; // tiles from the town's start point they wander
 

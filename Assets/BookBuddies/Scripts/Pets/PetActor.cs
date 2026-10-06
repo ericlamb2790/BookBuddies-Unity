@@ -31,6 +31,7 @@ namespace BookBuddies.Pets
         public float Pace;          // >0 speeds other players up or down so they arrive in sync
         public bool Sitting, Sleeping, WantSit, Hidden;
         public bool Hovered;        // the pointer is on it: lifts a little
+        public bool NameShown = true; // storybook folk only show their names close by
         public System.Action OnArrived;
 
         // what it's showing
@@ -100,10 +101,11 @@ namespace BookBuddies.Pets
             animLength = seconds;
         }
 
-        public void Say(string text)
+        /// <summary>A speech bubble, for "seconds" (or long enough to read when 0).</summary>
+        public void Say(string text, float seconds = 0)
         {
             Bubble = text;
-            BubbleUntil = Time.time + 4.5f + text.Length * .06f;
+            BubbleUntil = Time.time + (seconds > 0 ? seconds : 4.5f + text.Length * .06f);
         }
 
         public void ClearBubble() => Bubble = null;

@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using BookBuddies.Economy;
 using BookBuddies.UI;
 using UnityEngine;
 using UnityEngine.UI;
@@ -5,38 +8,59 @@ using UnityEngine.UI;
 namespace BookBuddies.Tales
 {
     /// <summary>
-    /// The hero card: your buddy with its gear, class and evolution, Pet Lv and renown, the stats it fights with,
-    /// its moves, tactics (auto ultimate, lane) and what shapes it (nature, spark, home genre, loot luck).
-    /// C or B closes it; I opens the bag.
+    /// The hero card, which is also the Tales shop. The left side is always your buddy: gear, class and evolution, Pet Lv,
+    /// renown and the next milestone, and its stats. The tabs on the right: Hero (equipped moves, tactics and what shapes
+    /// it), Moves (the compendium: moves it owns, the next few sealed, the rest hidden until it grows), Class (the classes
+    /// it can be, each keeping its own progress, and the ones close to opening) and Library (upgrades for every fight).
+    /// LB and RB change tabs; C or B closes it; I opens the bag.
     /// </summary>
-    public sealed class HeroCard : TalesScreen
+    public sealed partial class HeroCard : TalesScreen
     {
-        const float Pad = 24, HeadHeight = 56;
+        const float Pad = 24, HeadHeight = 56, TabsHeight = 52;
+        static readonly string[] TabKeys = { "hero", "moves", "class", "library" };
+        static readonly string[] TabNames = { "Hero", "Moves", "Class", "Library" };
         static readonly string[] LaneNames = { "Top", "Middle", "Bottom" };
         static readonly string[] LaneKeys = { "l", null, "r" };
 
         TalesSave save;
         RectTransform left, leftContent, right, rightContent;
+        Button[] tabs;
+        Image movesDot, classDot; // something new on that tab
+        FlashPill flash;
+        int tab;
         float leftWidth;
         bool wasTop = true;
+        readonly HashSet<string> shownNew = new HashSet<string>(), flipped = new HashSet<string>();
 
-        /// <summary>Opens the hero card, or brings it back when the bag was opened over it.</summary>
-        public static void Open()
+        /// <summary>
+        /// Opens the hero card on a tab ("hero", "moves", "class" or "library"; null keeps it as it is), or brings it back
+        /// when the bag was opened over it.
+        /// </summary>
+        public static void Open(string tab = null)
         {
-            if (TalesUi.Find<HeroCard>() != null) { TalesUi.Find<BagScreen>()?.Close(); return; }
+            var open = TalesUi.Find<HeroCard>();
+            if (open != null)
+            {
+                TalesUi.Find<BagScreen>()?.Close();
+                if (tab != null) open.Show(Array.IndexOf(TabKeys, tab));
+                return;
+            }
             var c = Create<HeroCard>("Hero card", false);
-            c.MaxSize = new Vector2(1240, 800);
+            c.MaxSize = new Vector2(1240, 820);
+            c.tab = Math.Max(0, Array.IndexOf(TabKeys, tab));
             c.Build();
         }
 
         void Build()
         {
             save = TalesSave.Current;
+            HeroFactory.CheckClassUnlocks(save); // the site checks when its Tales shop opens: gear found since may have opened one
             var head = UiKit.Node("header", Card);
             head.anchorMin = new Vector2(0, 1); head.anchorMax = Vector2.one; head.pivot = new Vector2(.5f, 1);
             head.offsetMin = new Vector2(Pad, -Pad - HeadHeight); head.offsetMax = new Vector2(-Pad, -Pad);
             UiKit.Row(head, 12);
             UiKit.Size(UiKit.Label(head, TalesUi.PetName, UiKit.TitleSize, Palette.Ink, UiKit.Title), -1, 44, 1);
+            CoinPill.Create(head, null);
             UiKit.Secondary(head, "Bag & gear", () => TalesUi.OpenBag(), "🎒", 44);
             UiKit.CloseButton(head, Close);
 
@@ -44,9 +68,20 @@ namespace BookBuddies.Tales
             leftContent = UiKit.ScrollColumn(left, 12, new RectOffset(18, 18, 14, 20), out _);
             ((RectTransform)leftContent.parent).Fill();
             right = UiKit.Node("details", Card);
-            rightContent = UiKit.ScrollColumn(right, 10, new RectOffset(4, 12, 4, 24), out _);
-            ((RectTransform)rightContent.parent).Fill();
-            UiKit.PadHints(Card, ("A", "Select"), ("B", "Back"));
+            var bar = UiKit.Node("tabs", right);
+            bar.anchorMin = new Vector2(0, 1); bar.anchorMax = Vector2.one; bar.pivot = new Vector2(.5f, 1);
+            bar.offsetMin = new Vector2(0, -TabsHeight); bar.offsetMax = Vector2.zero;
+            UiKit.Row(bar, 8).childForceExpandWidth = false;
+            tabs = UiKit.Tabs(bar, TabNames, Show);
+            movesDot = ShopKit.Dot(tabs[1].transform);
+            classDot = ShopKit.Dot(tabs[2].transform);
+            rightContent = UiKit.ScrollColumn(right, 10, new RectOffset(4, 12, 4, 64), out _);
+            var view = (RectTransform)rightContent.parent;
+            view.Fill();
+            view.offsetMax = new Vector2(0, -TabsHeight - 10);
+            flash = FlashPill.Create(Card);
+            UiKit.PadHints(Card, ("A", "Select"), ("LB/RB", "Tabs"), ("B", "Back"));
+            Wallet.Changed += Fill;
         }
 
         protected override void Layout(Vector2 card)
@@ -56,22 +91,60 @@ namespace BookBuddies.Tales
             left.anchorMin = Vector2.zero; left.anchorMax = new Vector2(0, 1); left.pivot = new Vector2(0, .5f);
             left.offsetMin = new Vector2(Pad, Pad); left.offsetMax = new Vector2(Pad + leftWidth, -top);
             right.anchorMin = Vector2.zero; right.anchorMax = Vector2.one; right.pivot = new Vector2(.5f, .5f);
-            right.offsetMin = new Vector2(Pad * 2 + leftWidth, Pad + 16); right.offsetMax = new Vector2(-Pad, -top);
+            right.offsetMin = new Vector2(Pad * 2 + leftWidth, Pad); right.offsetMax = new Vector2(-Pad, -top);
             bool first = leftContent.childCount == 0;
+            if (first) Show(tab);
+            else Fill();
+        }
+
+        /// <summary>Shows a tab (wrapping around), from the top. What was new on the last tab counts as seen.</summary>
+        void Show(int index)
+        {
+            Seen();
+            tab = (index % TabKeys.Length + TabKeys.Length) % TabKeys.Length;
+            UiKit.SelectTab(tabs, tab);
             Fill();
-            if (first) VirtualCursor.FocusFirst(Card.GetComponentInChildren<Selectable>());
+            rightContent.anchoredPosition = Vector2.zero;
+            Selectable first = null;
+            foreach (var b in rightContent.GetComponentsInChildren<Button>()) if (b.interactable) { first = b; break; }
+            VirtualCursor.FocusFirst(first ? first : tabs[tab]);
         }
 
         void Fill()
         {
-            if (leftWidth <= 0) return; // not laid out yet
+            if (leftWidth <= 0 || !this) return; // not laid out yet, or closed
             Clear(leftContent);
             Clear(rightContent);
             var hero = HeroFactory.Build(Buddy.ShownLook, TalesUi.PetName, 1);
             FillLeft(hero);
-            FillMoves(hero);
-            FillTactics();
-            FillMakeup(hero);
+            switch (TabKeys[tab])
+            {
+                case "moves": FillCompendium(hero); break;
+                case "class": FillClasses(hero); break;
+                case "library": FillLibrary(); break;
+                default:
+                    FillMoves(hero);
+                    FillTactics();
+                    FillMakeup(hero);
+                    break;
+            }
+            UiKit.Show(movesDot, AnyNew($"move:{hero.Hero.Cls}:"));
+            UiKit.Show(classDot, AnyNew("cls:"));
+        }
+
+        bool AnyNew(string prefix)
+        {
+            foreach (var k in save.Unseen) if (k.StartsWith(prefix)) return true;
+            return false;
+        }
+
+        // what was shown as new on this tab is new no more
+        void Seen()
+        {
+            if (shownNew.Count == 0) return;
+            save.Unseen.ExceptWith(shownNew);
+            shownNew.Clear();
+            save.Touch();
         }
 
         static void Clear(Transform t)
@@ -119,7 +192,8 @@ namespace BookBuddies.Tales
             fill.anchorMin = Vector2.zero; fill.anchorMax = new Vector2(Mathf.Clamp01((float)(renown.xp / renown.need)), 1);
             fill.offsetMin = fill.offsetMax = Vector2.zero;
             int bonus = JsMath.RoundI((HeroFactory.RenownBonus(renown.lvl) + .05 * evo) * 100);
-            UiKit.Label(bar, $"+{bonus}% stats · evolves at Pet Lv {(evo + 1) * 10}", UiKit.SmallSize, Palette.InkSoft);
+            UiKit.Label(bar, $"+{bonus}% stats from renown and evolutions", UiKit.SmallSize, Palette.InkSoft);
+            Milestone();
 
             var c = HeroFactory.CardStats(hero);
             var stats = UiKit.Node("stats", leftContent);
@@ -180,6 +254,7 @@ namespace BookBuddies.Tales
             return row;
         }
 
+        // the Hero tab: the moves it fights with now
         void FillMoves(BattleUnit hero)
         {
             var h = hero.Hero;
@@ -268,8 +343,18 @@ namespace BookBuddies.Tales
             if (top && !wasTop) Fill(); // back from the bag: the gear may have changed
             wasTop = top;
             if (!top) return;
-            if (TalesUi.Pressed(PlazaAction.Hero)) Close();
+            if (TalesUi.Pressed(PlazaAction.ZoomIn)) Show(tab + 1);       // RB (or +)
+            else if (TalesUi.Pressed(PlazaAction.ZoomOut)) Show(tab - 1); // LB (or -)
+            else if (TalesUi.Pressed(PlazaAction.Hero)) Close();
             else if (TalesUi.Pressed(PlazaAction.Bag)) TalesUi.OpenBag();
+        }
+
+        protected override void OnClosed() => Seen();
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            Wallet.Changed -= Fill;
         }
     }
 }

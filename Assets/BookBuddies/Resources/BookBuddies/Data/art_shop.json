@@ -1,0 +1,10 @@
+{
+ "note": "Emoji the shops show (made by tools/export_shop_art.js); any PNG resolution works",
+ "emotes": {
+  "🪐": "Shop/Emoji/1fa90",
+  "⚰️": "Shop/Emoji/26b0",
+  "🏝️": "Shop/Emoji/1f3dd",
+  "🪕": "Shop/Emoji/1fa95",
+  "📟": "Shop/Emoji/1f4df"
+ }
+}

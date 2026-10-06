@@ -92,7 +92,7 @@ namespace BookBuddies.Tales
     }
 
     /// <summary>tqRand / ltRng: mulberry32. Seed 12345 gives 0.9797282677609473, 0.3067522644996643, 0.484205421525985.</summary>
-    public sealed class Mulberry32
+    public sealed class Mulberry32 : IRng
     {
         uint a;
         public Mulberry32(uint seed) { a = seed; }

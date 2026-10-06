@@ -3,7 +3,8 @@
 // account, and every change is written to the admin_log table so other admins can see who did what.
 
 import { textProblem, cleanText } from './safety.js';
-import { blockedWords, TOWNS, ROOMS, Problem, json, readJson } from './db.js';
+import { blockedWords, forgetRooms, Problem, json, readJson } from './db.js';
+import { adminSetCoins, deleteWalletRows } from './wallet.js';
 
 const FOREVER = 8.64e15;              // a break "for good" lasts until the last date JavaScript can hold
 const MAX_MUTE_MINUTES = 30 * 24 * 60;
@@ -20,7 +21,7 @@ export async function adminRoute(request, env, path, url, me) {
 
   const m = path.match(/^\/admin\/players\/([\w-]{1,64})(?:\/([a-z]+))?$/);
   if (!m) throw new Problem('Not found', 404);
-  const player = await env.DB.prepare('SELECT * FROM players WHERE id = ?1').bind(m[1]).first();
+  const player = await env.DB.prepare(`${PLAYERS} WHERE id = ?1`).bind(m[1]).first();
   if (!player) throw new Problem('That player doesn’t exist anymore.', 404);
   if (!m[2] && method === 'GET') return reply({ player: view(player), log: await recentLog(env, player.id, 20) });
 
@@ -90,11 +91,10 @@ const ACTIONS = {
     return `to “${name}”`;
   },
 
+  /** Sets their coins: one 'admin' row in the coin ledger for the difference. */
   async coins(env, me, p, body) {
-    const coins = whole(body.coins, 0, MAX_COINS);
-    const old = p.coins;
-    p.coins = coins;
-    await save(env, p, 'coins');
+    const [old, coins] = await adminSetCoins(env, p.id, whole(body.coins, 0, MAX_COINS), me.id);
+    p.balance = coins;
     return `from ${old} to ${coins}`;
   },
 
@@ -111,11 +111,12 @@ const ACTIONS = {
     protect(me, p);
     await env.DB.batch([
       env.DB.prepare('DELETE FROM tokens WHERE player_id = ?1').bind(p.id),
-      env.DB.prepare('DELETE FROM finds WHERE player_id = ?1').bind(p.id),
+      ...deleteWalletRows(env, p.id),
       env.DB.prepare('DELETE FROM pets WHERE player_id = ?1').bind(p.id),
       env.DB.prepare('DELETE FROM players WHERE id = ?1').bind(p.id),
     ]);
     await tellRooms(env, { action: 'kick', pid: p.id, msg: 'This account was closed by an admin.' });
+    await forgetRooms(env, p.id).run();
     return '';
   },
 };
@@ -126,23 +127,22 @@ function protect(me, p) {
   if (p.is_admin) throw new Problem('They’re an admin. Take their admin rights away first.');
 }
 
-const COLUMNS = new Set(['name', 'coins', 'is_admin', 'mute_until', 'ban_until']);
+const COLUMNS = new Set(['name', 'is_admin', 'mute_until', 'ban_until']);
 const save = (env, p, column) => {
   if (!COLUMNS.has(column)) throw new Error('unknown column ' + column);
   return env.DB.prepare(`UPDATE players SET ${column} = ?2 WHERE id = ?1`).bind(p.id, p[column]).run();
 };
 
-/** Passes a live change (kick, mute, unmute) to every room of every town, so it reaches the player wherever they are. */
+/**
+ * Passes a live change (kick, mute, unmute) to the rooms the player joined lately (index.js notes each join), so it
+ * reaches them wherever they are. Calling all 216 rooms would pass the Worker's subrequest limit.
+ */
+const RECENT_ROOMS = 12;
 async function tellRooms(env, message) {
   const body = JSON.stringify(message);
-  const calls = [];
-  for (const town of TOWNS) {
-    for (let room = 1; room <= ROOMS; room++) {
-      const stub = env.TOWNS.get(env.TOWNS.idFromName(`${town}:${room}`));
-      calls.push(stub.fetch('https://room/admin', { method: 'POST', headers: { 'content-type': 'application/json' }, body }));
-    }
-  }
-  await Promise.allSettled(calls);
+  const { results } = await env.DB.prepare('SELECT room FROM rooms_seen WHERE player_id = ?1 ORDER BY at DESC LIMIT ?2').bind(message.pid, RECENT_ROOMS).all();
+  await Promise.allSettled((results || []).map(({ room }) =>
+    env.TOWNS.get(env.TOWNS.idFromName(room)).fetch('https://room/admin', { method: 'POST', headers: { 'content-type': 'application/json' }, body })));
 }
 
 // ---- finding players ----
@@ -154,15 +154,18 @@ async function search(env, url) {
   let where = '', args = [];
   if (q && exact) { where = 'WHERE name = ?1 COLLATE NOCASE OR id = ?1'; args = [q]; }
   else if (q) { where = "WHERE name LIKE ?1 ESCAPE '\\' OR id = ?2"; args = ['%' + q.replace(/[\\%_]/g, (c) => '\\' + c) + '%', q]; }
-  const { results } = await env.DB.prepare(`SELECT * FROM players ${where} ORDER BY COALESCE(last_seen, created_at) DESC LIMIT ${limitOf(url, 40)}`)
+  const { results } = await env.DB.prepare(`${PLAYERS} ${where} ORDER BY COALESCE(last_seen, created_at) DESC LIMIT ${limitOf(url, 40)}`)
     .bind(...args).all();
   const total = await env.DB.prepare('SELECT COUNT(*) AS n FROM players').first();
   return { players: (results || []).map(view), total: total ? total.n : 0 };
 }
 
+// players with their coin balance (the sum of their coin ledger)
+const PLAYERS = 'SELECT p.*, (SELECT COALESCE(SUM(amount), 0) FROM coin_tx WHERE player_id = p.id) AS balance FROM players p';
+
 /** What admins see of a player (never their recovery code). */
 const view = (p) => ({
-  id: p.id, name: p.name, pet: p.pet || '', coins: p.coins || 0, is_admin: !!p.is_admin,
+  id: p.id, name: p.name, pet: p.pet || '', coins: p.balance || 0, is_admin: !!p.is_admin,
   created_at: p.created_at, last_seen: p.last_seen || 0, mute_until: p.mute_until || 0, ban_until: p.ban_until || 0,
 });
 

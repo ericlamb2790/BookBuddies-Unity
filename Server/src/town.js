@@ -1,18 +1,21 @@
-// One live room of a place (Pawtopia, Bramble Road or the Inkwell Caves): a Durable Object that holds everyone's
-// WebSocket and passes walking, chat, emotes and tricks between them. In Pawtopia, villagers wander between the
-// same spots the website uses, and coins, coin bags and gift boxes turn up for whoever reaches them first.
+// One live room of a place (Pawtopia, a town on Bramble Road, a road link or the Inkwell Caves): a Durable Object
+// that holds everyone's WebSocket and passes walking, chat, emotes and tricks between them. In every town, coins,
+// coin bags and gift boxes turn up for whoever reaches them first (paid into the coin ledger, see wallet.js), and in
+// Pawtopia villagers wander between the same spots the website uses.
 // The road and the caves are quieter: just the readers (their foes live on each player's own device).
 // The admin tools reach a room through POST https://room/admin (kick, mute, unmute).
 
 import { textProblem, cleanText, personalDetails } from './safety.js';
-import { ensureSchema, blockedWords, today } from './db.js';
+import { ensureSchema, blockedWords, GENRE_TOWNS } from './db.js';
+import { credit, balance, todayCount, etDay } from './wallet.js';
+import ECONOMY from './economy.json';
 
 const CAP = 300;
-// each place's size in tiles (the site's road rooms were stuck at 64×46 and pinned anyone past x 63 to the edge)
-const PLACES = { pawtopia: { w: 80, h: 64, life: true }, road1: { w: 112, h: 52 }, caves: { w: 56, h: 40 } };
+// each place's size in tiles (the site's road rooms were stuck at 64×46 and pinned anyone past x 63 to the edge);
+// finds: coins and gifts turn up there (every town); life: villagers wander there (Pawtopia)
+const PLACES = { pawtopia: { w: 80, h: 64, life: true, finds: true }, caves: { w: 56, h: 40 } };
+GENRE_TOWNS.forEach((k, i) => { PLACES[k] = { w: 56, h: 44, finds: true }; PLACES['road' + (i + 1)] = { w: 112, h: 52 }; });
 const TICK_MS = 3000;
-const FINDS_PER_DAY = 25;
-const ITEM_COINS = { coin: 5, bag: 15, gift: 30 };
 const EMOTES = ['❤️', '😂', '👋', '🎉', '😮', '📚', '✨', '💤'];
 const ACTS = ['hop', 'spin', 'wave', 'dance', 'nap', 'sip', 'read', 'hug', 'boop', 'play', 'snack', 'highpaw'];
 
@@ -144,11 +147,11 @@ export class TownRoom {
     return new Response(JSON.stringify({ ok: true, found: mine.length }), { headers: { 'content-type': 'application/json' } });
   }
 
-  // The room only ticks while someone is in it. Only Pawtopia has villagers and finds.
+  // The room only ticks while someone is in it, and only in towns (finds); only Pawtopia has villagers.
   wakeUp() {
     this.villagers = new Map();
-    if (!this.place.life) return;
-    VILLAGERS.forEach((v, i) => {
+    if (!this.place.finds) return;
+    if (this.place.life) VILLAGERS.forEach((v, i) => {
       const [x, y] = SPOTS[(i * 7 + Math.floor(Math.random() * SPOTS.length)) % SPOTS.length];
       this.villagers.set('b' + i, { id: 'b' + i, name: v.n, look: JSON.stringify(v.look), x, y, tx: x, ty: y, sit: 0, next: Date.now() + 2000 + Math.random() * 8000 });
     });
@@ -261,23 +264,19 @@ export class TownRoom {
     this.broadcast({ t: 'say', id: pl.id, text });
   }
 
-  /** Whoever reaches a coin, bag or gift first keeps it (up to 25 finds a day). */
+  /** Whoever reaches a coin, bag or gift first keeps it: paid into the coin ledger, up to 25 finds a day. "bal" is the new balance. */
   async claim(pl, m) {
     const it = this.items.get(String(m.id || ''));
     if (!it || Math.abs(pl.tx - it.x) > 1.5 || Math.abs(pl.ty - it.y) > 1.5) return;
     this.items.delete(it.id);
     this.broadcast({ t: 'ix', id: it.id, by: pl.id });
-    const day = today();
-    const found = await this.env.DB.prepare('SELECT n FROM finds WHERE player_id = ?1 AND day = ?2').bind(pl.pid, day).first();
+    const { finds } = ECONOMY;
     let coins = 0;
-    if (!found || found.n < FINDS_PER_DAY) {
-      coins = ITEM_COINS[it.k] || 5;
-      await this.env.DB.batch([
-        this.env.DB.prepare('INSERT INTO finds (player_id, day, n) VALUES (?1, ?2, 1) ON CONFLICT (player_id, day) DO UPDATE SET n = n + 1').bind(pl.pid, day),
-        this.env.DB.prepare('UPDATE players SET coins = coins + ?2 WHERE id = ?1').bind(pl.pid, coins),
-      ]);
+    if ((await todayCount(this.env, pl.pid, 'find')).n < finds.perDay) {
+      coins = finds.coins[it.k] || finds.coins.coin;
+      if (!(await credit(this.env, pl.pid, 'find', `${etDay()}:${it.id}:${Math.floor(it.exp)}`, coins))) coins = 0;
     }
-    this.send(pl, { t: 'got', k: it.k, coins });
+    this.send(pl, { t: 'got', k: it.k, coins, bal: await balance(this.env, pl.pid) });
   }
 
   isMuted(pl, now) {

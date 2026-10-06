@@ -2,6 +2,7 @@ using System.Collections;
 using BookBuddies.Live;
 using BookBuddies.Net;
 using BookBuddies.Road;
+using BookBuddies.Tales;
 using BookBuddies.UI;
 using BookBuddies.World;
 using UnityEngine;
@@ -11,8 +12,8 @@ namespace BookBuddies
     /// <summary>
     /// Starts BookBuddies when you press Play and moves between the screens:
     /// loading → the intro (first launch only) → the title → hatching or signing in → loading → arriving in town,
-    /// and back to the title from the town menu. Travel moves you between Pawtopia, Bramble Road and the
-    /// Inkwell Caves, and the place you were last in is where you come back to.
+    /// and back to the title from the town menu. Travel moves you between the towns on Bramble Road, the road's
+    /// links and the Inkwell Caves, and the place you were last in is where you come back to.
     /// It adds itself to whatever scene is open, so an empty scene works.
     /// </summary>
     public sealed class Boot : MonoBehaviour
@@ -21,6 +22,7 @@ namespace BookBuddies
         const string PlaceKey = "bb.place"; // the place you were last in
         const float RoomWait = 2.5f;   // seconds the loading screen waits for the live room, so you arrive to company
         const float TravelWait = 1.8f; // the same wait when travelling (the site's 1800 ms)
+        const float NewStopToast = 1.8f; // "… is now a stop on the Paw Express", after arriving somewhere new
 
         static Boot running;
         TownMap map;
@@ -48,6 +50,8 @@ namespace BookBuddies
             UiKit.EnsureEventSystem();
             Art.Load();
             RoadSpots.Register(() => world);
+            TownSpots.Register(() => world);
+            TownShop.Register();
             var loading = LoadingScreen.Show(Buddy.ShownLook, "Opening the storybook…");
             Sound.Music("home");
             yield return null;
@@ -152,32 +156,38 @@ namespace BookBuddies
             ShowTown();
         }
 
+        /// <summary>The place you're in (null on the title screen).</summary>
+        public static PlazaWorld World => running != null ? running.world : null;
+
         /// <summary>
-        /// Takes you to another place: Pawtopia, Bramble Road ("road1") or the Inkwell Caves ("caves"), arriving at
-        /// a tile or at the place's own start, with an optional note shown once you're there.
+        /// Takes you to another place: a town on Bramble Road (its key, like "romance"), a road link ("road" + link)
+        /// or the Inkwell Caves ("caves"), arriving at a tile or at the place's own start, with an optional note
+        /// shown once you're there. "train" is a Paw Express ride (or a lore stone's); otherwise you walked.
         /// Ignored while already on the way, or when you're already there.
         /// </summary>
-        public static void Travel(string place, Vector2Int? arrive, string note = null)
+        public static void Travel(string place, Vector2Int? arrive, string note = null, bool train = false)
         {
             if (running == null || running.travelling || running.world == null || place == running.map.Key) return;
-            running.StartCoroutine(running.TravelTo(place, arrive, note));
+            running.StartCoroutine(running.TravelTo(place, arrive, note, train));
         }
 
-        IEnumerator TravelTo(string place, Vector2Int? arrive, string note)
+        // the site's travelTo: "All aboard! Next stop: Rosewater" or "On the road to Rosewater", then the step lines
+        IEnumerator TravelTo(string place, Vector2Int? arrive, string note, bool train)
         {
             travelling = true;
             PlazaInput.Locked = true;
+            var about = About(place);
             string name = world.Me.Name, look = world.Me.Look;
             var fade = Cinema.Create(cam, false);
             yield return fade.Fade(1, .35f);
-            var loading = LoadingScreen.Show(look, TravelTitle(place));
+            var loading = LoadingScreen.Show(look, train ? "All aboard! Next stop: " + about.name : (place == "caves" ? "Into " : "On the road to ") + about.name);
             Destroy(fade.gameObject);
             loading.Progress(.1f);
             LeaveTown();
             yield return new WaitForSecondsRealtime(.75f); // the site's wave goodbye
 
-            loading.Stage("Following the path…");
-            yield return BuildPlace(place, loading, .15f, .55f);
+            loading.Stage(about.step);
+            yield return BuildPlace(place, loading, .15f, .55f, train ? "Pulling into the station…" : "Following the path…");
             world = new GameObject("Plaza").AddComponent<PlazaWorld>();
             world.Begin(map, view, cam, name, look, arrive);
             for (float t = 0; t < TravelWait && world.Net.State == LiveState.Connecting; t += Time.unscaledDeltaTime)
@@ -185,7 +195,7 @@ namespace BookBuddies
                 loading.Progress(.7f + .25f * t / TravelWait);
                 yield return null;
             }
-            loading.Stage("Almost there…");
+            loading.Stage(train ? "Doors opening…" : "Almost there…");
             yield return new WaitForSecondsRealtime(.25f);
             Sound.Music(MoodOf(map));
             PlayerPrefs.SetString(PlaceKey, map.Key);
@@ -193,17 +203,40 @@ namespace BookBuddies
 
             ShowTown();
             world.Me.Play("hop", .65f);
-            world.Me.ShowEmote(map.Wild == null ? "🏡" : map.Wild.IsCave ? "🕯️" : "🌾");
+            world.Me.ShowEmote(about.icon);
             Sound.Play("coin");
             if (note != null) world.Notify(note);
+            if (TownProgress.MarkSeen(map.Key)) StartCoroutine(NewStop(TownBook.Current.Get(map.Key)));
             PlazaInput.Locked = false;
             travelling = false;
         }
 
-        static string TravelTitle(string place) =>
-            place == TownKey ? "Back to Pawtopia" : place == "caves" ? "Into the Inkwell Caves" : place == "road1" ? "On to Bramble Road" : "On the way…";
+        // what the loading card says about a place: its icon, its name and the step line ("Romance town", "Tier I · the meadows")
+        static (string icon, string name, string step) About(string place)
+        {
+            var town = TownBook.Current.Get(place);
+            if (town != null) return (town.Icon, town.Name, town.Genre + " town");
+            if (place == "caves") return ("🕯️", "Inkwell Caves", "The caves");
+            var data = TalesData.Current;
+            int link = int.TryParse(place.Replace("road", ""), out var l) ? Mathf.Clamp(l, 1, data.LinkT.Length - 1) : 1;
+            var tier = data.Tiers[data.LinkT[link] - 1];
+            return (tier.Icon, tier.Name, tier.Genre);
+        }
 
-        static string MoodOf(TownMap place) => place.Wild?.Music ?? "pawtopia";
+        IEnumerator NewStop(TownBook.Town town)
+        {
+            yield return new WaitForSecondsRealtime(NewStopToast);
+            if (world && town != null) world.Notify($"{town.Icon} {town.Name} is now a stop on the Paw Express");
+        }
+
+        // the wilds' own music, or the town's tune (its root note and scale)
+        static string MoodOf(TownMap place)
+        {
+            if (place.Wild != null) return place.Wild.Music;
+            var town = TownBook.Current.Get(place.Key);
+            if (town != null) Sound.AddMood(place.Key, town.MusicRoot, town.Scale);
+            return place.Key;
+        }
 
         // the place you were last in, if it still exists
         static string SavedPlace()
@@ -212,22 +245,29 @@ namespace BookBuddies
             return place == TownKey || Art.TryText("Data/town_" + place) != null ? place : TownKey;
         }
 
-        /// <summary>Replaces the map and its view with another place, a little each frame under the loading screen.</summary>
-        IEnumerator BuildPlace(string place, LoadingScreen loading, float from, float span)
+        /// <summary>
+        /// Replaces the map and its view with another place, a little each frame under the loading screen
+        /// ("halfway" becomes the loading line once it's half built).
+        /// </summary>
+        IEnumerator BuildPlace(string place, LoadingScreen loading, float from, float span, string halfway = null)
         {
             if (view) Destroy(view.gameObject);
             map = TownMap.Load(place);
             view = new GameObject(map.Name).AddComponent<TownView>();
-            yield return view.BuildGradually(map, p => loading.Progress(from + p * span));
+            yield return view.BuildGradually(map, p =>
+            {
+                loading.Progress(from + p * span);
+                if (halfway != null && p >= .5f) loading.Stage(halfway);
+            });
             cam.Setup(map, new Vector2(map.Start.x + .5f, map.Start.y + .5f));
         }
 
-        // the HUD, the road's own corner of it, and the cave darkness or weather
+        // the HUD, the road's own corner of it, and the cave darkness, the weather or a town's fog
         void ShowTown()
         {
             hud = Hud.Create(world, () => StartCoroutine(BackToTitle()));
             roadHud = RoadHud.Create(world);
-            if (map.Wild != null) sky = RoadSky.Create(world);
+            if (map.Wild != null || TownBook.Current.Get(map.Key)?.Fog == true) sky = RoadSky.Create(world);
             world.HudReady();
         }
 

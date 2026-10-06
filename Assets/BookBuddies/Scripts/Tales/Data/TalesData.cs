@@ -67,7 +67,7 @@ namespace BookBuddies.Tales
 
     public sealed class WildTier
     {
-        public string Name, Icon, Sub, Fx, Hill;
+        public string Name, Icon, Genre, Sub, Fx, Hill; // Genre: "Tier I · the meadows"
         public int Lvl;
         public double Mul, EliteChance, TreeDensity;
         public int[] Foes = new int[0], Elites = new int[0];
@@ -93,6 +93,7 @@ namespace BookBuddies.Tales
         public readonly Dictionary<string, string> MoveDesc = new Dictionary<string, string>();
         public readonly List<MoveDef> Tomes = new List<MoveDef>();
         public readonly Dictionary<string, string> TomeLabel = new Dictionary<string, string>();
+        public readonly List<(string key, string name, string icon, string desc)> Library = new List<(string, string, string, string)>(); // TQ_META upgrades
         public string[][] Adjectives = new string[0][];
         public readonly Dictionary<string, string[]> Nouns = new Dictionary<string, string[]>(), BookNames = new Dictionary<string, string[]>();
         public string[] EvoIcons = new string[0], Projectiles = new string[0], PetLvFlavor = new string[0], PetLvX = new string[0];
@@ -153,6 +154,7 @@ namespace BookBuddies.Tales
             foreach (var kv in j.Obj("TQ_ABD")) d.MoveDesc[kv.Key] = (string)kv.Value;
             foreach (Dictionary<string, object> g in j.Arr("TQ_GAB")) d.Tomes.Add(MoveDef.From(null, g));
             foreach (var kv in j.Obj("TQ_GLABEL")) d.TomeLabel[kv.Key] = (string)kv.Value;
+            foreach (Dictionary<string, object> m in j.Arr("TQ_META")) d.Library.Add((m.Str("k"), m.Str("n"), m.Str("i"), m.Str("d")));
             var adj = j.Arr("TQ_ADJ"); d.Adjectives = new string[adj.Count][];
             for (int i = 0; i < adj.Count; i++) d.Adjectives[i] = Strings((List<object>)adj[i]);
             foreach (var kv in j.Obj("TQ_NOUN")) d.Nouns[kv.Key] = Strings((List<object>)kv.Value);
@@ -177,7 +179,7 @@ namespace BookBuddies.Tales
             {
                 var w = new WildTier
                 {
-                    Name = t.Str("n"), Icon = t.Str("i"), Sub = t.Str("sub"), Fx = t.Str("fx"), Hill = t.Str("hill"), Lvl = t.Int("lvl"), Mul = t.Num("mul", 1),
+                    Name = t.Str("n"), Icon = t.Str("i"), Genre = t.Str("g"), Sub = t.Str("sub"), Fx = t.Str("fx"), Hill = t.Str("hill"), Lvl = t.Int("lvl"), Mul = t.Num("mul", 1),
                     EliteChance = t.Num("ec"), TreeDensity = t.Num("td"), Foes = t.Ints("foes"), Elites = t.Ints("el"), Sky = Strings(t.Arr("sky")), Trees = Strings(t.Arr("trees")),
                 };
                 var pal = t.Obj("pal");

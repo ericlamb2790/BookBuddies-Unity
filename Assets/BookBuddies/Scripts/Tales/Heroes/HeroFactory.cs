@@ -8,7 +8,8 @@ namespace BookBuddies.Tales
     {
         public string Cls = "sleuth", Personality = "sunny", PetKey = "me", Look, Name = "Buddy";
         public double Hue, Rxp, Mood = 60;
-        public int Stage = 1, Rank, MetaVit, MetaAtk;
+        public int Stage = 1, Rank, MetaVit, MetaAtk, MetaInk;  // library upgrade levels (quest.meta vit, atk, ink)
+        public bool MetaRev;                                     // Second Wind
         public bool Shiny;
         public GearSum Gear = new GearSum();
         public List<string> Kit, Own;         // null = the class's starting kit and owned moves
@@ -29,6 +30,7 @@ namespace BookBuddies.Tales
                 Hue = look.Num("h"), Stage = JsMath.Clamp(look.Int("s"), 0, 5), Rank = Math.Max(0, look.Int("r")), Shiny = look.Truthy("sy"),
                 Rxp = save.Me.Rxp, Gear = Loot.Sum(save.Me.Gear, TalesData.GenreOfHue(look.Num("h"))),
                 Kit = KitOf(save, cls), Own = Owned(save, cls),
+                MetaVit = Library(save, "vit"), MetaAtk = Library(save, "atk"), MetaInk = Library(save, "ink"), MetaRev = Library(save, "rev") > 0,
             };
             var hero = Build(seed, lvl);
             var info = hero.Hero;
@@ -47,7 +49,7 @@ namespace BookBuddies.Tales
             var info = new HeroInfo
             {
                 Cls = C.Key, Look = s.Look, PetKey = s.PetKey, Rank = s.Rank, Stage = s.Stage, Shiny = s.Shiny, Rn = rn, Lvl = Math.Max(1, lvl), Gear = s.Gear,
-                Kit = s.Kit ?? KitOf(C.Key, rn, null, null), Own = s.Own ?? BaseOwn(C.Key),
+                Kit = s.Kit ?? KitOf(C.Key, rn, null, null), Own = s.Own ?? BaseOwn(C.Key), MetaInk = s.MetaInk, MetaRev = s.MetaRev,
             };
             double mult = (1 + .1 * s.Stage) * (1 + .22 * s.Rank) * (s.Shiny ? 1.1 : 1) * (1 + RenownBonus(rn)) * (1 + .05 * Evo(rn));
             HeroEvo.SetBase(info, C, mult, s);
@@ -81,6 +83,9 @@ namespace BookBuddies.Tales
             int power = JsMath.RoundI(h.BaseHp / 4.0 + h.BaseAtk * 3 + h.BaseDef * 2 + h.BaseSpd * 2);
             return (h.BaseHp, h.BaseAtk, h.BaseDef, h.BaseSpd, power);
         }
+
+        /// <summary>A library upgrade's level (tqMeta: vit, atk, ink, luck, rev, shop), 0 when not bought.</summary>
+        public static int Library(TalesSave save, string key) => save.Meta.TryGetValue(key, out int l) ? l : 0;
 
         /// <summary>Class key for the buddy (chosen or natural from personality).</summary>
         public static string ClassOf(TalesSave save)

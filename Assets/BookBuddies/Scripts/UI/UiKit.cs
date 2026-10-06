@@ -399,6 +399,23 @@ namespace BookBuddies.UI
             return b;
         }
 
+        /// <summary>An arrow drawn with three rounded bars, pointing right (rotate the returned rect to aim it), 24 units across.</summary>
+        public static RectTransform Arrow(Transform parent, Color color)
+        {
+            var arrow = Node("arrow", parent).Pin(new Vector2(.5f, .5f), Vector2.zero, new Vector2(24, 24));
+            ArrowBar(arrow, color, new Vector2(-2, 0), 16, 0);     // shaft
+            ArrowBar(arrow, color, new Vector2(4, 3.6f), 11, -40); // head
+            ArrowBar(arrow, color, new Vector2(4, -3.6f), 11, 40);
+            return arrow;
+        }
+
+        static void ArrowBar(RectTransform arrow, Color color, Vector2 at, float length, float angle)
+        {
+            var bar = Panel(arrow, "bar", color, 2);
+            bar.raycastTarget = false;
+            bar.rectTransform.Pin(new Vector2(.5f, .5f), at, new Vector2(length, 3.5f)).localRotation = Quaternion.Euler(0, 0, angle);
+        }
+
         /// <summary>A thin ink line between groups of rows.</summary>
         public static Image Rule(Transform parent)
         {
@@ -448,14 +465,15 @@ namespace BookBuddies.UI
             return b;
         }
 
-        public static InputField Input(Transform parent, string placeholder, int fontSize = BodySize)
+        /// <summary>A white text box with an ink edge (a pill when radius is half its height).</summary>
+        public static InputField Input(Transform parent, string placeholder, int fontSize = BodySize, int radius = 12)
         {
-            var bg = Panel(parent, "input", Color.white, 12);
+            var bg = Panel(parent, "input", Color.white, radius);
             var field = bg.gameObject.AddComponent<InputField>();
             field.colors = Tints;
             field.targetGraphic = bg;
-            Outline(bg, Palette.Ink.WithAlpha(.18f), 12);
-            Feel(field, 12, false);
+            Outline(bg, Palette.Ink.WithAlpha(.18f), radius);
+            Feel(field, radius, false);
             var text = Label(bg.transform, "", fontSize, Palette.Ink);
             text.supportRichText = false;
             text.horizontalOverflow = HorizontalWrapMode.Overflow;

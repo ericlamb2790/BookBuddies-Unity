@@ -244,7 +244,7 @@ namespace BookBuddies.Tales
             UiKit.Size(power, -1, 60);
 
             Extras(now, after);
-            var hero = UiKit.Secondary(leftContent, "Hero card", TalesUi.OpenHero, "📜");
+            var hero = UiKit.Secondary(leftContent, "Hero card", () => TalesUi.OpenHero(), "📜");
             UiKit.Size(hero, -1, UiKit.ButtonHeight);
         }
 

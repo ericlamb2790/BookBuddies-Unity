@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using BookBuddies.Economy;
 using BookBuddies.Pets;
 using BookBuddies.Road;
 using BookBuddies.UI;
@@ -29,7 +30,15 @@ namespace BookBuddies.Live
         public TownMap Map { get; private set; }
         public PlazaNetwork Net { get; private set; }
         public PetActor Me { get; private set; }
-        public IEnumerable<PetActor> Actors => actors.Values;
+        /// <summary>Every pet in town: yours, other readers', villagers and the storybook folk.</summary>
+        public IEnumerable<PetActor> Actors
+        {
+            get
+            {
+                foreach (var a in actors.Values) yield return a;
+                if (storyFolk) foreach (var a in storyFolk.Pets) yield return a;
+            }
+        }
         public string Area { get; private set; }
         public TownMap.Spot Hint { get; private set; }
         /// <summary>The villains, on the road and in the caves (null in town).</summary>
@@ -53,6 +62,7 @@ namespace BookBuddies.Live
         TownCamera cam;
         Transform actorRoot;
         readonly Dictionary<string, PetActor> actors = new Dictionary<string, PetActor>();
+        StoryFolk storyFolk; // a town's storybook characters (not part of the live room)
         readonly Dictionary<string, Vector2Int> items = new Dictionary<string, Vector2Int>();
         readonly HashSet<string> claimed = new HashSet<string>();
         readonly List<string> unseenNotes = new List<string>(); // messages that came while no HUD was up
@@ -80,6 +90,7 @@ namespace BookBuddies.Live
             actorRoot.SetParent(transform, false);
             Me = PetActor.Spawn(actorRoot, map, "me", myName, myLook, arrive.HasValue ? Arrival(arrive.Value) : StartPosition(), false, true);
             actors[Me.Id] = Me;
+            if (map.Folk.Count > 0) storyFolk = StoryFolk.Spawn(actorRoot, map, Me);
             cam.Setup(map, Me.Pos);
             ring = Highlight.Create(transform);
             trail = PathPreview.Create(transform);
@@ -155,7 +166,7 @@ namespace BookBuddies.Live
         {
             PetActor best = null;
             float bestD = 60f * Screen.dpi / 160f + 30f;
-            foreach (var a in actors.Values)
+            foreach (var a in Actors)
             {
                 if (a.Gone || a.Hidden || (!includeMe && a == Me)) continue;
                 Vector2 p = cam.Cam.WorldToScreenPoint(a.transform.position + a.transform.up * .55f);
@@ -263,7 +274,7 @@ namespace BookBuddies.Live
             if (near == null) { Trick("hop"); return; }
             switch (near.Thing)
             {
-                case PetActor pet: PetTapped?.Invoke(pet); break;
+                case PetActor pet: Greet(pet); break;
                 case TownMap.Seat seat: SitAt(seat); break;
                 case TownMap.Spot spot: if (!SpotActions.Use(spot)) SetHint(spot); break;
             }
@@ -309,7 +320,7 @@ namespace BookBuddies.Live
         {
             PetActor near = null;
             float bestD = 1.9f;
-            foreach (var a in actors.Values)
+            foreach (var a in Actors)
                 if (a != Me && !a.Gone && !a.Hidden && Vector2.Distance(a.Pos, Me.Pos) < bestD) { bestD = Vector2.Distance(a.Pos, Me.Pos); near = a; }
             if (near != null) return Describe(into, near);
             var t = Me.Tile;
@@ -401,6 +412,34 @@ namespace BookBuddies.Live
             SendGo();
         }
 
+        /// <summary>
+        /// Vanishes in a puff and reappears at a tile in this town (poofTo: riding to the lore stone of the town
+        /// you're in), with the place's name as a banner.
+        /// </summary>
+        public void PoofTo(Vector2Int at, string label)
+        {
+            var to = PathFinder.NearestWalkable(Map, at.x, at.y);
+            if (!to.HasValue) return;
+            keyHeld = holdWalking = false;
+            Me.Path.Clear();
+            Me.OnArrived = null;
+            if (Me.Sitting) { Me.Sitting = false; Send("sit", "on", 0.0); }
+            trail.Clear();
+            StartCoroutine(Reappear(to.Value, label));
+        }
+
+        System.Collections.IEnumerator Reappear(Vector2Int to, string label)
+        {
+            Fx.Poof(Me.Pos);
+            yield return new WaitForSeconds(.26f);
+            Me.Pos = new Vector2(to.x + .5f, to.y + .5f);
+            Fx.Poof(Me.Pos);
+            Me.Play("poofin", .6f);
+            Send(new Dictionary<string, object> { ["t"] = "go", ["x"] = (double)to.x, ["y"] = (double)to.y, ["tx"] = (double)to.x, ["ty"] = (double)to.y });
+            if (label != null) Banner?.Invoke(label, "");
+            Arrived();
+        }
+
         /// <summary>Walks to a place and shows its card (the compass uses this to lead you to the road).</summary>
         public void GoToSpot(TownMap.Spot spot) => UseSpot(spot);
 
@@ -450,9 +489,17 @@ namespace BookBuddies.Live
         {
             var t = other.Tile;
             var near = PathFinder.NearestWalkable(Map, t.x + (Me.Pos.x < other.Pos.x ? -1 : 1), t.y) ?? PathFinder.NearestWalkable(Map, t.x, t.y + 1);
-            void Face() { Me.Dir = other.Pos.x > Me.Pos.x ? 1 : -1; PetTapped?.Invoke(other); }
+            void Face() { Me.Dir = other.Pos.x > Me.Pos.x ? 1 : -1; Greet(other); }
             if (!near.HasValue || Vector2.Distance(new Vector2(near.Value.x + .5f, near.Value.y + .5f), Me.Pos) < 1.2f) { Face(); return; }
             WalkTo(near.Value.x, near.Value.y, Face, true);
+        }
+
+        // a storybook character talks to you and you wave; anyone else opens their pet card
+        void Greet(PetActor other)
+        {
+            if (!storyFolk || !storyFolk.Has(other)) { PetTapped?.Invoke(other); return; }
+            storyFolk.Talk(other);
+            Me.ShowEmote("👋");
         }
 
         public void Say(string text)
@@ -667,6 +714,7 @@ namespace BookBuddies.Live
                     Me.ShowEmote(m.Str("k") == "gift" ? "🎁" : "🪙");
                     Sound.Play(m.Str("k") == "gift" ? "rare" : "coin");
                     int coins = m.Int("coins");
+                    Wallet.Credited(coins, "town find", m.Int("bal", -1));
                     Notify(coins > 0 ? $"Found {(m.Str("k") == "bag" ? "a bag of coins" : m.Str("k") == "gift" ? "a gift box" : "a coin")}! +{coins} coins" : "Found it! You've hit today's coin limit.");
                     break;
                 case "g":
@@ -805,7 +853,7 @@ namespace BookBuddies.Live
         void LocalVillagers()
         {
             foreach (var a in actors.Values) if (a.IsBot) return;
-            var folk = Townsfolk.Villagers;
+            var folk = Townsfolk.For(Map.Key);
             for (int i = 0; i < folk.Length && Map.Seats.Count > 0; i++)
             {
                 var seat = Map.Seats[(i * 5 + 3) % Map.Seats.Count];
@@ -850,14 +898,29 @@ namespace BookBuddies.Live
             foreach (var note in notes) Notify(note);
         }
 
+        // a new area shows its name and one of its lines; arriving (the first area after HudReady) shows the place's own title
         void CheckArea()
         {
             var t = Me.Tile;
             string area = Map.AreaAt(t.x, t.y);
             if (area == Area) return;
+            bool arriving = Area == null;
             Area = area;
-            Banner?.Invoke(area, area != Map.Name ? Map.Name : "");
+            var lines = Map.IsTown ? TownBook.Current.AreaLines(Map.Key, area) : new string[0];
+            string line = lines.Length > 0 ? lines[Random.Range(0, lines.Length)] : area != Map.Name ? Map.Name : "";
+            if (arriving) Banner?.Invoke(Map.Name, Tagline(area, line));
+            else Banner?.Invoke(area, line);
             Changed?.Invoke();
+        }
+
+        // under a place's name as you arrive: a town's tagline, the two towns a road joins, or where in the caves you are
+        string Tagline(string area, string line)
+        {
+            var town = TownBook.Current.Get(Map.Key);
+            if (town != null && town.Sub.Length > 0) return town.Sub;
+            var wild = Map.Wild;
+            if (wild != null && wild.West != null && wild.East != null) return $"The road from {wild.West.Name} to {wild.East.Name}";
+            return area != Map.Name ? area : line;
         }
 
         void SetHint(TownMap.Spot spot)

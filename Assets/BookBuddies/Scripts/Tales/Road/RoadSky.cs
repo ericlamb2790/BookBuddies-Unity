@@ -9,8 +9,9 @@ namespace BookBuddies.Road
 {
     /// <summary>
     /// What hangs in the air over the wilds (the site's wildOverlay), drawn flat over the world and under the
-    /// labels: the tier's weather on the road (snow, embers, fireflies or falling leaves), and in the caves
-    /// darkness that closes in around your pet, lit by lanterns and crystals.
+    /// labels: the tier's weather on the road (snow, embers, fireflies or falling leaves), in the caves
+    /// darkness that closes in around your pet, lit by lanterns and crystals, and in the foggy towns
+    /// (Foghollow, Shadowmark, Ravenmoor) a pale mist along the top of the screen.
     /// The site adds the light glows; here they're blended softly over the dark, which looks much the same.
     /// </summary>
     public sealed class RoadSky : MonoBehaviour
@@ -21,6 +22,9 @@ namespace BookBuddies.Road
         Weather weather;
         Image[] lights = new Image[0];
 
+        const float FogShare = .22f; // of the screen's height, from the top
+        static readonly Color Fog = new Color32(235, 238, 242, 191); // rgba(235,238,242,.75)
+
         public static RoadSky Create(PlazaWorld world)
         {
             var canvas = UiKit.MakeCanvas("Road sky", 5);
@@ -30,7 +34,14 @@ namespace BookBuddies.Road
             sky.canvas = canvas;
             var root = (RectTransform)canvas.transform;
             var wild = world.Map.Wild;
-            if (wild.IsCave)
+            if (wild == null)
+            {
+                var mist = UiKit.Node("fog", root).Painted<Haze>();
+                mist.rectTransform.anchorMin = new Vector2(0, 1 - FogShare);
+                mist.rectTransform.anchorMax = Vector2.one;
+                mist.rectTransform.offsetMin = mist.rectTransform.offsetMax = Vector2.zero;
+            }
+            else if (wild.IsCave)
             {
                 sky.dark = UiKit.Node("darkness", root).Fill().Painted<Darkness>();
                 sky.lights = new Image[wild.Lights.Count];
@@ -115,6 +126,23 @@ namespace BookBuddies.Road
                     vh.AddTriangle(v, v + 1, v + 3);
                     vh.AddTriangle(v, v + 3, v + 2);
                 }
+            }
+        }
+
+        /// <summary>The foggy towns' top haze: the fog colour at the top edge, fading to nothing below.</summary>
+        sealed class Haze : MaskableGraphic
+        {
+            protected override void OnPopulateMesh(VertexHelper vh)
+            {
+                vh.Clear();
+                var r = rectTransform.rect;
+                var clear = Fog.WithAlpha(0);
+                vh.AddVert(new Vector2(r.xMin, r.yMin), clear, Vector2.zero);
+                vh.AddVert(new Vector2(r.xMin, r.yMax), Fog, Vector2.zero);
+                vh.AddVert(new Vector2(r.xMax, r.yMax), Fog, Vector2.zero);
+                vh.AddVert(new Vector2(r.xMax, r.yMin), clear, Vector2.zero);
+                vh.AddTriangle(0, 1, 2);
+                vh.AddTriangle(0, 2, 3);
             }
         }
 

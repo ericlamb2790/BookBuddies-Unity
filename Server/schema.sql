@@ -9,8 +9,6 @@ CREATE TABLE IF NOT EXISTS tokens (hash TEXT PRIMARY KEY, player_id TEXT NOT NUL
 
 CREATE INDEX IF NOT EXISTS tokens_player ON tokens (player_id);
 
-CREATE TABLE IF NOT EXISTS finds (player_id TEXT NOT NULL, day TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (player_id, day));
-
 CREATE TABLE IF NOT EXISTS limits (kind TEXT NOT NULL, ip TEXT NOT NULL, day TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (kind, ip, day));
 
 CREATE TABLE IF NOT EXISTS blocked_words (word TEXT PRIMARY KEY);
@@ -26,3 +24,20 @@ CREATE INDEX IF NOT EXISTS admin_log_target ON admin_log (target_id);
 -- Each player's pets (up to six). The active one's look is also players.pet. See src/pets.js.
 CREATE TABLE IF NOT EXISTS pets (player_id TEXT NOT NULL, id TEXT NOT NULL, name TEXT NOT NULL, look TEXT NOT NULL,
   active INTEGER NOT NULL DEFAULT 0, born INTEGER NOT NULL, PRIMARY KEY (player_id, id));
+
+-- The wallet (src/wallet.js): coins and Book Fair tickets are ledgers (a balance is SUM(amount); each (kind, ref) pays once),
+-- and econ_state keeps the Book Fair's counters. The website's tables, as they are.
+CREATE TABLE IF NOT EXISTS coin_tx (id INTEGER PRIMARY KEY AUTOINCREMENT, player_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL, ref TEXT NOT NULL, amount INTEGER NOT NULL, day TEXT NOT NULL, created_at INTEGER NOT NULL);
+
+CREATE UNIQUE INDEX IF NOT EXISTS coin_tx_once_idx ON coin_tx (player_id, kind, ref);
+
+CREATE INDEX IF NOT EXISTS coin_tx_day_idx ON coin_tx (player_id, day);
+
+CREATE TABLE IF NOT EXISTS fair_tx (id INTEGER PRIMARY KEY AUTOINCREMENT, player_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL, ref TEXT NOT NULL, amount INTEGER NOT NULL, day TEXT NOT NULL, created_at INTEGER NOT NULL);
+
+CREATE UNIQUE INDEX IF NOT EXISTS fair_tx_once_idx ON fair_tx (player_id, kind, ref);
+
+CREATE TABLE IF NOT EXISTS econ_state (player_id TEXT PRIMARY KEY REFERENCES players(id) ON DELETE CASCADE, pity INTEGER NOT NULL,
+  balls INTEGER NOT NULL, tix INTEGER NOT NULL, drops INTEGER NOT NULL, fish_at INTEGER NOT NULL, ups TEXT NOT NULL, freecap TEXT);

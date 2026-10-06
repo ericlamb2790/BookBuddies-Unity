@@ -34,7 +34,7 @@ namespace BookBuddies.Tales
             return ev < names.Length ? names[ev] : names[names.Length - 1] + " " + Roman(ev - names.Length + 2);
         }
 
-        /// <summary>tqGain after a fight: adds renown, counts life stats, returns a level-up line or null.</summary>
+        /// <summary>tqGain after a fight: adds renown, counts life stats, opens any class now earned, returns a level-up line or null.</summary>
         /// <remarks>
         /// A wild win passes rx 2 and stat "wins" (every wild fight is the site's 'fight' kind, even against a boss), which also
         /// counts the foes beaten and the best level. A loss passes 0 and "falls". Fate rolls (natural 20s, helpers) count either way.
@@ -55,6 +55,7 @@ namespace BookBuddies.Tales
             }
             string line = rx > 0 ? AddRenown(save, rx, outcome) : null;
             save.Touch();
+            CheckClassUnlocks(save);
             return line;
         }
 

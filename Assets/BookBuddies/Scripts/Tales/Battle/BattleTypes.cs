@@ -43,6 +43,8 @@ namespace BookBuddies.Tales
         public List<string> Order;          // tactics order (null = Smart)
         public bool AutoUlt = true, WantUlt, PhoenixUsed, PlotUsed;
         public int Dark, Weak;              // literary class counters (dk, wk)
+        public int MetaInk;                 // library: Bottomless Inkwell, +1 starting ink per level
+        public bool MetaRev;                // library: Second Wind, back up at half HP once a battle
     }
 
     /// <summary>One side's fighter. Status keys follow the site: stun bleed poison regen expose taunt pow dodge shield crit wind (+ weak).</summary>

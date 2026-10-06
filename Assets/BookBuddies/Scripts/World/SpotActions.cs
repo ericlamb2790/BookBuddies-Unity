@@ -10,7 +10,15 @@ namespace BookBuddies.World
     {
         static readonly Dictionary<string, System.Action<TownMap.Spot>> handlers = new Dictionary<string, System.Action<TownMap.Spot>>();
 
+        /// <summary>Sets what a kind of place does, replacing any handler (including a default).</summary>
         public static void Register(string kind, System.Action<TownMap.Spot> use) => handlers[kind] = use;
+
+        /// <summary>A stand-in for a kind of place a later feature fills in: used only while nothing else is registered.</summary>
+        public static void RegisterDefault(string kind, System.Action<TownMap.Spot> use)
+        {
+            if (!handlers.ContainsKey(kind)) handlers[kind] = use;
+        }
+
         public static bool CanUse(TownMap.Spot spot) => spot != null && handlers.ContainsKey(spot.Kind);
 
         public static bool Use(TownMap.Spot spot)

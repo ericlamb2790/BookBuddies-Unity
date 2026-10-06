@@ -1,12 +1,27 @@
 // Shared by the routes: the D1 database (tables made automatically on first use), daily limits, the
 // blocked-words list, the towns and rooms, and the small reply helpers.
 
-/** Creates the tables on first use, so a fresh D1 database works without a separate step. */
+/** Creates the tables on first use, so a fresh D1 database works without a separate step, then runs the one-time moves. */
 let schemaReady = false;
 export async function ensureSchema(env) {
   if (schemaReady) return;
   await env.DB.batch(SCHEMA.map((sql) => env.DB.prepare(sql)));
+  await moveCoinsToLedger(env);
   schemaReady = true;
+}
+
+/**
+ * v0.4: coins used to be a number on the player (players.coins). They move into the coin ledger once, as one 'legacy'
+ * row each (INSERT OR IGNORE, so a second run pays nothing), and the old per-day finds counter goes with them.
+ */
+async function moveCoinsToLedger(env) {
+  if (await env.DB.prepare("SELECT 1 FROM meta WHERE k = 'wallet_v1'").first()) return;
+  await env.DB.batch([
+    env.DB.prepare("INSERT OR IGNORE INTO coin_tx (player_id, kind, ref, amount, day, created_at) SELECT id, 'legacy', 'once', coins, ?1, ?2 FROM players WHERE coins > 0")
+      .bind(etDay(), Date.now()),
+    env.DB.prepare('DROP TABLE IF EXISTS finds'),
+    env.DB.prepare("INSERT OR IGNORE INTO meta (k, v) VALUES ('wallet_v1', ?1)").bind(String(Date.now())),
+  ]);
 }
 
 const SCHEMA = [
@@ -15,7 +30,6 @@ const SCHEMA = [
      ban_until INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, last_seen INTEGER)`,
   `CREATE TABLE IF NOT EXISTS tokens (hash TEXT PRIMARY KEY, player_id TEXT NOT NULL, created_at INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS tokens_player ON tokens (player_id)`,
-  `CREATE TABLE IF NOT EXISTS finds (player_id TEXT NOT NULL, day TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (player_id, day))`,
   `CREATE TABLE IF NOT EXISTS limits (kind TEXT NOT NULL, ip TEXT NOT NULL, day TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (kind, ip, day))`,
   `CREATE TABLE IF NOT EXISTS blocked_words (word TEXT PRIMARY KEY)`,
   `CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT NOT NULL)`,
@@ -24,9 +38,25 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS admin_log_target ON admin_log (target_id)`,
   `CREATE TABLE IF NOT EXISTS pets (player_id TEXT NOT NULL, id TEXT NOT NULL, name TEXT NOT NULL, look TEXT NOT NULL,
      active INTEGER NOT NULL DEFAULT 0, born INTEGER NOT NULL, PRIMARY KEY (player_id, id))`,
+  // the wallet (wallet.js), the website's tables as they are: coins and Book Fair tickets as ledgers, the fair's counters
+  `CREATE TABLE IF NOT EXISTS coin_tx (id INTEGER PRIMARY KEY AUTOINCREMENT, player_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+     kind TEXT NOT NULL, ref TEXT NOT NULL, amount INTEGER NOT NULL, day TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS coin_tx_once_idx ON coin_tx (player_id, kind, ref)`,
+  `CREATE INDEX IF NOT EXISTS coin_tx_day_idx ON coin_tx (player_id, day)`,
+  `CREATE TABLE IF NOT EXISTS fair_tx (id INTEGER PRIMARY KEY AUTOINCREMENT, player_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+     kind TEXT NOT NULL, ref TEXT NOT NULL, amount INTEGER NOT NULL, day TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS fair_tx_once_idx ON fair_tx (player_id, kind, ref)`,
+  // the rooms each player joined lately: the admin tools tell only these (36 places × 6 rooms is too many to call)
+  `CREATE TABLE IF NOT EXISTS rooms_seen (player_id TEXT NOT NULL, room TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (player_id, room))`,
+  `CREATE TABLE IF NOT EXISTS econ_state (player_id TEXT PRIMARY KEY REFERENCES players(id) ON DELETE CASCADE, pity INTEGER NOT NULL,
+     balls INTEGER NOT NULL, tix INTEGER NOT NULL, drops INTEGER NOT NULL, fish_at INTEGER NOT NULL, ups TEXT NOT NULL, freecap TEXT)`,
 ];
 
 export const today = () => new Date().toISOString().slice(0, 10);
+
+/** Today in US Eastern time (YYYY-MM-DD), like the website: every coin cap and the daily gift turn over at its midnight. */
+export const etDay = () =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 
 export async function countToday(env, kind, ip) {
   const row = await env.DB.prepare('SELECT n FROM limits WHERE kind = ?1 AND ip = ?2 AND day = ?3').bind(kind, ip, today()).first();
@@ -47,9 +77,24 @@ export async function blockedWords(env) {
 
 // ---- towns and rooms ----
 
-/** The live towns. Each has rooms 1 to ROOMS, and each room is one Durable Object named "<town>:<room>". */
-export const TOWNS = ['pawtopia', 'road1', 'caves'];
+/** The towns along Bramble Road after Pawtopia, in order. Road link l runs from the town before it to the l-th of these. */
+export const GENRE_TOWNS = ['romance', 'classics', 'adventure', 'mystery', 'fantasy', 'scifi', 'horror', 'cozy', 'fairytale',
+  'poetry', 'western', 'ocean', 'historical', 'thriller', 'dystopia', 'myth', 'gothic'];
+
+/**
+ * The live places: Pawtopia, the 17 towns, the 17 road links between them ("road1" … "road17") and the Inkwell Caves.
+ * Each has rooms 1 to ROOMS, and each room is one Durable Object named "<town>:<room>".
+ */
+export const TOWNS = ['pawtopia', ...GENRE_TOWNS, ...GENRE_TOWNS.map((_, i) => 'road' + (i + 1)), 'caves'];
 export const ROOMS = 6;
+
+/** Notes the room a player just joined, so the admin tools can reach them there (see admin.js tellRooms). */
+export const noteRoom = (env, pid, room) =>
+  env.DB.prepare('INSERT INTO rooms_seen (player_id, room, at) VALUES (?1, ?2, ?3) ON CONFLICT (player_id, room) DO UPDATE SET at = ?3')
+    .bind(pid, room, Date.now()).run();
+
+/** Forgets the rooms a player joined (when their account goes). */
+export const forgetRooms = (env, pid) => env.DB.prepare('DELETE FROM rooms_seen WHERE player_id = ?1').bind(pid);
 
 // ---- replies ----
 

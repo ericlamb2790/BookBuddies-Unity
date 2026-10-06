@@ -26,7 +26,6 @@ namespace BookBuddies.Road
         const float GuardianSpeed = 3.2f, CaveSpeed = 4.05f, RoadSpeed = 4.25f, HomeSpeed = 2.4f, IdleSpeed = 1.3f;
         const float AmbushChance = .07f, LairMinutes = 30, WipeSeconds = .72f;
         static readonly Vector2Int GuardianHome = new Vector2Int(48, 20);
-        static readonly Vector2Int WakeUpSpot = new Vector2Int(39, 34); // the Wishing Fountain
         static readonly Vector2Int[] AmbushSpots = { new(1, 0), new(-1, 0), new(0, 1), new(0, -1), new(1, 1), new(-1, -1) };
 
         /// <summary>A fight from the moment a foe touches you until the battle screen hands back the outcome.</summary>
@@ -36,6 +35,7 @@ namespace BookBuddies.Road
         TownMap map;
         WildInfo wild;
         WildTier tier;
+        int tierNumber, level; // the caves take both from the road you came in from
         TownView view;
         TownCamera cam;
         Transform root;
@@ -53,8 +53,11 @@ namespace BookBuddies.Road
         {
             var r = world.gameObject.AddComponent<RoadFoes>();
             r.world = world; r.map = world.Map; r.wild = world.Map.Wild; r.view = view; r.cam = cam;
-            var tiers = TalesData.Current.Tiers;
-            r.tier = tiers[Mathf.Clamp(r.wild.Tier - 1, 0, tiers.Count - 1)];
+            var data = TalesData.Current;
+            int link = Mathf.Clamp(TalesSave.Current.Link, 1, data.LinkT.Length - 1);
+            r.tierNumber = Mathf.Clamp(r.wild.IsCave ? data.LinkT[link] : r.wild.Tier, 1, data.Tiers.Count);
+            r.tier = data.Tiers[r.tierNumber - 1];
+            r.level = r.wild.IsCave ? r.tier.Lvl + 1 : r.wild.Level;
             r.root = new GameObject("Foes").transform;
             r.root.SetParent(world.transform, false);
             return r;
@@ -233,7 +236,7 @@ namespace BookBuddies.Road
             f.V = FoeFactory.Variant(def, guardian, elite, rng);
             f.Id = ++lastId;
             f.Guardian = guardian; f.Elite = elite; f.Ambusher = ambush;
-            f.Lvl = wild.Level + (guardian ? 2 : elite ? 1 : 0) + (rng.Chance(.25) ? 1 : 0);
+            f.Lvl = level + (guardian ? 2 : elite ? 1 : 0) + (rng.Chance(.25) ? 1 : 0);
             f.Pos = new Vector2(x + .5f, y + .5f); f.Home = new Vector2Int(x, y);
             f.Dir = rng.Chance(.5) ? 1 : -1;
             f.Born = clock;
@@ -393,7 +396,7 @@ namespace BookBuddies.Road
                 Guardian = pack[0].Guardian,
                 HpFrac = hp,
                 Ink = Mathf.Max(1, ink), // the site starts every fight with at least one ink
-                Tier = wild.Tier,
+                Tier = tierNumber,
                 Cave = wild.IsCave,
                 Look = Buddy.Look,
                 PetName = MyPets.ActiveName,
@@ -439,7 +442,10 @@ namespace BookBuddies.Road
             foreach (var o in pack) { o.State = RoadFoe.Mood.Idle; o.Path.Clear(); o.Stun = clock + 3; }
             world.Halt();
             world.Me.ShowEmote("💫");
-            StartCoroutine(Later(.4f, () => Boot.Travel(Boot.TownKey, WakeUpSpot, "Your pet fainted and woke up at the Wishing Fountain in Pawtopia Town.")));
+            // stoneWake: at your home stone, or the stone of the town behind you
+            var home = TownBook.Current.Get(TownProgress.WakePlace(map.Key, true, TalesSave.Current.Link));
+            string note = $"Your pet fainted and woke up at the {home.Landmark} in {home.Name}.";
+            StartCoroutine(Later(.4f, () => Boot.Travel(home.Key, new Vector2Int(home.Stone[0], home.Stone[1]), note)));
         }
 
         // the fight didn't happen (no pet, or the battle couldn't start): everyone takes a breather

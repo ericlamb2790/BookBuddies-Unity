@@ -1,14 +1,15 @@
 using System.Collections.Generic;
 using BookBuddies.Live;
 using BookBuddies.Tales;
+using BookBuddies.UI;
 using BookBuddies.World;
 using UnityEngine;
 
 namespace BookBuddies.Road
 {
     /// <summary>
-    /// What the road's places do (the site's wildAct and road extras): the gate out of Pawtopia, the ways home and
-    /// on, the cave mouth and its exit, the trailhead, the campfire, the wayshrine, the hidden stash and the
+    /// What the road's places do (the site's wildAct and road extras): the town gates, the ways back and on at each
+    /// end of a road, the cave mouth and its exit, the trailhead, the campfire, the wayshrine, the hidden stash and the
     /// guardian's chest. Registered once with SpotActions; each handler acts on the town you're in now.
     /// </summary>
     public static class RoadSpots
@@ -20,7 +21,8 @@ namespace BookBuddies.Road
             "Someone carved “almost there!” into the base.", "The shrine hums like a town full of readers.", "A little bell rings. The road ahead feels shorter.",
         };
         static readonly string[] StashLines = { "Nothing left but a note: “Back tomorrow.”", "Empty. A squirrel is looking at you very innocently.", "Just leaves now. Come back another day." };
-        static readonly Vector2Int HomeGate = new Vector2Int(77, 40), CaveMouth = new Vector2Int(48, 42);
+        static readonly Vector2Int CaveMouth = new Vector2Int(48, 42);
+        const int EastEnd = 109; // arriving on a road from the town ahead (RW - 3)
 
         static System.Func<PlazaWorld> current;
 
@@ -28,11 +30,11 @@ namespace BookBuddies.Road
         public static void Register(System.Func<PlazaWorld> world)
         {
             current = world;
-            SpotActions.Register("road", _ => HeadOut());
-            SpotActions.Register("home", _ => Boot.Travel(Boot.TownKey, HomeGate));
-            SpotActions.Register("towns", Onward);
+            SpotActions.Register("road", spot => TownSheets.Gate(World, spot.Side));
+            SpotActions.Register("home", _ => WalkOff(false));
+            SpotActions.Register("towns", _ => WalkOff(true));
             SpotActions.Register("cave", _ => IntoTheCaves());
-            SpotActions.Register("exit", _ => Boot.Travel("road1", CaveMouth));
+            SpotActions.Register("exit", _ => Boot.Travel(TownBook.LinkPlace(TalesSave.Current.Link), CaveMouth));
             SpotActions.Register("trail", Trailhead);
             SpotActions.Register("camp", Camp);
             SpotActions.Register("rshrine", Shrine);
@@ -42,37 +44,46 @@ namespace BookBuddies.Road
 
         static PlazaWorld World => current?.Invoke();
         static TalesData Data => TalesData.Current;
-        static WildTier FirstTier => Data.Tiers[0];
         static T Pick<T>(IList<T> list) => list[Random.Range(0, list.Count)];
+
+        /// <summary>Your level for the road's warnings and level badges: your Pet Lv (the site uses your reader level from books read).</summary>
+        public static int ReaderLevel => HeroFactory.Renown(TalesSave.Current.Me.Rxp).lvl + 1;
 
         // ---- coming and going ----
 
-        static void HeadOut()
+        /// <summary>Walks onto road link l (linkTo): at its west end, or at its east end when coming back from the town ahead.</summary>
+        public static void WalkTheRoad(int link, bool fromEast)
         {
-            DangerAsk(Data.RouteLv[1], FirstTier.Name, FirstTier.Lvl, () =>
-            {
-                TalesSave.Current.Link = 1;
-                TalesSave.Current.Touch();
-                Boot.Travel("road1", null);
-            });
+            TalesSave.Current.Link = link;
+            TalesSave.Current.Touch();
+            Boot.Travel(TownBook.LinkPlace(link), fromEast ? new Vector2Int(EastEnd, TownBook.RoadY(EastEnd, link)) : (Vector2Int?)null);
         }
 
-        static void IntoTheCaves() => DangerAsk(Data.RouteLv[1] + 1, "The Inkwell Caves", FirstTier.Lvl + 1, () => Boot.Travel("caves", null));
-
-        static void Onward(TownMap.Spot spot)
+        // off the end of a road into its town: the next town's west gate, or the east gate of the town behind you
+        static void WalkOff(bool east)
         {
-            var east = World?.Map.Wild?.East;
-            string name = east?.Name ?? spot.Name;
-            RoadCard.Tell(east?.Icon ?? spot.Icon, name, name + " opens in a later version. The road ends here for now, but there’s plenty to find along the way.");
+            var wild = World?.Map.Wild;
+            var end = east ? wild?.East : wild?.West;
+            if (end == null) return;
+            var at = TownBook.ArrivalFromRoad(end.Key, east);
+            Boot.Travel(end.Key, new Vector2Int(at[0], at[1]));
+        }
+
+        // the caves are as tough as the road you came in from: its tier's foes, a level up
+        static void IntoTheCaves()
+        {
+            int link = Mathf.Clamp(TalesSave.Current.Link, 1, Data.Route.Length - 1);
+            var tier = Data.Tiers[Data.LinkT[link] - 1];
+            DangerAsk(Data.RouteLv[link] + 1, "The Inkwell Caves", tier.Lvl + 1, () => Boot.Travel("caves", null));
         }
 
         /// <summary>
         /// The site's dangerAsk: if the place is above your level, asks before you go ("Once a fight starts you
-        /// can't run…"). Your level here is your Pet Lv (the site uses your reader level from books read).
+        /// can't run…").
         /// </summary>
         public static void DangerAsk(int required, string where, int foes, System.Action go)
         {
-            int level = HeroFactory.Renown(TalesSave.Current.Me.Rxp).lvl + 1;
+            int level = ReaderLevel;
             if (required <= level) { go(); return; }
             bool very = required >= level + 3;
             RoadCard.Ask(very ? "☠️" : "⚠️", very ? "Very dangerous road" : "Dangerous road",
@@ -119,7 +130,7 @@ namespace BookBuddies.Road
             Fx.Sparkle(new Vector2(spot.Use.x + .5f, spot.Use.y - 1), 0, 1.2f);
             Sound.Play("coin");
             if (Buddy.Hatched) { Find(new[] { "stash" }, "You found the Bramble Stash!", .5f); return; } // Loot.Roll marks the day
-            save.StashDay = Today();
+            Loot.MarkToday(save, "stash");
             save.Touch();
             w.Notify("A pile of old coins and a note: “Hatch a pet and come back.”");
         }
@@ -170,8 +181,5 @@ namespace BookBuddies.Road
             yield return new WaitForSecondsRealtime(delay);
             TalesUi.Reveal(items, title);
         }
-
-        // the road's daily finds turn over at midnight UTC, like the site's
-        static string Today() => System.DateTime.UtcNow.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
     }
 }

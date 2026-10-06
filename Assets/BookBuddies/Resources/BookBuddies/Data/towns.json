@@ -1,0 +1,3776 @@
+{
+ "towns": {
+  "pawtopia": {
+   "n": "Pawtopia Town",
+   "i": "🏡",
+   "g": "Every genre",
+   "sub": "The Plaza’s home town, with the Book Fair and your apartment",
+   "subj": "fiction",
+   "lv": 1,
+   "shop": "Paper Paws Books",
+   "keeper": "Barista Beans",
+   "roof": null,
+   "sky": [
+    "#8fd3ff",
+    "#bfe6ff",
+    "#fff1d6"
+   ],
+   "mon": "Wishing Fountain",
+   "sq": null,
+   "pond": null,
+   "fog": false,
+   "dusk": false,
+   "lines": [
+    "A wish for a cozy rainy reading day ☔📖",
+    "A wish for a book that’s impossible to put down ✨",
+    "A wish for one more chapter tonight 🌙",
+    "A wish for snacks during the next plot twist 🍪",
+    "A wish that everyone here finds their next favorite book 💛"
+   ],
+   "lore": "Pawtopia grew up around a fountain where readers swapped books on Sunday mornings. The first pets hatched from eggs left in the lost-and-found box, and they never wanted to leave. Every road starts here, and every road comes home.",
+   "role": null,
+   "curios": [
+    {
+     "i": "🔔",
+     "n": "The Lost Bookmark Bell",
+     "v": "Ring it",
+     "o": [
+      "The bell rings and three bookmarks flutter down from nowhere.",
+      "A pigeon lands on your pet’s head. It seems pleased.",
+      "Somewhere, a library book returns itself.",
+      "The bell plays the first notes of your favourite song.",
+      "Nothing happens. Then, very faintly, someone across town says “thank you”."
+     ]
+    },
+    {
+     "i": "📮",
+     "n": "Letters to Authors",
+     "v": "Post a letter",
+     "o": [
+      "Your pet posts a very sincere letter about chapter nine.",
+      "The postbox burps out a reply: “Thank you for reading!”",
+      "A postcard falls out with a doodle of your pet on it.",
+      "The slot is full of fan mail. Your pet adds a sticker.",
+      "The postbox winks. Postboxes cannot wink."
+     ]
+    },
+    {
+     "i": "🧺",
+     "n": "The Sharing Basket",
+     "v": "Take a peek",
+     "o": [
+      "Someone left a cookie and a note: “for the next reader”.",
+      "Your pet swaps a pebble for a shiny button.",
+      "There’s a battered paperback inside with every twist underlined.",
+      "The basket is empty except for a very small mouse reading a very small book.",
+      "A warm scarf, knitted in book-spine stripes."
+     ]
+    }
+   ],
+   "house": [],
+   "stone": [
+    39,
+    34
+   ],
+   "music": {
+    "root": 60,
+    "scale": [
+     0,
+     2,
+     4,
+     7,
+     9
+    ]
+   },
+   "books": [
+    [
+     "Charlotte’s Web",
+     "E. B. White"
+    ],
+    [
+     "The Very Hungry Caterpillar",
+     "Eric Carle"
+    ],
+    [
+     "Matilda",
+     "Roald Dahl"
+    ],
+    [
+     "Wonder",
+     "R. J. Palacio"
+    ],
+    [
+     "The Little Prince",
+     "Antoine de Saint-Exupéry"
+    ],
+    [
+     "A Man Called Ove",
+     "Fredrik Backman"
+    ]
+   ],
+   "items": [
+    [
+     "🎡",
+     "Mini Ferris wheel",
+     150
+    ],
+    [
+     "🎠",
+     "Carousel music box",
+     140
+    ],
+    [
+     "⛲",
+     "Tiny fountain",
+     120
+    ],
+    [
+     "☕",
+     "Cozy Cup mug",
+     70
+    ],
+    [
+     "🦆",
+     "Rubber duck",
+     60
+    ],
+    [
+     "🎪",
+     "Little circus tent",
+     130
+    ]
+   ]
+  },
+  "romance": {
+   "n": "Rosewater",
+   "i": "🌹",
+   "g": "Romance",
+   "sub": "Blossom lanes, rose gardens and a heart-shaped fountain",
+   "subj": "romance",
+   "lv": 2,
+   "shop": "Dog-Eared Hearts",
+   "keeper": "Juliet Purrington",
+   "roof": "#e2557f",
+   "sky": [
+    "#ffc6dd",
+    "#ffe3ee",
+    "#fff3e6"
+   ],
+   "mon": "The Sweetheart Fountain",
+   "sq": "Sweetheart Square",
+   "pond": "Swan Pond",
+   "fog": false,
+   "dusk": false,
+   "lines": [
+    "Couples toss a bookmark in for luck. 💌",
+    "The fountain sparkles brighter for meet-cutes. 💖",
+    "A carved note says: “Slow burn is worth it.”",
+    "Two swans are reading the same book. Adorable. 🦢"
+   ],
+   "lore": "Two rival bakers built the Sweetheart Fountain after a year of leaving each other notes in library books. Toss a coin in and somewhere, someone gets their happy ending.",
+   "role": {
+    "shop": "Dog-eared corners mark the best kissing scenes.",
+    "sq": "Two strangers bumped into each other here last week. They’re engaged now.",
+    "ex": "Departures are always slow, so nobody misses a goodbye.",
+    "pond": "The swans have been courting since chapter one."
+   },
+   "curios": [
+    {
+     "i": "💌",
+     "n": "Love Letter Tree",
+     "v": "Read a letter",
+     "o": [
+      "“I saved you the last croissant. Forever yours.”",
+      "“Meet me at the fountain. Bring the sequel.”",
+      "“You annotated my favourite book. Marry me.”",
+      "“Our cats are friends now. We have to talk.”",
+      "A blank card. Your pet draws a heart on it."
+     ]
+    },
+    {
+     "i": "🌹",
+     "n": "Rose Arbour",
+     "v": "Smell the roses",
+     "o": [
+      "Your pet sneezes in a very romantic way.",
+      "A rose petal lands perfectly on your pet’s nose.",
+      "The roses rustle like an audience sighing.",
+      "Somebody proposed here an hour ago. There’s still confetti.",
+      "The roses smell like summer and old paperbacks."
+     ]
+    },
+    {
+     "i": "⛲",
+     "n": "Wishing Well",
+     "v": "Toss a pebble",
+     "o": [
+      "Plink! A wish for a happily ever after.",
+      "The well whispers: “slow burn, but worth it”.",
+      "Your pebble skips twice and makes a heart.",
+      "The water ripples into the shape of a book.",
+      "A frog surfaces, wearing a tiny crown."
+     ]
+    }
+   ],
+   "house": [
+    "Rosalind",
+    "Monsieur Bonbon",
+    "Juniper Heart",
+    "Valentina",
+    "Cupid Jr."
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 65,
+    "scale": [
+     0,
+     4,
+     7,
+     9,
+     11
+    ]
+   },
+   "books": [
+    [
+     "Pride and Prejudice",
+     "Jane Austen"
+    ],
+    [
+     "The Hating Game",
+     "Sally Thorne"
+    ],
+    [
+     "Beach Read",
+     "Emily Henry"
+    ],
+    [
+     "The Flatshare",
+     "Beth O’Leary"
+    ],
+    [
+     "Red, White & Royal Blue",
+     "Casey McQuiston"
+    ],
+    [
+     "Anne of Green Gables",
+     "L. M. Montgomery"
+    ]
+   ],
+   "items": [
+    [
+     "🌹",
+     "Rose in a vase",
+     90
+    ],
+    [
+     "💌",
+     "Bundle of love letters",
+     110
+    ],
+    [
+     "💐",
+     "Bouquet",
+     100
+    ],
+    [
+     "🎀",
+     "Big satin bow",
+     80
+    ],
+    [
+     "💝",
+     "Heart gift box",
+     130
+    ],
+    [
+     "🧁",
+     "Strawberry cupcake",
+     70
+    ]
+   ]
+  },
+  "classics": {
+   "n": "Old Quill",
+   "i": "📜",
+   "g": "Classics",
+   "sub": "Hedge mazes, statues and a giant quill in an inkpot",
+   "subj": "classics",
+   "lv": 3,
+   "shop": "Ink & Ivy Antiquarian",
+   "keeper": "Miss Bennet Paws",
+   "roof": "#7a4b2b",
+   "sky": [
+    "#9fd0f0",
+    "#d8ecf6",
+    "#fff3dc"
+   ],
+   "mon": "The Great Quill",
+   "sq": "Inkwell Square",
+   "pond": "Swanlake Green",
+   "fog": false,
+   "dusk": false,
+   "lines": [
+    "The quill has signed a thousand library cards. 🖋️",
+    "“It is a truth universally acknowledged…” is carved on the base.",
+    "The ink never dries. Nobody knows why.",
+    "Locals say the quill writes a new sonnet every full moon."
+   ],
+   "lore": "The Great Quill was the first pen in the Plaza, and Old Quill grew up around the inkwell beneath it. The streets are still kept in alphabetical order, and the town clock only strikes in iambic pentameter.",
+   "role": {
+    "shop": "Every edition here has been read at least a hundred times.",
+    "sq": "The street signs are written in perfect cursive.",
+    "ex": "Trains depart at a stately pace, as is proper.",
+    "pond": "A poet once sat here for an entire winter. You can still see the dent."
+   },
+   "curios": [
+    {
+     "i": "✒️",
+     "n": "Poet’s Desk",
+     "v": "Write a line",
+     "o": [
+      "Your pet writes “paws” and is very proud.",
+      "The quill writes a sonnet on its own. It’s about snacks.",
+      "Ink everywhere. Artistic.",
+      "“It was the best of naps, it was the worst of naps.”",
+      "A line appears: “Reader, I adopted it.”"
+     ]
+    },
+    {
+     "i": "🎻",
+     "n": "Street Quartet",
+     "v": "Request a song",
+     "o": [
+      "They play something sad and lovely. Your pet sways.",
+      "They play a jig. Everybody dances, briefly.",
+      "The cellist is asleep. The others carry on.",
+      "They play the theme from your favourite book. How?",
+      "They take a bow. Your pet bows back."
+     ]
+    },
+    {
+     "i": "📜",
+     "n": "Town Crier",
+     "v": "Hear the news",
+     "o": [
+      "“Hear ye! A reader finished a 900-page book!”",
+      "“Hear ye! The library is closed for being too cozy!”",
+      "“Hear ye! Somebody spoiled the ending! Outrage!”",
+      "“Hear ye! Tea at four. As always.”",
+      "“Hear ye! Your pet looks very dashing today!”"
+     ]
+    }
+   ],
+   "house": [
+    "Professor Quill",
+    "Lady Bennet",
+    "Old Captain Fitz",
+    "Miss Austen-Paws",
+    "Mr. Thornfield"
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 62,
+    "scale": [
+     0,
+     2,
+     4,
+     5,
+     7,
+     9
+    ]
+   },
+   "books": [
+    [
+     "Jane Eyre",
+     "Charlotte Brontë"
+    ],
+    [
+     "Little Women",
+     "Louisa May Alcott"
+    ],
+    [
+     "Great Expectations",
+     "Charles Dickens"
+    ],
+    [
+     "The Secret Garden",
+     "Frances Hodgson Burnett"
+    ],
+    [
+     "Moby-Dick",
+     "Herman Melville"
+    ],
+    [
+     "Emma",
+     "Jane Austen"
+    ]
+   ],
+   "items": [
+    [
+     "🖋️",
+     "Fountain pen",
+     90
+    ],
+    [
+     "🫖",
+     "China teapot",
+     100
+    ],
+    [
+     "🎻",
+     "Violin",
+     180
+    ],
+    [
+     "🏛️",
+     "Little temple",
+     160
+    ],
+    [
+     "📯",
+     "Post horn",
+     110
+    ],
+    [
+     "🪶",
+     "Feather quill",
+     80
+    ]
+   ]
+  },
+  "adventure": {
+   "n": "Driftwood Cove",
+   "i": "🧭",
+   "g": "Adventure",
+   "sub": "Palm trees, cargo crates and a compass rose",
+   "subj": "adventure",
+   "lv": 5,
+   "shop": "Map & Compass Books",
+   "keeper": "Captain Fernsby",
+   "roof": "#2fa39b",
+   "sky": [
+    "#7fd6ff",
+    "#c4f0ff",
+    "#fff5d6"
+   ],
+   "mon": "The Compass Rose",
+   "sq": "Compass Square",
+   "pond": "Treasure Lagoon",
+   "fog": false,
+   "dusk": false,
+   "lines": [
+    "The needle always points to the nearest bookshop. 🧭",
+    "X marks the spot… of the next great read. 🗺️",
+    "A parrot squawks: “Pieces of eight! Pages of eight!” 🦜",
+    "Scratched into the stone: “Not all who wander are lost.”"
+   ],
+   "lore": "The Compass Rose has never once pointed north. Captain Blackpage buried it here so it would always point to the next adventure, which is usually further down Bramble Road.",
+   "role": {
+    "shop": "Maps, compasses and books that end with a treasure.",
+    "sq": "The compass rose points to whoever needs an adventure most.",
+    "ex": "The train has a crow’s nest. Nobody knows why.",
+    "pond": "The lagoon hides a chest that nobody has found. Yet."
+   },
+   "curios": [
+    {
+     "i": "🗺️",
+     "n": "Treasure Map Post",
+     "v": "Take a map",
+     "o": [
+      "X marks the spot. The spot is the bookshop.",
+      "The map is of your own living room. Suspicious.",
+      "A map with a dragon drawn where the café should be.",
+      "This one leads straight to the Bramble Road.",
+      "The map is blank. Write your own adventure."
+     ]
+    },
+    {
+     "i": "🦜",
+     "n": "Parrot Perch",
+     "v": "Chat",
+     "o": [
+      "“SPOILERS! SPOILERS!” Oh no.",
+      "The parrot recites the first line of a classic.",
+      "“Pieces of eight! Pages of eight!”",
+      "It steals a crumb and looks very proud.",
+      "The parrot asks what you’re reading and nods wisely."
+     ]
+    },
+    {
+     "i": "⚓",
+     "n": "Ship’s Wheel",
+     "v": "Steer",
+     "o": [
+      "Hard to starboard! Nothing happens. It’s bolted down.",
+      "Your pet spins it and gets dizzy.",
+      "The wheel creaks a sea shanty.",
+      "You feel the wind, the waves and a strong need for snacks.",
+      "Land ho! It’s just the bookshop again."
+     ]
+    }
+   ],
+   "house": [
+    "Captain Compass",
+    "Scout Juniper",
+    "Old Salt Barnaby",
+    "Treasure Tilly",
+    "Ranger Moss"
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 64,
+    "scale": [
+     0,
+     2,
+     4,
+     7,
+     9,
+     10
+    ]
+   },
+   "books": [
+    [
+     "Treasure Island",
+     "Robert Louis Stevenson"
+    ],
+    [
+     "Hatchet",
+     "Gary Paulsen"
+    ],
+    [
+     "Around the World in 80 Days",
+     "Jules Verne"
+    ],
+    [
+     "The Count of Monte Cristo",
+     "Alexandre Dumas"
+    ],
+    [
+     "Life of Pi",
+     "Yann Martel"
+    ],
+    [
+     "Percy Jackson and the Lightning Thief",
+     "Rick Riordan"
+    ]
+   ],
+   "items": [
+    [
+     "🧭",
+     "Brass compass",
+     100
+    ],
+    [
+     "🗺️",
+     "Treasure map",
+     120
+    ],
+    [
+     "🦜",
+     "Parrot pal",
+     160
+    ],
+    [
+     "⚓",
+     "Ship’s anchor",
+     140
+    ],
+    [
+     "🐚",
+     "Seashell",
+     70
+    ],
+    [
+     "🏝️",
+     "Desert island diorama",
+     190
+    ]
+   ]
+  },
+  "mystery": {
+   "n": "Foghollow",
+   "i": "🔍",
+   "g": "Mystery",
+   "sub": "Gas lamps, hedges and a clock tower that’s always five minutes slow",
+   "subj": "mystery",
+   "lv": 6,
+   "shop": "Clue & Candle Books",
+   "keeper": "Inspector Whiskers",
+   "roof": "#3d4a5c",
+   "sky": [
+    "#9fb3c8",
+    "#d6dde6",
+    "#eef0f2"
+   ],
+   "mon": "The Slow Clock Tower",
+   "sq": "Magnifier Square",
+   "pond": "Misty Mere",
+   "fog": true,
+   "dusk": false,
+   "lines": [
+    "The clock is five minutes slow. Suspicious. 🕰️",
+    "Someone left a pawprint on the clock face. The plot thickens. 🔍",
+    "Rumor says the butler didn’t do it this time.",
+    "A note under the bench reads: “Check chapter 12.”"
+   ],
+   "lore": "The Slow Clock Tower loses one minute every night, and nobody has caught who takes it. The fog rolls in whenever a reader gets close to the twist.",
+   "role": {
+    "shop": "Every book here has one page missing. Find it and you get a discount.",
+    "sq": "Footprints in the dust lead three ways and back again.",
+    "ex": "Nobody has ever seen the conductor’s face. Suspicious.",
+    "pond": "Something glinted under the mist. Probably a clue."
+   },
+   "curios": [
+    {
+     "i": "🔍",
+     "n": "Clue Board",
+     "v": "Study it",
+     "o": [
+      "Red string connects the baker, the butler and a goose.",
+      "You spot a fingerprint. It’s your pet’s. Hmm.",
+      "A new note pinned today: “The clock knows.”",
+      "Someone has circled a single word: “Tuesday”.",
+      "The board is upside down. Was it always like that?"
+     ]
+    },
+    {
+     "i": "🎩",
+     "n": "Lost Property Desk",
+     "v": "Ring for service",
+     "o": [
+      "A hat that fits only on Thursdays.",
+      "A single glove, still warm.",
+      "A diary with every page saying “I know”.",
+      "An umbrella that opens itself when you lie.",
+      "Nobody answers. The bell rings back."
+     ]
+    },
+    {
+     "i": "🕯️",
+     "n": "Candle in the Window",
+     "v": "Look closer",
+     "o": [
+      "A silhouette waves, then vanishes.",
+      "The candle spells out letters in smoke: B-O-O-K.",
+      "There’s nobody inside. Just a cat in a deerstalker.",
+      "The flame leans toward the clock tower.",
+      "It goes out. It comes back on. You didn’t touch it."
+     ]
+    }
+   ],
+   "house": [
+    "Inspector Pudding",
+    "Miss Marbles",
+    "Constable Crumb",
+    "Madame Vellum",
+    "Old Ledger"
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 57,
+    "scale": [
+     0,
+     2,
+     3,
+     7,
+     8
+    ]
+   },
+   "books": [
+    [
+     "The Hound of the Baskervilles",
+     "Arthur Conan Doyle"
+    ],
+    [
+     "And Then There Were None",
+     "Agatha Christie"
+    ],
+    [
+     "The Thursday Murder Club",
+     "Richard Osman"
+    ],
+    [
+     "Rebecca",
+     "Daphne du Maurier"
+    ],
+    [
+     "The Westing Game",
+     "Ellen Raskin"
+    ],
+    [
+     "A Good Girl’s Guide to Murder",
+     "Holly Jackson"
+    ]
+   ],
+   "items": [
+    [
+     "🔍",
+     "Magnifying glass",
+     100
+    ],
+    [
+     "🕰️",
+     "Grandfather clock",
+     200
+    ],
+    [
+     "🗝️",
+     "Mystery key",
+     90
+    ],
+    [
+     "🕯️",
+     "Candelabra",
+     120
+    ],
+    [
+     "🎩",
+     "Detective’s hat",
+     140
+    ],
+    [
+     "📜",
+     "Secret letter",
+     110
+    ]
+   ]
+  },
+  "fantasy": {
+   "n": "Dragonmere",
+   "i": "🐉",
+   "g": "Fantasy",
+   "sub": "Crystal groves, toadstools and a dragon-sized bookshop",
+   "subj": "fantasy",
+   "lv": 8,
+   "shop": "The Gilded Grimoire",
+   "keeper": "Sage Thistlewick",
+   "roof": "#6c5bd6",
+   "sky": [
+    "#a9b8ff",
+    "#e6d9ff",
+    "#fff1e0"
+   ],
+   "mon": "The Wishing Crystal",
+   "sq": "Spellstone Square",
+   "pond": "Moonwell Pond",
+   "fog": false,
+   "dusk": false,
+   "lines": [
+    "The crystal hums when someone finishes a trilogy. ✨",
+    "A tiny dragon is sleeping inside the crystal. Shh! 🐉",
+    "Legend says the first map of Dragonmere was drawn on a library card.",
+    "Make a wish: may your next series have a satisfying ending. 🌙"
+   ],
+   "lore": "The Wishing Crystal is a scale a dragon shed the day it finished its first book. It glows a little brighter for every story finished in town.",
+   "role": {
+    "shop": "Spellbooks on the left, dragon care manuals on the right.",
+    "sq": "The cobbles hum faintly whenever someone casts a page-turn.",
+    "ex": "The train here is pulled by a very patient griffin.",
+    "pond": "The moon visits this pond every night, even cloudy ones."
+   },
+   "curios": [
+    {
+     "i": "🔮",
+     "n": "Oracle Orb",
+     "v": "Gaze in",
+     "o": [
+      "The orb shows your next book. It has a dragon on the cover.",
+      "Mist swirls into the shape of a teacup. Odd.",
+      "The orb sneezes glitter.",
+      "You see yourself, finishing a trilogy, triumphant.",
+      "The orb is closed for lunch."
+     ]
+    },
+    {
+     "i": "🗡️",
+     "n": "Sword in the Stack",
+     "v": "Pull it",
+     "o": [
+      "It doesn’t budge. Your pet is not yet worthy. Yet.",
+      "It wiggles! Then a sign pops up: “Keep reading.”",
+      "A bard appears and writes a song about you trying.",
+      "The sword is glued. A wizard is giggling somewhere.",
+      "It comes out an inch and the whole town gasps."
+     ]
+    },
+    {
+     "i": "🐣",
+     "n": "Dragon Egg Nest",
+     "v": "Warm it",
+     "o": [
+      "The egg wobbles happily.",
+      "A tiny puff of smoke curls out. Adorable.",
+      "The egg hums a lullaby back at you.",
+      "Your pet curls up beside it for a cozy second.",
+      "A note says: “Hatching after the next full moon. Probably.”"
+     ]
+    }
+   ],
+   "house": [
+    "Sage Wren",
+    "Old Bramblebeard",
+    "Pip the Squire",
+    "Lady Moonmoss",
+    "Tinker Fennick"
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 62,
+    "scale": [
+     0,
+     2,
+     4,
+     6,
+     7,
+     9,
+     11
+    ]
+   },
+   "books": [
+    [
+     "The Hobbit",
+     "J.R.R. Tolkien"
+    ],
+    [
+     "A Wizard of Earthsea",
+     "Ursula K. Le Guin"
+    ],
+    [
+     "The Name of the Wind",
+     "Patrick Rothfuss"
+    ],
+    [
+     "Howl’s Moving Castle",
+     "Diana Wynne Jones"
+    ],
+    [
+     "The Night Circus",
+     "Erin Morgenstern"
+    ],
+    [
+     "Mistborn",
+     "Brandon Sanderson"
+    ]
+   ],
+   "items": [
+    [
+     "🐉",
+     "Sleepy dragon",
+     180
+    ],
+    [
+     "🔮",
+     "Crystal ball",
+     140
+    ],
+    [
+     "🪄",
+     "Wand on a stand",
+     120
+    ],
+    [
+     "🦄",
+     "Unicorn plush",
+     150
+    ],
+    [
+     "🗡️",
+     "Hero’s sword",
+     200
+    ],
+    [
+     "🍄",
+     "Glowing toadstool",
+     90
+    ]
+   ]
+  },
+  "scifi": {
+   "n": "Nova Port",
+   "i": "🚀",
+   "g": "Sci-fi",
+   "sub": "Neon trees, satellite dishes and a rocket in the square",
+   "subj": "science_fiction",
+   "lv": 10,
+   "shop": "Lightyear Books",
+   "keeper": "Unit B00K",
+   "roof": "#4f7fd6",
+   "sky": [
+    "#5b6fd6",
+    "#a7b8ff",
+    "#e6ecff"
+   ],
+   "mon": "The Paw-11 Rocket",
+   "sq": "Launchpad Square",
+   "pond": "Coolant Lake",
+   "fog": false,
+   "dusk": false,
+   "lines": [
+    "T-minus one more chapter… 🚀",
+    "The rocket’s logbook lists every book read in Nova Port.",
+    "Beep boop: reading is the best fuel. 🤖",
+    "A sign reads: “Mind the gravity well. And the plot holes.”"
+   ],
+   "lore": "The Paw-11 Rocket has been ready to launch for ninety years. It is waiting for the last reader to return the library’s overdue star charts.",
+   "role": {
+    "shop": "Books here come with a free hologram bookmark.",
+    "sq": "The launch countdown has been at 3 for ninety years.",
+    "ex": "Mind the gap. It leads to another dimension.",
+    "pond": "Do not drink the coolant. The fish insist."
+   },
+   "curios": [
+    {
+     "i": "🛰️",
+     "n": "Signal Dish",
+     "v": "Tune in",
+     "o": [
+      "You catch a broadcast of someone reading a bedtime story to a robot.",
+      "Static, then: “...the library on Mars is open late tonight...”",
+      "The dish picks up your own pet purring, from tomorrow.",
+      "A comet newsletter. Subscribed!",
+      "Beep boop. That’s all. Beep boop."
+     ]
+    },
+    {
+     "i": "🤖",
+     "n": "Retired Librarian Bot",
+     "v": "Say hello",
+     "o": [
+      "“GREETINGS. YOUR BOOK IS 3 DAYS OVERDUE. JUST KIDDING.”",
+      "The bot recommends 12,000 books. Per second.",
+      "It gives your pet a careful pat.",
+      "“I HAVE READ EVERY BOOK. MY FAVOURITE IS THE NEXT ONE.”",
+      "It dusts your pet with a tiny broom."
+     ]
+    },
+    {
+     "i": "🌌",
+     "n": "Star Chart Table",
+     "v": "Plot a course",
+     "o": [
+      "Destination: the next chapter.",
+      "You find a constellation shaped like a bookmark.",
+      "The chart says you are here. You are here.",
+      "A star blinks twice. Friendly.",
+      "You chart a route to the snack bar. Very efficient."
+     ]
+    }
+   ],
+   "house": [
+    "Unit B-00K",
+    "Captain Nova",
+    "Dr. Quasar",
+    "Zip",
+    "Ensign Comet"
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 60,
+    "scale": [
+     0,
+     2,
+     4,
+     6,
+     8,
+     10
+    ]
+   },
+   "books": [
+    [
+     "Dune",
+     "Frank Herbert"
+    ],
+    [
+     "The Martian",
+     "Andy Weir"
+    ],
+    [
+     "Project Hail Mary",
+     "Andy Weir"
+    ],
+    [
+     "A Wrinkle in Time",
+     "Madeleine L’Engle"
+    ],
+    [
+     "The Left Hand of Darkness",
+     "Ursula K. Le Guin"
+    ],
+    [
+     "The Wild Robot",
+     "Peter Brown"
+    ]
+   ],
+   "items": [
+    [
+     "🚀",
+     "Rocket model",
+     150
+    ],
+    [
+     "🛸",
+     "Flying saucer lamp",
+     160
+    ],
+    [
+     "🤖",
+     "Robot buddy",
+     180
+    ],
+    [
+     "🪐",
+     "Planet mobile",
+     130
+    ],
+    [
+     "👽",
+     "Alien plush",
+     110
+    ],
+    [
+     "🛰️",
+     "Tiny satellite",
+     120
+    ]
+   ]
+  },
+  "horror": {
+   "n": "Grimsby Hollow",
+   "i": "🦇",
+   "g": "Horror",
+   "sub": "Crooked trees, friendly ghosts and pumpkin lanterns",
+   "subj": "horror",
+   "lv": 12,
+   "shop": "The Creaky Page",
+   "keeper": "Count Bookula",
+   "roof": "#4b3a5a",
+   "sky": [
+    "#6a5a9a",
+    "#c49ac0",
+    "#ffd2b0"
+   ],
+   "mon": "The Old Crooked Tree",
+   "sq": "Lantern Square",
+   "pond": "Murky Marsh",
+   "fog": false,
+   "dusk": true,
+   "lines": [
+    "The tree creaks: “Read with the lights on.” 🕯️",
+    "A friendly ghost borrowed a book and returned it on time. 👻",
+    "Something rustles in the branches. It’s just a very polite bat. 🦇",
+    "Carved in the bark: “The real monster was the cliffhanger.”"
+   ],
+   "lore": "The Old Crooked Tree grew from a bookmark someone left in a ghost story and never came back for. The brambles were afraid of it for years, until the road grew past it toward ten new towns.",
+   "role": {
+    "shop": "The books whisper. Only the good ones.",
+    "sq": "The lanterns flicker whenever someone skips to the last page.",
+    "ex": "The last train always has one extra passenger.",
+    "pond": "Bubbles rise from the marsh. Nobody asks why."
+   },
+   "curios": [
+    {
+     "i": "🪦",
+     "n": "Grumbling Gravestone",
+     "v": "Read the stone",
+     "o": [
+      "“Here lies the ending. It was a twist.”",
+      "“I told you I hadn’t finished it.”",
+      "“Do not disturb. Reading.”",
+      "The stone yawns. Stones don’t yawn.",
+      "“Return your library books.” Chilling."
+     ]
+    },
+    {
+     "i": "🪞",
+     "n": "Haunted Mirror",
+     "v": "Look in",
+     "o": [
+      "Your reflection is reading a different book.",
+      "Your reflection waves first. Rude.",
+      "A ghost fixes its hair and floats off.",
+      "The mirror fogs up and draws a smiley face.",
+      "You look great. The mirror agrees."
+     ]
+    },
+    {
+     "i": "🎃",
+     "n": "Pumpkin Patch",
+     "v": "Knock on one",
+     "o": [
+      "Hollow. Full of candy wrappers.",
+      "The pumpkin knocks back.",
+      "It giggles. You leave quickly.",
+      "A bat flutters out, apologises, and leaves.",
+      "This one has a book inside. It’s a cookbook. For soup."
+     ]
+    }
+   ],
+   "house": [
+    "Count Crumble",
+    "Wednesday Moth",
+    "Old Grave Gus",
+    "Mx. Shroud",
+    "The Night Librarian"
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 55,
+    "scale": [
+     0,
+     1,
+     3,
+     6,
+     7
+    ]
+   },
+   "books": [
+    [
+     "Frankenstein",
+     "Mary Shelley"
+    ],
+    [
+     "Coraline",
+     "Neil Gaiman"
+    ],
+    [
+     "The Haunting of Hill House",
+     "Shirley Jackson"
+    ],
+    [
+     "Dracula",
+     "Bram Stoker"
+    ],
+    [
+     "The Graveyard Book",
+     "Neil Gaiman"
+    ],
+    [
+     "Mexican Gothic",
+     "Silvia Moreno-Garcia"
+    ]
+   ],
+   "items": [
+    [
+     "🦇",
+     "Hanging bat",
+     90
+    ],
+    [
+     "🕸️",
+     "Cozy cobweb",
+     70
+    ],
+    [
+     "💀",
+     "Spooky skull",
+     110
+    ],
+    [
+     "🎃",
+     "Jack-o’-lantern",
+     100
+    ],
+    [
+     "⚰️",
+     "Coffin bookcase",
+     200
+    ],
+    [
+     "🕯️",
+     "Haunted candle",
+     90
+    ]
+   ]
+  },
+  "cozy": {
+   "n": "Hearthside",
+   "i": "🫖",
+   "g": "Cozy",
+   "sub": "Teapot chimneys, quilted gardens and a bakery that never closes",
+   "subj": "friendship",
+   "lv": 13,
+   "shop": "The Warm Mug Bookshop",
+   "keeper": "Granny Crumpet",
+   "roof": "#d9814f",
+   "sky": [
+    "#ffd2a6",
+    "#ffe6c9",
+    "#fff4e4"
+   ],
+   "mon": "The Great Teapot",
+   "sq": "Crumpet Square",
+   "pond": "Honeydew Pond",
+   "fog": false,
+   "dusk": false,
+   "lines": [
+    "The teapot is always warm. Nobody knows who refills it. 🫖",
+    "Someone left a scarf on the bench with a note: “for whoever needs it.”",
+    "The town rule: no one reads alone unless they want to.",
+    "Smells like cinnamon. It always smells like cinnamon. 🍂"
+   ],
+   "lore": "Hearthside started as one kettle on one stove, shared by every reader who came in from the rain. The kettle grew, the town grew round it, and the Great Teapot has been pouring ever since.",
+   "role": {
+    "shop": "Every book comes wrapped in brown paper and string.",
+    "sq": "Neighbours leave pie on the benches for whoever is hungry.",
+    "ex": "The train conductor knits between stops.",
+    "pond": "The ducks here are very well fed. Too well fed."
+   },
+   "curios": [
+    {
+     "i": "🧺",
+     "n": "Picnic Basket",
+     "v": "Peek inside",
+     "o": [
+      "Scones! Still warm. Who keeps doing this?",
+      "A thermos of cocoa and a note: “for the next reader.”",
+      "A book of recipes, all of them for comfort.",
+      "Jam sandwiches, crusts cut off. Very thoughtful.",
+      "A blanket, perfectly folded. Tempting."
+     ]
+    },
+    {
+     "i": "🐝",
+     "n": "Busy Beehive",
+     "v": "Listen",
+     "o": [
+      "The bees hum a lullaby.",
+      "Bzzz. They’re reading a book about flowers.",
+      "A drop of honey lands right on your paw.",
+      "The bees are arguing about their favourite author.",
+      "Bzz bzz. That sounded like “hello.”"
+     ]
+    },
+    {
+     "i": "🧶",
+     "n": "Knitting Bench",
+     "v": "Sit and knit",
+     "o": [
+      "You knit one row. It’s a bit lumpy. It’s perfect.",
+      "The yarn tangles into the shape of a heart.",
+      "Somebody left a scarf here half-finished. You add a stitch.",
+      "Knit one, purl one, read one.",
+      "The needles click like a ticking clock. Cozy."
+     ]
+    }
+   ],
+   "house": [
+    "Granny Crumpet",
+    "Muffin",
+    "Old Tom Teacake",
+    "Clementine",
+    "Bramble Bun"
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 65,
+    "scale": [
+     0,
+     2,
+     4,
+     7,
+     9
+    ]
+   },
+   "books": [
+    [
+     "The House in the Cerulean Sea",
+     "TJ Klune"
+    ],
+    [
+     "Legends & Lattes",
+     "Travis Baldree"
+    ],
+    [
+     "A Psalm for the Wild-Built",
+     "Becky Chambers"
+    ],
+    [
+     "Before the Coffee Gets Cold",
+     "Toshikazu Kawaguchi"
+    ],
+    [
+     "The Secret Garden",
+     "Frances Hodgson Burnett"
+    ],
+    [
+     "Winnie-the-Pooh",
+     "A. A. Milne"
+    ]
+   ],
+   "items": [
+    [
+     "🫖",
+     "Little teapot",
+     90
+    ],
+    [
+     "🧶",
+     "Basket of yarn",
+     80
+    ],
+    [
+     "🥧",
+     "Fresh pie",
+     70
+    ],
+    [
+     "🕯️",
+     "Cozy candle",
+     60
+    ],
+    [
+     "🧸",
+     "Well-loved teddy",
+     120
+    ],
+    [
+     "🪴",
+     "Window plant",
+     75
+    ]
+   ]
+  },
+  "fairytale": {
+   "n": "Thornbriar",
+   "i": "🏰",
+   "g": "Fairy tale",
+   "sub": "Briar hedges, a sleepy castle and a pumpkin that might be a coach",
+   "subj": "fairy_tales",
+   "lv": 14,
+   "shop": "Once Upon a Shelf",
+   "keeper": "Godmother Goosefeather",
+   "roof": "#8f6bd1",
+   "sky": [
+    "#c6b4ff",
+    "#ecdcff",
+    "#fff3e6"
+   ],
+   "mon": "The Glass Slipper",
+   "sq": "Happily Square",
+   "pond": "Frog Prince Pond",
+   "fog": false,
+   "dusk": false,
+   "lines": [
+    "The slipper fits nobody. It is waiting for the right reader. 👠",
+    "At midnight, the benches turn back into pumpkins. Briefly.",
+    "A frog in the pond keeps asking for a kiss. Politely. 🐸",
+    "Every story here starts with “Once upon a time.” Even the menus."
+   ],
+   "lore": "Thornbriar slept for a hundred years behind its hedge. A reader finally cut through, mostly to return a library book. The town woke up, and the glass slipper has been waiting for its owner ever since.",
+   "role": {
+    "shop": "Every book ends happily. Some take their time.",
+    "sq": "A fairy godmother sits here on Tuesdays. Bring a wish.",
+    "ex": "Trains leave at midnight sharp, and not a second later.",
+    "pond": "Kiss a frog at your own risk."
+   },
+   "curios": [
+    {
+     "i": "🪞",
+     "n": "Magic Mirror",
+     "v": "Ask the mirror",
+     "o": [
+      "“Who’s the best reader of them all?” It points at you.",
+      "The mirror shows you in a tiny crown. Cute.",
+      "“Your next book will be a page-turner,” it whispers.",
+      "It fogs up shyly. It isn’t used to compliments.",
+      "“Mirror, mirror…” It answers: “Finish your chapter first.”"
+     ]
+    },
+    {
+     "i": "🫘",
+     "n": "Magic Bean",
+     "v": "Plant it",
+     "o": [
+      "A sprout shoots up and then thinks better of it.",
+      "The bean wiggles. Not today.",
+      "A tiny vine grows a single tiny book.",
+      "You plant it. Somewhere, a giant sneezes.",
+      "It sprouts! Into a bookmark."
+     ]
+    },
+    {
+     "i": "🍎",
+     "n": "Polished Apple",
+     "v": "Inspect it",
+     "o": [
+      "It’s a perfectly normal apple. Probably.",
+      "There’s a tiny bite missing. Suspicious.",
+      "The apple is very shiny. Too shiny.",
+      "Someone carved “do not eat” into it.",
+      "It smells like a happy ending."
+     ]
+    }
+   ],
+   "house": [
+    "Goldie",
+    "Grandma Riding Hood",
+    "Jack Beanstalk",
+    "Rapunzel’s cousin",
+    "The Third Little Pig"
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 67,
+    "scale": [
+     0,
+     2,
+     4,
+     5,
+     7,
+     9,
+     11
+    ]
+   },
+   "books": [
+    [
+     "Grimms’ Fairy Tales",
+     "Jacob and Wilhelm Grimm"
+    ],
+    [
+     "Ella Enchanted",
+     "Gail Carson Levine"
+    ],
+    [
+     "Uprooted",
+     "Naomi Novik"
+    ],
+    [
+     "Spinning Silver",
+     "Naomi Novik"
+    ],
+    [
+     "Cinder",
+     "Marissa Meyer"
+    ],
+    [
+     "The Bear and the Nightingale",
+     "Katherine Arden"
+    ]
+   ],
+   "items": [
+    [
+     "👠",
+     "Glass slipper",
+     160
+    ],
+    [
+     "🍎",
+     "Shiny red apple",
+     60
+    ],
+    [
+     "🪞",
+     "Magic mirror",
+     180
+    ],
+    [
+     "🎃",
+     "Pumpkin coach",
+     150
+    ],
+    [
+     "👑",
+     "Tiny tiara",
+     140
+    ],
+    [
+     "🧵",
+     "Golden thread",
+     100
+    ]
+   ]
+  },
+  "poetry": {
+   "n": "Versewood",
+   "i": "🌙",
+   "g": "Poetry",
+   "sub": "Lantern-lit lanes where the wind speaks in rhyme",
+   "subj": "poetry",
+   "lv": 15,
+   "shop": "Stanza & Ink",
+   "keeper": "Bard Willowby",
+   "roof": "#3f5f8f",
+   "sky": [
+    "#7d8fd6",
+    "#c1c8f0",
+    "#f6efe6"
+   ],
+   "mon": "The Sonnet Moon",
+   "sq": "Stanza Square",
+   "pond": "Haiku Pool",
+   "fog": false,
+   "dusk": false,
+   "lines": [
+    "The moon here is always a crescent. It likes the shape. 🌙",
+    "Whisper a line to the lanterns and they glow a little brighter.",
+    "The owls speak only in iambic pentameter. Mostly.",
+    "Someone carved a haiku into the bench. It has six syllables too many."
+   ],
+   "lore": "Versewood was written, not built. Its first street was a single line of verse, and every house is a stanza someone added. The moon stays a crescent because the poem calls for one.",
+   "role": {
+    "shop": "Books are shelved by rhyme, not by author.",
+    "sq": "Open mic every evening. The pigeons heckle.",
+    "ex": "The train whistle plays in perfect meter.",
+    "pond": "Drop a word in the pool and a poem ripples out."
+   },
+   "curios": [
+    {
+     "i": "📜",
+     "n": "Poem Post",
+     "v": "Read a line",
+     "o": [
+      "“I wandered lonely as a cloud…” and then got distracted.",
+      "“Hope is the thing with feathers.” A bird nods.",
+      "“Two roads diverged…” Both lead to bookshops.",
+      "“Do not go gentle…” into that unread pile.",
+      "A haiku: “Paws on warm pages / the kettle sings in the hall / one more chapter, please.”"
+     ]
+    },
+    {
+     "i": "🎐",
+     "n": "Rhyming Chimes",
+     "v": "Ring",
+     "o": [
+      "Ding. Ring. Sing.",
+      "The chimes rhyme with the breeze.",
+      "Tinkle. A lantern brightens in reply.",
+      "The chimes play the opening of a sonnet.",
+      "Clink. Somewhere a poet gets an idea."
+     ]
+    },
+    {
+     "i": "🦉",
+     "n": "Critic Owl",
+     "v": "Recite a verse",
+     "o": [
+      "“Hoo. Hoo.” It approves.",
+      "The owl raises one eyebrow. Rewrite.",
+      "It hoots in perfect iambic pentameter.",
+      "The owl takes notes. Very serious.",
+      "“Needs more moon,” says the owl."
+     ]
+    }
+   ],
+   "house": [
+    "Bard Willowby",
+    "Odette Ode",
+    "Sonny Sonnet",
+    "Lyra",
+    "Old Limerick Lou"
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 60,
+    "scale": [
+     0,
+     2,
+     3,
+     5,
+     7,
+     8,
+     10
+    ]
+   },
+   "books": [
+    [
+     "Milk and Honey",
+     "Rupi Kaur"
+    ],
+    [
+     "Leaves of Grass",
+     "Walt Whitman"
+    ],
+    [
+     "Where the Sidewalk Ends",
+     "Shel Silverstein"
+    ],
+    [
+     "The Sun and Her Flowers",
+     "Rupi Kaur"
+    ],
+    [
+     "Ariel",
+     "Sylvia Plath"
+    ],
+    [
+     "The Odyssey",
+     "Homer"
+    ]
+   ],
+   "items": [
+    [
+     "📜",
+     "Rolled-up poem",
+     70
+    ],
+    [
+     "🪶",
+     "Poet’s quill",
+     90
+    ],
+    [
+     "🌙",
+     "Crescent lamp",
+     130
+    ],
+    [
+     "🦉",
+     "Owl figurine",
+     110
+    ],
+    [
+     "🎻",
+     "Little violin",
+     160
+    ],
+    [
+     "🕯️",
+     "Reading candle",
+     60
+    ]
+   ]
+  },
+  "western": {
+   "n": "Dustwater Gulch",
+   "i": "🤠",
+   "g": "Western",
+   "sub": "Red rock, tumbleweeds and a saloon that only serves lemonade",
+   "subj": "western_stories",
+   "lv": 16,
+   "shop": "The Last Chapter Saloon",
+   "keeper": "Sheriff Biscuit",
+   "roof": "#b5562e",
+   "sky": [
+    "#f6a96b",
+    "#fbd29c",
+    "#fff0d6"
+   ],
+   "mon": "The Thousand-Year Cactus",
+   "sq": "High Noon Square",
+   "pond": "Last Drop Spring",
+   "fog": false,
+   "dusk": false,
+   "lines": [
+    "The cactus has seen every showdown. It never picks a side. 🌵",
+    "A tumbleweed rolls by. It seems to be in a hurry.",
+    "The wanted posters are all for overdue library books.",
+    "At high noon the whole town stops to read a chapter. 🤠"
+   ],
+   "lore": "Dustwater Gulch sprang up around the only spring for a hundred miles and the only bookshop for a thousand. The cactus in the square was here first, and it has outlasted every gunslinger and every sequel.",
+   "role": {
+    "shop": "Pull up a stool. The barkeep reads to you.",
+    "sq": "Showdowns here are settled with spelling bees.",
+    "ex": "The train robbers only steal bookmarks.",
+    "pond": "Only spring for a hundred miles. Bring a cup."
+   },
+   "curios": [
+    {
+     "i": "🪧",
+     "n": "Wanted Poster",
+     "v": "Read it",
+     "o": [
+      "WANTED: one overdue library book. Reward: a cookie.",
+      "WANTED: whoever keeps spoiling endings.",
+      "WANTED: a reader brave enough for a 900-page epic.",
+      "WANTED: The Paper Cut Goblin. Approach with bookmarks.",
+      "WANTED: a good bedtime story. Apply within."
+     ]
+    },
+    {
+     "i": "🌵",
+     "n": "Prickly Cactus",
+     "v": "Pat it",
+     "o": [
+      "Ow. It meant well.",
+      "The cactus blooms a tiny pink flower just for you.",
+      "It’s surprisingly soft on one side. Just one.",
+      "You and the cactus share a quiet moment.",
+      "The cactus has a bookmark stuck in it. Nobody knows why."
+     ]
+    },
+    {
+     "i": "🔔",
+     "n": "Saloon Bell",
+     "v": "Ring for service",
+     "o": [
+      "A lemonade slides down the bar to you.",
+      "“Story time!” yells the barkeep.",
+      "Ding! Everybody looks up from their books.",
+      "The piano starts playing on its own.",
+      "“We don’t serve your kind,” says the cat. “Unless you read.”"
+     ]
+    }
+   ],
+   "house": [
+    "Sheriff Biscuit",
+    "Dusty Rose",
+    "Tex Tumbleweed",
+    "Calamity Cat",
+    "Old Prospector Pete"
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 57,
+    "scale": [
+     0,
+     3,
+     5,
+     6,
+     7,
+     10
+    ]
+   },
+   "books": [
+    [
+     "Lonesome Dove",
+     "Larry McMurtry"
+    ],
+    [
+     "True Grit",
+     "Charles Portis"
+    ],
+    [
+     "The Virginian",
+     "Owen Wister"
+    ],
+    [
+     "Riders of the Purple Sage",
+     "Zane Grey"
+    ],
+    [
+     "The Sisters Brothers",
+     "Patrick deWitt"
+    ],
+    [
+     "News of the World",
+     "Paulette Jiles"
+    ]
+   ],
+   "items": [
+    [
+     "🤠",
+     "Cowpoke hat",
+     120
+    ],
+    [
+     "🌵",
+     "Potted cactus",
+     70
+    ],
+    [
+     "🐎",
+     "Rocking horse",
+     150
+    ],
+    [
+     "⭐",
+     "Sheriff’s star",
+     100
+    ],
+    [
+     "🪕",
+     "Banjo",
+     140
+    ],
+    [
+     "🧭",
+     "Brass compass",
+     90
+    ]
+   ]
+  },
+  "ocean": {
+   "n": "Saltmere Harbor",
+   "i": "⚓",
+   "g": "Sea stories",
+   "sub": "Gull-call docks, rope bridges and a ship in a giant bottle",
+   "subj": "sea_stories",
+   "lv": 18,
+   "shop": "Tidebound Books",
+   "keeper": "Captain Barnacle",
+   "roof": "#2f7fa8",
+   "sky": [
+    "#7fd0f0",
+    "#bfe9f8",
+    "#f2fbff"
+   ],
+   "mon": "The Ship in a Bottle",
+   "sq": "Anchor Square",
+   "pond": "Kraken Cove",
+   "fog": false,
+   "dusk": false,
+   "lines": [
+    "Nobody knows how the ship got into the bottle. The ship isn’t saying. ⛵",
+    "The gulls steal bookmarks, then return them a chapter later.",
+    "Listen closely: the tide reads aloud at night. 🌊",
+    "The harbor master logs every book that sails in."
+   ],
+   "lore": "Saltmere Harbor is where the stories that ran away to sea come back to dock. Somebody built the town’s first ship inside a bottle, then built a bottle big enough for the town to admire it.",
+   "role": {
+    "shop": "Waterproof covers on every book. Just in case.",
+    "sq": "Sailors swap tall tales here at sunset.",
+    "ex": "Trains leave at high tide.",
+    "pond": "Something big lives in the cove. It is mostly friendly."
+   },
+   "curios": [
+    {
+     "i": "🐚",
+     "n": "Singing Shell",
+     "v": "Listen",
+     "o": [
+      "You hear the sea. And someone reading aloud.",
+      "The shell hums a sea shanty.",
+      "A tiny voice says: “ahoy.”",
+      "Waves, gulls, and a page turning.",
+      "The shell whispers the end of a pirate story."
+     ]
+    },
+    {
+     "i": "🛟",
+     "n": "Life Ring",
+     "v": "Toss it",
+     "o": [
+      "It lands on a lazy seal. It doesn’t mind.",
+      "Splash! A gull applauds.",
+      "It floats back with a soggy bookmark on it.",
+      "You missed. The sea forgives you.",
+      "Bullseye! Right around a buoy."
+     ]
+    },
+    {
+     "i": "🗺️",
+     "n": "Harbor Map",
+     "v": "Study it",
+     "o": [
+      "Here be dragons. And a very good bookshop.",
+      "An X marks a spot just past the pier.",
+      "The map is upside down. It works better that way.",
+      "Someone drew a tiny sea monster reading a book.",
+      "The coastline is shaped like a question mark."
+     ]
+    }
+   ],
+   "house": [
+    "Captain Barnacle",
+    "Marina",
+    "Gulliver Gull",
+    "Old Salt Sam",
+    "Pearl"
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 62,
+    "scale": [
+     0,
+     2,
+     4,
+     7,
+     9
+    ]
+   },
+   "books": [
+    [
+     "Moby-Dick",
+     "Herman Melville"
+    ],
+    [
+     "Treasure Island",
+     "Robert Louis Stevenson"
+    ],
+    [
+     "Twenty Thousand Leagues Under the Seas",
+     "Jules Verne"
+    ],
+    [
+     "The Old Man and the Sea",
+     "Ernest Hemingway"
+    ],
+    [
+     "Life of Pi",
+     "Yann Martel"
+    ],
+    [
+     "Master and Commander",
+     "Patrick O’Brian"
+    ]
+   ],
+   "items": [
+    [
+     "⚓",
+     "Little anchor",
+     90
+    ],
+    [
+     "🐚",
+     "Spiral shell",
+     60
+    ],
+    [
+     "⛵",
+     "Ship in a bottle",
+     170
+    ],
+    [
+     "🦀",
+     "Crab plush",
+     80
+    ],
+    [
+     "🛟",
+     "Life ring",
+     70
+    ],
+    [
+     "🗺️",
+     "Sea chart",
+     110
+    ]
+   ]
+  },
+  "historical": {
+   "n": "Old Ironbridge",
+   "i": "🏛️",
+   "g": "Historical",
+   "sub": "Cobbled streets, market stalls and a town clock older than paper",
+   "subj": "historical_fiction",
+   "lv": 20,
+   "shop": "Chronicle & Quill",
+   "keeper": "Archivist Pennywhistle",
+   "roof": "#7a5a3a",
+   "sky": [
+    "#c9b9a0",
+    "#e6dccb",
+    "#f8f2e6"
+   ],
+   "mon": "The Great Hourglass",
+   "sq": "Market Cross",
+   "pond": "Millwheel Pond",
+   "fog": false,
+   "dusk": false,
+   "lines": [
+    "The hourglass is turned once a century. You just missed it. ⏳",
+    "Every cobblestone has a date carved on the bottom.",
+    "The town crier reads book reviews instead of news. 📯",
+    "Legend says the bridge was built from one very long bookshelf."
+   ],
+   "lore": "Old Ironbridge keeps time with the Great Hourglass. Every grain of sand is a day someone wrote down, and the archivists swear they have never lost a single one.",
+   "role": {
+    "shop": "First editions, second editions, and editions nobody can date.",
+    "sq": "Market day is every day. Mostly turnips and novels.",
+    "ex": "The oldest train on the line. It still runs on time.",
+    "pond": "The millwheel has been turning since before calendars."
+   },
+   "curios": [
+    {
+     "i": "📯",
+     "n": "Town Crier’s Horn",
+     "v": "Blow it",
+     "o": [
+      "HEAR YE! A new chapter has been read!",
+      "The pigeons scatter dramatically.",
+      "A very old dog howls along in harmony.",
+      "HEAR YE! Library fines are forgiven today!",
+      "Toot. That was quieter than expected."
+     ]
+    },
+    {
+     "i": "🪙",
+     "n": "Old Wishing Coin",
+     "v": "Flip it",
+     "o": [
+      "Heads. Your next book will be a good one.",
+      "Tails. Your next book will be a long one.",
+      "It lands on its edge. Historic.",
+      "The coin has a cat on it. Possibly a king.",
+      "It rolls away into the cobbles. History reclaims it."
+     ]
+    },
+    {
+     "i": "🏺",
+     "n": "Dusty Amphora",
+     "v": "Peek inside",
+     "o": [
+      "A scroll! It’s a 2,000-year-old book review.",
+      "Empty, except for a very old raisin.",
+      "An echo says “hello” in Latin.",
+      "It smells like olives and adventure.",
+      "A tiny note: “Back in a century.”"
+     ]
+    }
+   ],
+   "house": [
+    "Archivist Pennywhistle",
+    "Lady Chronicle",
+    "Brother Ledger",
+    "Miss Almanac",
+    "Squire Datebook"
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 58,
+    "scale": [
+     0,
+     2,
+     4,
+     5,
+     7,
+     9
+    ]
+   },
+   "books": [
+    [
+     "Wolf Hall",
+     "Hilary Mantel"
+    ],
+    [
+     "The Book Thief",
+     "Markus Zusak"
+    ],
+    [
+     "All the Light We Cannot See",
+     "Anthony Doerr"
+    ],
+    [
+     "The Pillars of the Earth",
+     "Ken Follett"
+    ],
+    [
+     "A Tale of Two Cities",
+     "Charles Dickens"
+    ],
+    [
+     "The Nightingale",
+     "Kristin Hannah"
+    ]
+   ],
+   "items": [
+    [
+     "⏳",
+     "Hourglass",
+     130
+    ],
+    [
+     "🏺",
+     "Old amphora",
+     110
+    ],
+    [
+     "📯",
+     "Crier’s horn",
+     90
+    ],
+    [
+     "🪙",
+     "Ancient coin",
+     100
+    ],
+    [
+     "🛡️",
+     "Wall shield",
+     150
+    ],
+    [
+     "📜",
+     "Royal decree",
+     80
+    ]
+   ]
+  },
+  "thriller": {
+   "n": "Shadowmark",
+   "i": "🕶️",
+   "g": "Thriller",
+   "sub": "Rain-slick streets, secret doors and a statue that keeps moving",
+   "subj": "thrillers",
+   "lv": 22,
+   "shop": "Page-Turner & Co.",
+   "keeper": "Agent Velvet",
+   "roof": "#2f3440",
+   "sky": [
+    "#5f6b80",
+    "#9ea7b8",
+    "#dfe3ea"
+   ],
+   "mon": "The Agent’s Statue",
+   "sq": "Dead Drop Square",
+   "pond": "Midnight Canal",
+   "fog": true,
+   "dusk": false,
+   "lines": [
+    "The statue was facing the other way yesterday. 🕵️",
+    "A folder marked TOP SECRET contains a very good book list.",
+    "Every bench has a hidden compartment. Most hold snacks.",
+    "Rumor says the twist is in the last line. Don’t look yet."
+   ],
+   "lore": "Nobody founded Shadowmark. One day it was simply there, between two chapters, and nobody asks too many questions. The statue in the square is an agent who stood still for too long.",
+   "role": {
+    "shop": "Every book has a cliffhanger. Even the cookbooks.",
+    "sq": "Someone is always watching. Usually a pigeon.",
+    "ex": "Check under your seat. There is always a note.",
+    "pond": "The canal reflects things that aren’t there."
+   },
+   "curios": [
+    {
+     "i": "📞",
+     "n": "Payphone",
+     "v": "Answer it",
+     "o": [
+      "“The eagle has landed.” Click.",
+      "Heavy breathing. Then: “Are you up to chapter nine?”",
+      "“Don’t trust the bookmark.” Click.",
+      "A dial tone. Suspiciously cheerful.",
+      "“Meet me at the bookshop. Come alone. Bring snacks.”"
+     ]
+    },
+    {
+     "i": "🧳",
+     "n": "Abandoned Briefcase",
+     "v": "Open it",
+     "o": [
+      "Locked. The code is probably 1234.",
+      "Inside: one paperback and a fake moustache.",
+      "It’s full of top-secret bookmarks.",
+      "A note: “If you’re reading this, you’re in the plot.”",
+      "Empty. That’s the most suspicious thing of all."
+     ]
+    },
+    {
+     "i": "🚨",
+     "n": "Alarm Box",
+     "v": "Press it",
+     "o": [
+      "WEEOO. Everyone just reads faster.",
+      "It makes a tiny polite beep.",
+      "The statue turns its head. Just slightly.",
+      "Lights flash. A pigeon salutes.",
+      "“False alarm,” says a voice. “Or is it?”"
+     ]
+    }
+   ],
+   "house": [
+    "Agent Velvet",
+    "Mr. Nobody",
+    "Cipher",
+    "The Handler",
+    "Double Oh Paws"
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 55,
+    "scale": [
+     0,
+     1,
+     3,
+     5,
+     7,
+     8
+    ]
+   },
+   "books": [
+    [
+     "Gone Girl",
+     "Gillian Flynn"
+    ],
+    [
+     "The Silent Patient",
+     "Alex Michaelides"
+    ],
+    [
+     "The Da Vinci Code",
+     "Dan Brown"
+    ],
+    [
+     "The Girl with the Dragon Tattoo",
+     "Stieg Larsson"
+    ],
+    [
+     "The Bourne Identity",
+     "Robert Ludlum"
+    ],
+    [
+     "Big Little Lies",
+     "Liane Moriarty"
+    ]
+   ],
+   "items": [
+    [
+     "🕶️",
+     "Spy shades",
+     110
+    ],
+    [
+     "📁",
+     "Secret file",
+     80
+    ],
+    [
+     "🗝️",
+     "Skeleton key",
+     90
+    ],
+    [
+     "📟",
+     "Old pager",
+     100
+    ],
+    [
+     "🎯",
+     "Dartboard",
+     130
+    ],
+    [
+     "🧳",
+     "Briefcase",
+     140
+    ]
+   ]
+  },
+  "dystopia": {
+   "n": "Greywall",
+   "i": "🏙️",
+   "g": "Dystopian",
+   "sub": "Concrete towers, glowing screens and a watchful eye that blinks at banned books",
+   "subj": "dystopias",
+   "lv": 24,
+   "shop": "The Forbidden Shelf",
+   "keeper": "Citizen 451",
+   "roof": "#4a5560",
+   "sky": [
+    "#7b8a96",
+    "#b6c0c8",
+    "#e3e7ea"
+   ],
+   "mon": "The Watching Eye",
+   "sq": "Unity Plaza",
+   "pond": "Ration Reservoir",
+   "fog": false,
+   "dusk": false,
+   "lines": [
+    "The eye blinks whenever someone reads a banned book. It blinks a lot. 👁️",
+    "The loudspeakers announce reading hour. Everyone cheers.",
+    "Graffiti on the wall says: “Books are the resistance.” 📚",
+    "The Forbidden Shelf is the most popular shelf in town."
+   ],
+   "lore": "Greywall was built to keep stories out. It didn’t work. Readers smuggled in one book at a time, and now the Forbidden Shelf is the most-borrowed shelf on Bramble Road.",
+   "role": {
+    "shop": "Officially closed. Unofficially, the busiest shop in town.",
+    "sq": "Speakers announce the daily reading quota. Everyone exceeds it.",
+    "ex": "Papers, please. Library cards also accepted.",
+    "pond": "Water is rationed. Stories are not."
+   },
+   "curios": [
+    {
+     "i": "📻",
+     "n": "Pirate Radio",
+     "v": "Tune in",
+     "o": [
+      "“This is Radio Free Reading. Today’s banned book is…” static.",
+      "A voice reads poetry in the dark.",
+      "“Resist. Read. Repeat.”",
+      "Static, then a lullaby.",
+      "“Citizens, it is officially story time.”"
+     ]
+    },
+    {
+     "i": "📢",
+     "n": "Loudspeaker",
+     "v": "Listen",
+     "o": [
+      "“REMEMBER: READING IS MANDATORY.” Everyone cheers.",
+      "“THE DAILY QUOTA IS ONE CHAPTER.” Nobody stops at one.",
+      "“ALL HAIL THE LIBRARY.”",
+      "It crackles. Then plays smooth jazz.",
+      "“SMILE. YOU ARE BEING READ TO.”"
+     ]
+    },
+    {
+     "i": "🧱",
+     "n": "Graffiti Wall",
+     "v": "Read the wall",
+     "o": [
+      "“BOOKS ARE THE RESISTANCE” in neon paint.",
+      "A painted cat reading under the moon.",
+      "“Big Brother is reading too.”",
+      "A list of banned books. It’s a great reading list.",
+      "“Free the shelves!”"
+     ]
+    }
+   ],
+   "house": [
+    "Citizen 451",
+    "Rebel Wren",
+    "The Archivist",
+    "Comrade Cozy",
+    "Static"
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 53,
+    "scale": [
+     0,
+     2,
+     3,
+     6,
+     7,
+     8
+    ]
+   },
+   "books": [
+    [
+     "Nineteen Eighty-Four",
+     "George Orwell"
+    ],
+    [
+     "Fahrenheit 451",
+     "Ray Bradbury"
+    ],
+    [
+     "The Hunger Games",
+     "Suzanne Collins"
+    ],
+    [
+     "The Handmaid’s Tale",
+     "Margaret Atwood"
+    ],
+    [
+     "The Giver",
+     "Lois Lowry"
+    ],
+    [
+     "Brave New World",
+     "Aldous Huxley"
+    ]
+   ],
+   "items": [
+    [
+     "📢",
+     "Loudspeaker",
+     100
+    ],
+    [
+     "🔦",
+     "Flashlight",
+     70
+    ],
+    [
+     "📻",
+     "Pirate radio",
+     140
+    ],
+    [
+     "🚧",
+     "Road barrier",
+     80
+    ],
+    [
+     "🛰️",
+     "Tiny satellite",
+     160
+    ],
+    [
+     "📕",
+     "Banned book",
+     120
+    ]
+   ]
+  },
+  "myth": {
+   "n": "Laurelpeak",
+   "i": "🏺",
+   "g": "Mythology",
+   "sub": "Marble steps, olive groves and a temple on a cloud",
+   "subj": "mythology",
+   "lv": 27,
+   "shop": "The Oracle’s Library",
+   "keeper": "Oracle Olivetta",
+   "roof": "#e3e8f2",
+   "sky": [
+    "#8ec5ff",
+    "#cfe6ff",
+    "#fffaf0"
+   ],
+   "mon": "The Temple of Tales",
+   "sq": "Agora Square",
+   "pond": "The Wine-dark Pool",
+   "fog": false,
+   "dusk": false,
+   "lines": [
+    "The temple only opens for readers who finish what they start. 🏛️",
+    "An owl watches from the columns. It has read everything.",
+    "Lightning struck the fountain once. Now it fizzes. ⚡",
+    "The oracle predicts you will love your next book."
+   ],
+   "lore": "Laurelpeak sits where the gods used to swap stories after dinner. They left the temple behind, and they still drop by, disguised as tourists who ask a lot of questions.",
+   "role": {
+    "shop": "The Oracle knows which book you need before you do.",
+    "sq": "Philosophers argue here about who has the best bookmark.",
+    "ex": "The train is pulled by a very patient winged horse.",
+    "pond": "Don’t stare at your reflection too long. It happened once."
+   },
+   "curios": [
+    {
+     "i": "⚡",
+     "n": "Thunderbolt Stand",
+     "v": "Touch it",
+     "o": [
+      "Zap! Your fur stands on end.",
+      "It hums with stories older than writing.",
+      "A tiny cloud rumbles above your head.",
+      "“Not that one,” says a voice from the clouds.",
+      "Lightning writes your name in the sky. Briefly."
+     ]
+    },
+    {
+     "i": "🍇",
+     "n": "Offering Bowl",
+     "v": "Leave a snack",
+     "o": [
+      "The grapes vanish. A distant “thanks!”",
+      "An owl takes one grape and nods.",
+      "The bowl refills with olives.",
+      "A golden leaf floats down in return.",
+      "The gods appreciate a good snack."
+     ]
+    },
+    {
+     "i": "🗿",
+     "n": "Hero Statue",
+     "v": "Read the plaque",
+     "o": [
+      "“Here stands a hero who finished a 12-book series.”",
+      "“Defeated the Hydra of Unread Emails.”",
+      "“Never once spoiled an ending.”",
+      "“Brave. Kind. Owed the library nothing.”",
+      "The statue winks. You saw it."
+     ]
+    }
+   ],
+   "house": [
+    "Oracle Olivetta",
+    "Hermes the Courier",
+    "Athena’s Owl",
+    "Minor God of Bookmarks",
+    "Pegasus Pete"
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 62,
+    "scale": [
+     0,
+     2,
+     4,
+     6,
+     7,
+     9
+    ]
+   },
+   "books": [
+    [
+     "Circe",
+     "Madeline Miller"
+    ],
+    [
+     "The Song of Achilles",
+     "Madeline Miller"
+    ],
+    [
+     "Mythos",
+     "Stephen Fry"
+    ],
+    [
+     "Percy Jackson and the Lightning Thief",
+     "Rick Riordan"
+    ],
+    [
+     "Norse Mythology",
+     "Neil Gaiman"
+    ],
+    [
+     "The Iliad",
+     "Homer"
+    ]
+   ],
+   "items": [
+    [
+     "🏺",
+     "Painted urn",
+     130
+    ],
+    [
+     "🌿",
+     "Laurel wreath",
+     90
+    ],
+    [
+     "🦉",
+     "Wise owl",
+     120
+    ],
+    [
+     "⚡",
+     "Bottled lightning",
+     170
+    ],
+    [
+     "🏛️",
+     "Tiny temple",
+     160
+    ],
+    [
+     "🍇",
+     "Bunch of grapes",
+     60
+    ]
+   ]
+  },
+  "gothic": {
+   "n": "Ravenmoor",
+   "i": "🦇",
+   "g": "Gothic",
+   "sub": "Moonlit moors, a crumbling abbey and the end of Bramble Road",
+   "subj": "gothic_fiction",
+   "lv": 30,
+   "shop": "Wuthering Pages",
+   "keeper": "Lady Nightshade",
+   "roof": "#3a2f4a",
+   "sky": [
+    "#3d3552",
+    "#7a6b8f",
+    "#cbbcd6"
+   ],
+   "mon": "The Withered Rose",
+   "sq": "Abbey Green",
+   "pond": "The Still Black Tarn",
+   "fog": true,
+   "dusk": false,
+   "lines": [
+    "The rose has been wilting for two hundred years. It refuses to finish. 🥀",
+    "A raven on the abbey wall says only one word, and it isn’t “hello.”",
+    "The moors are lonely. The books keep each other company.",
+    "This is where the road ends. Every great story ends somewhere. 🦇"
+   ],
+   "lore": "Ravenmoor is where Bramble Road finally ends, on a moor so quiet you can hear pages turn a mile away. The withered rose has been dying for two centuries, and it is in no hurry at all.",
+   "role": {
+    "shop": "The books are dusty on purpose. It adds atmosphere.",
+    "sq": "The abbey bells ring whenever someone sighs dramatically.",
+    "ex": "The last train leaves at dusk. Then the moors belong to the ravens.",
+    "pond": "The tarn is perfectly still. It is listening."
+   },
+   "curios": [
+    {
+     "i": "🔔",
+     "n": "Abbey Bell",
+     "v": "Ring it",
+     "o": [
+      "BONG. The ravens rise and settle again.",
+      "A distant voice: “Reader… reader…”",
+      "The bell tolls thirteen. That’s not a number.",
+      "A bat flaps out, offended.",
+      "The echo goes on for a full chapter."
+     ]
+    },
+    {
+     "i": "🖼️",
+     "n": "Old Portrait",
+     "v": "Study it",
+     "o": [
+      "The lady in the painting turns the page of her book.",
+      "Her eyes follow you. Encouragingly.",
+      "There’s a tiny cat hidden in the corner.",
+      "The frame is carved with roses and thorns.",
+      "For a moment she smiles. Then she doesn’t."
+     ]
+    },
+    {
+     "i": "🕯️",
+     "n": "Everburning Candle",
+     "v": "Blow it out",
+     "o": [
+      "It relights itself. Rude.",
+      "The flame flickers into the shape of a raven.",
+      "It smells of old paper and lavender.",
+      "The wax drips into a tiny heart.",
+      "Whoosh. Out. Then on again."
+     ]
+    }
+   ],
+   "house": [
+    "Lady Nightshade",
+    "Mr. Rochester-Paws",
+    "Heathcliff Hound",
+    "The Grey Lady",
+    "Sister Quill"
+   ],
+   "stone": [
+    27,
+    24
+   ],
+   "music": {
+    "root": 52,
+    "scale": [
+     0,
+     2,
+     3,
+     5,
+     7,
+     8,
+     11
+    ]
+   },
+   "books": [
+    [
+     "Jane Eyre",
+     "Charlotte Brontë"
+    ],
+    [
+     "Wuthering Heights",
+     "Emily Brontë"
+    ],
+    [
+     "Rebecca",
+     "Daphne du Maurier"
+    ],
+    [
+     "Mexican Gothic",
+     "Silvia Moreno-Garcia"
+    ],
+    [
+     "The Picture of Dorian Gray",
+     "Oscar Wilde"
+    ],
+    [
+     "Dracula",
+     "Bram Stoker"
+    ]
+   ],
+   "items": [
+    [
+     "🥀",
+     "Withered rose",
+     90
+    ],
+    [
+     "🕯️",
+     "Candelabra",
+     120
+    ],
+    [
+     "🦇",
+     "Bat plush",
+     80
+    ],
+    [
+     "🖤",
+     "Locket of ink",
+     110
+    ],
+    [
+     "🪦",
+     "Tiny tombstone",
+     100
+    ],
+    [
+     "📖",
+     "Dusty diary",
+     130
+    ]
+   ]
+  }
+ },
+ "places": {
+  "Community Garden": [
+   "Somebody planted a bookmark here. It came up as a sunflower.",
+   "Water a plot and it remembers your name."
+  ],
+  "Tale Hall": [
+   "Every Tales of Pages adventure starts at these doors.",
+   "The floorboards creak in iambic pentameter."
+  ],
+  "Lazy Pond": [
+   "The fish here only bite during cliffhangers.",
+   "A duck is pretending to read. Badly."
+  ],
+  "Town Square": [
+   "The beating heart of Pawtopia. Everybody passes through eventually.",
+   "Rumour says the fountain grants one wish per finished series."
+  ],
+  "Book Fair": [
+   "Every fair game lives under these striped tents. Bring tickets!",
+   "Smells like popcorn and fresh paperbacks."
+  ],
+  "Pawtment Heights": [
+   "Your room is up there, waiting to be decorated.",
+   "Someone on the third floor is practising the trombone again."
+  ],
+  "The Cozy Cup": [
+   "Grab a seat. Every chair here has heard a spoiler.",
+   "Today’s special: a chai the colour of old pages."
+  ],
+  "Reading Garden": [
+   "Shh. Somebody just reached the twist.",
+   "The benches are warm from a hundred afternoon chapters."
+  ],
+  "Whisperwood": [
+   "The trees lean in when you read aloud.",
+   "Moss grows thickest on the side facing the library."
+  ],
+  "Sunny Beach": [
+   "The sand is perfect for burying a book you didn’t finish.",
+   "Gulls here steal snacks, not bookmarks. Mostly."
+  ],
+  "Paw Express": [
+   "The trains run on tea and good intentions.",
+   "Tickets are free, but the conductor asks what you’re reading."
+  ],
+  "Bramble Road": [
+   "The brambles get thicker the further you walk. So do the foes.",
+   "Wanderers leave pebbles on the signpost for luck."
+  ],
+  "Wayfarer’s Camp": [
+   "Travellers swap stories here until the fire burns down.",
+   "Rest a while. The road will wait."
+  ],
+  "Hidden Glade": [
+   "The brambles grow thickest where the best secrets are.",
+   "Something glints between the thorns."
+  ],
+  "Tales Trailhead": [
+   "The story stones hum when a party is gathering.",
+   "Every adventure on this road starts here."
+  ],
+  "Inkwell Cave Mouth": [
+   "Cold air and the smell of old ink drift out of the dark.",
+   "Something big is snoring down there."
+  ]
+ },
+ "gags": [
+  {
+   "i": "📦",
+   "n": "Free Books Box",
+   "v": "Take one",
+   "o": [
+    "“Free books. Please take. PLEASE. We have too many.”",
+    "You took one. Three more appeared.",
+    "A note: “If found, return to the TBR pile.”"
+   ]
+  },
+  {
+   "i": "🪧",
+   "n": "Very Serious Sign",
+   "v": "Read it",
+   "o": [
+    "“NO SPOILERS BEYOND THIS POINT.” Someone wrote “Snape” underneath. Rude.",
+    "“Caution: wet paint. And wet tears. Chapter 37 hit hard.”",
+    "“Dragons must be leashed in town.”"
+   ]
+  },
+  {
+   "i": "🦆",
+   "n": "Duck Reading a Book",
+   "v": "Say hi",
+   "o": [
+    "The duck looks up. Then back down. It’s at the good part.",
+    "Quack. (Translation: “Shh.”)",
+    "The duck is reading upside down. It seems to be enjoying it."
+   ]
+  },
+  {
+   "i": "🛒",
+   "n": "Abandoned Cart",
+   "v": "Check it",
+   "o": [
+    "Forty books and one apple. Respect.",
+    "A receipt three feet long. All books.",
+    "Someone’s TBR. It’s… a lot."
+   ]
+  },
+  {
+   "i": "🗿",
+   "n": "Stone Face",
+   "v": "Stare back",
+   "o": [
+    "It stares. You stare. Nobody blinks. A legendary standoff.",
+    "🗿",
+    "It just raised one eyebrow. Probably."
+   ]
+  },
+  {
+   "i": "🧦",
+   "n": "Lost Sock",
+   "v": "Inspect",
+   "o": [
+    "It’s been here since chapter one.",
+    "It belongs to the Bremen Musicians. All four of them.",
+    "Someone used it as a bookmark. Inventive."
+   ]
+  },
+  {
+   "i": "🎈",
+   "n": "Stuck Balloon",
+   "v": "Pull the string",
+   "o": [
+    "It says “Happy Unbirthday!” The Hatter was here.",
+    "Pop! Confetti and one tiny bookmark.",
+    "It floats away. Bye, balloon. 🎈"
+   ]
+  },
+  {
+   "i": "🐌",
+   "n": "Racing Snail",
+   "v": "Cheer it on",
+   "o": [
+    "Go, go, go! It moved one inch. Incredible.",
+    "The snail is beating the hare. Again.",
+    "It’s training for a reading marathon."
+   ]
+  },
+  {
+   "i": "🍕",
+   "n": "Suspicious Pizza",
+   "v": "Sniff",
+   "o": [
+    "Pineapple. The folk are divided.",
+    "A pizza with a bookmark baked in. Chef’s kiss.",
+    "It’s been cut into 13 slices. Weird flex."
+   ]
+  },
+  {
+   "i": "🪑",
+   "n": "Reading Chair Nobody Uses",
+   "v": "Sit",
+   "o": [
+    "So comfy you instantly lose track of time.",
+    "The chair whispers: “one more chapter.”",
+    "You sit. You rise. You are changed."
+   ]
+  },
+  {
+   "i": "📮",
+   "n": "Letters to Characters",
+   "v": "Read one",
+   "o": [
+    "“Dear Wolf, please stop eating grandmas. Love, everyone.”",
+    "“Dear Author, why would you do that to him. Regards, me.”",
+    "“Dear Pigs, bricks. Always bricks.”"
+   ]
+  },
+  {
+   "i": "🔔",
+   "n": "Bell That Says “Ding”",
+   "v": "Ding",
+   "o": [
+    "Ding.",
+    "Ding ding. Someone somewhere finished a book.",
+    "The bell is tired. It has dinged enough."
+   ]
+  }
+ ],
+ "memes": [
+  "POV: you said one more chapter at 9pm.",
+  "It’s giving main character.",
+  "Not me buying books I won’t read for 3 years.",
+  "My TBR pile has its own zip code.",
+  "This is fine. 🔥📚",
+  "Me: I won’t cry. Chapter 37: 😭",
+  "Bookmark? I hardly know her.",
+  "Living rent-free in my head: that plot twist.",
+  "Reading is my cardio.",
+  "I’m in my reading era.",
+  "No thoughts, just vibes and paperbacks.",
+  "Silence, I’m at the good part.",
+  "Book hangover is real. Send snacks.",
+  "Me after one book: “I could write that.”",
+  "Did you know you can just… read? Wild.",
+  "Respectfully, finish your book.",
+  "The real treasure was the books we hoarded along the way.",
+  "Ate and left no crumbs. Except on the pages. Sorry.",
+  "We stan a well-placed comma.",
+  "Plot twist: I’m also a character."
+ ],
+ "folk": [
+  {
+   "n": "The Big Bad Wolf (reformed)",
+   "i": "🐺",
+   "look": "{\"h\":220,\"s\":4,\"sh\":\"tall\",\"z\":1,\"e\":\"fox\",\"f\":\"cool\",\"pt\":\"belly\",\"o\":{\"top\":\"tux\",\"eye\":\"shades\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "I’m reformed. I only huff and puff at the gym now.",
+    "Sheriff of this town, technically. Don’t make it weird.",
+    "The pigs and I are in therapy together. It’s going great."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Little Pig of Straw",
+   "i": "🐷",
+   "look": "{\"h\":340,\"s\":4,\"sh\":\"round\",\"z\":1,\"e\":\"floppy\",\"f\":\"cute\",\"pt\":\"belly\",\"o\":{\"hat\":\"cap\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Built my house with straw. Zero regrets. Some regrets.",
+    "Not by the hair of my chinny-chin-chin!",
+    "My brother won’t stop talking about bricks."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Little Pig of Sticks",
+   "i": "🐷",
+   "look": "{\"h\":345,\"s\":4,\"sh\":\"round\",\"z\":1,\"e\":\"floppy\",\"f\":\"goofy\",\"pt\":\"belly\",\"o\":{\"hat\":\"beanie\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Sticks are sustainable, actually.",
+    "He huffed. He puffed. I moved in with my brother.",
+    "Rent is too high for brick."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Little Pig of Bricks",
+   "i": "🐷",
+   "look": "{\"h\":350,\"s\":4,\"sh\":\"round\",\"z\":1,\"e\":\"floppy\",\"f\":\"cool\",\"pt\":\"belly\",\"o\":{\"hat\":\"chef\",\"top\":\"overalls\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Told you so. Bricks. Always bricks.",
+    "I’m not saying I’m the smart one. But I am.",
+    "Building codes exist for a reason."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Little Red",
+   "i": "🧺",
+   "look": "{\"h\":0,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"none\",\"f\":\"cute\",\"pt\":\"none\",\"o\":{\"neck\":\"cape\",\"hand\":\"lantern\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Grandma says hi. Grandma also says don’t talk to wolves.",
+    "What big eyes you have. Oh, it’s just you.",
+    "Basket contents: muffins, a book, emotional support snacks."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Snow White",
+   "i": "🍎",
+   "look": "{\"h\":210,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"none\",\"f\":\"dreamy\",\"pt\":\"none\",\"o\":{\"hat\":\"bow\",\"dress\":\"gown\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "No apples, thank you. Long story.",
+    "I live with seven roommates. The dishes situation is dire.",
+    "Mirror said I’m the fairest. Mirror needs to log off."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Dwarf Miner",
+   "i": "⛏️",
+   "look": "{\"h\":30,\"s\":4,\"sh\":\"round\",\"z\":1,\"e\":\"none\",\"f\":\"goofy\",\"pt\":\"belly\",\"o\":{\"hat\":\"beanie\",\"hand\":\"lantern\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Heigh-ho, it’s off to read we go.",
+    "Dug up a first edition. Tunnel vision pays off.",
+    "Mining is just reading but for rocks."
+   ],
+   "count": 7
+  },
+  {
+   "n": "Beauty",
+   "i": "📖",
+   "look": "{\"h\":48,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"none\",\"f\":\"dreamy\",\"pt\":\"none\",\"o\":{\"dress\":\"sundress\",\"hand\":\"book\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "I married a guy for his library. No notes.",
+    "There must be more than this provincial life. Like a sequel.",
+    "Tale as old as time: I bought more books than I can read."
+   ],
+   "count": 1
+  },
+  {
+   "n": "The Beast",
+   "i": "🌹",
+   "look": "{\"h\":25,\"s\":4,\"sh\":\"round\",\"z\":1,\"e\":\"horns\",\"f\":\"angry\",\"pt\":\"belly\",\"o\":{\"top\":\"tux\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Grr. Sorry. Hi. I’m working on it.",
+    "The rose is fine. Stop asking about the rose.",
+    "I have a library the size of a castle. Because it is a castle."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Cinderella",
+   "i": "👠",
+   "look": "{\"h\":200,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"none\",\"f\":\"cute\",\"pt\":\"sparkle\",\"o\":{\"hat\":\"tiara\",\"dress\":\"gown\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Lost a shoe. Gained a husband. Fair trade.",
+    "Curfew is midnight. My bookmark is at chapter 40. Pray for me.",
+    "Pumpkin spice is a lifestyle, not a season."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Fairy Godmother",
+   "i": "🪄",
+   "look": "{\"h\":270,\"s\":4,\"sh\":\"round\",\"z\":1,\"e\":\"none\",\"f\":\"dreamy\",\"pt\":\"sparkle\",\"o\":{\"hat\":\"wizard\",\"hand\":\"wand\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Bibbidi bobbidi book.",
+    "You shall go to the bookshop!",
+    "Magic wears off at midnight. Tea doesn’t."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Rapunzel",
+   "i": "💇",
+   "look": "{\"h\":50,\"s\":4,\"sh\":\"tall\",\"z\":1,\"e\":\"none\",\"f\":\"cute\",\"pt\":\"none\",\"o\":{\"hat\":\"flowers\",\"dress\":\"sundress\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "My hair is a tower-to-ground express lane.",
+    "I read a lot. I had a lot of time. Tower life.",
+    "Let down my hair? I just got it styled."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Prince Charming",
+   "i": "👑",
+   "look": "{\"h\":220,\"s\":4,\"sh\":\"tall\",\"z\":1,\"e\":\"none\",\"f\":\"cool\",\"pt\":\"none\",\"o\":{\"hat\":\"crown\",\"neck\":\"cape\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "I’ve been engaged to every princess in this town. It’s complicated.",
+    "Charming by name. Mid by nature.",
+    "Has anyone seen a girl who lost a shoe? Asking for me."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Bremen Musician",
+   "i": "🎺",
+   "look": "{\"h\":15,\"s\":4,\"sh\":\"mochi\",\"z\":1,\"e\":\"floppy\",\"f\":\"goofy\",\"pt\":\"spots\",\"o\":{\"hat\":\"party\",\"hand\":\"balloon\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "We’re a band. Donkey, dog, cat and rooster. Genre: chaos.",
+    "Our album is called “Robbers Ran Away.” Banger.",
+    "Never made it to Bremen. Stayed for the vibes."
+   ],
+   "count": 4
+  },
+  {
+   "n": "Billy Goat Gruff",
+   "i": "🐐",
+   "look": "{\"h\":40,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"horns\",\"f\":\"goofy\",\"pt\":\"none\",\"o\":{\"neck\":\"bandana\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Wait for my bigger brother. He reads way more than me.",
+    "Trip trap trip trap. That’s me being dramatic.",
+    "The troll under the bridge is actually a great book reviewer."
+   ],
+   "count": 3
+  },
+  {
+   "n": "Bridge Troll",
+   "i": "🧌",
+   "look": "{\"h\":110,\"s\":4,\"sh\":\"round\",\"z\":1,\"e\":\"elf\",\"f\":\"angry\",\"pt\":\"spots\",\"o\":{\"neck\":\"scarf\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Toll is one book recommendation. No spoilers.",
+    "Who’s that trip-trapping over MY bridge? Oh, it’s a reader. Carry on.",
+    "I live under a bridge. Rent free. Like your favourite book in your head."
+   ],
+   "count": 2
+  },
+  {
+   "n": "Humpty Dumpty",
+   "i": "🥚",
+   "look": "{\"h\":45,\"s\":4,\"sh\":\"round\",\"z\":2,\"e\":\"none\",\"f\":\"goofy\",\"pt\":\"none\",\"o\":{\"hat\":\"tophat\",\"neck\":\"bowtie\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Sat on a wall. Read on a wall. It’s fine.",
+    "All the king’s horses could not help me finish this trilogy.",
+    "I’m not fragile. I’m “structurally whimsical.”"
+   ],
+   "count": 1
+  },
+  {
+   "n": "The White Rabbit",
+   "i": "🐇",
+   "look": "{\"h\":40,\"s\":4,\"sh\":\"tall\",\"z\":1,\"e\":\"bunny\",\"f\":\"shy\",\"pt\":\"belly\",\"o\":{\"eye\":\"monocle\",\"neck\":\"bowtie\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "I’m late! I’m late! For a very important chapter!",
+    "Five more minutes. Five more pages. Same thing.",
+    "Time is a social construct and I’m still late to it."
+   ],
+   "count": 1
+  },
+  {
+   "n": "The Mad Hatter",
+   "i": "🎩",
+   "look": "{\"h\":175,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"none\",\"f\":\"derp\",\"pt\":\"none\",\"o\":{\"hat\":\"tophat\",\"neck\":\"bowtie\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Why is a raven like a writing desk? Asking for a book club.",
+    "It’s always six o’clock. Tea o’clock. Book o’clock.",
+    "Clean cup! Move down! New chapter!"
+   ],
+   "count": 1
+  },
+  {
+   "n": "Cheshire Cat",
+   "i": "😼",
+   "look": "{\"h\":300,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"cat\",\"f\":\"goofy\",\"pt\":\"stripes\",\"o\":{},\"bg\":\"meadow\"}",
+   "lines": [
+    "We’re all mad here. Especially the ones who read the ending first.",
+    "*vanishes mid-conversation*",
+    "I’m not lost. I’m on a side quest."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Card Guard",
+   "i": "🃏",
+   "look": "{\"h\":0,\"s\":4,\"sh\":\"square\",\"z\":1,\"e\":\"none\",\"f\":\"cool\",\"pt\":\"none\",\"o\":{\"top\":\"jersey\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Painting the roses red. Again. Don’t ask.",
+    "Off with their… bookmarks?",
+    "I’m a four of hearts. Mid card. Main character energy."
+   ],
+   "count": 5
+  },
+  {
+   "n": "Gingerbread Pal",
+   "i": "🍪",
+   "look": "{\"h\":28,\"s\":4,\"sh\":\"tall\",\"z\":1,\"e\":\"none\",\"f\":\"goofy\",\"pt\":\"dip\",\"o\":{\"neck\":\"bowtie\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Run run as fast as you can! (to the bookshop)",
+    "I’m baked. I mean, I’m baked goods.",
+    "The fox offered me a ride. I said no. Growth."
+   ],
+   "count": 3
+  },
+  {
+   "n": "Mother Goose",
+   "i": "🪿",
+   "look": "{\"h\":45,\"s\":4,\"sh\":\"birdy\",\"z\":1,\"e\":\"none\",\"f\":\"dreamy\",\"pt\":\"belly\",\"o\":{\"hat\":\"wizard\",\"neck\":\"scarf\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Hickory dickory doomscroll.",
+    "Ring around the rosie, pocket full of books.",
+    "I wrote the nursery rhymes. The kids wrote the memes."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Blind Mouse",
+   "i": "🐭",
+   "look": "{\"h\":220,\"s\":3,\"sh\":\"bean\",\"z\":0,\"e\":\"mouse\",\"f\":\"shy\",\"pt\":\"none\",\"o\":{\"eye\":\"shades\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "See how we run! Actually we can’t see. Audiobooks only.",
+    "Three of us. One braille book. Teamwork.",
+    "The farmer’s wife needs anger management."
+   ],
+   "count": 3
+  },
+  {
+   "n": "Goldilocks",
+   "i": "🥣",
+   "look": "{\"h\":50,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"none\",\"f\":\"cute\",\"pt\":\"none\",\"o\":{\"hat\":\"bow\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "This book is too long. This one too short. This one: just right.",
+    "I broke into a house once. I’m a hero now somehow.",
+    "Porridge reviewer. Five stars for “just right.”"
+   ],
+   "count": 1
+  },
+  {
+   "n": "Bear of the Three",
+   "i": "🐻",
+   "look": "{\"h\":24,\"s\":4,\"sh\":\"round\",\"z\":1,\"e\":\"bear\",\"f\":\"cute\",\"pt\":\"belly\",\"o\":{},\"bg\":\"meadow\"}",
+   "lines": [
+    "Somebody’s been reading MY book!",
+    "Papa, Mama and Baby. Our book club is very exclusive.",
+    "We installed a doorbell camera. Long story."
+   ],
+   "count": 3
+  },
+  {
+   "n": "Puss in Boots",
+   "i": "🐱",
+   "look": "{\"h\":30,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"cat\",\"f\":\"cool\",\"pt\":\"stripes\",\"o\":{\"hat\":\"cowboy\",\"shoes\":\"boots\",\"neck\":\"cape\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "The boots are designer. The cat is legendary.",
+    "*does the eyes* Now buy me a book.",
+    "I lied my way into a castle. Classic hustle."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Pinocchio",
+   "i": "🤥",
+   "look": "{\"h\":35,\"s\":4,\"sh\":\"tall\",\"z\":1,\"e\":\"none\",\"f\":\"goofy\",\"pt\":\"none\",\"o\":{\"hat\":\"party\",\"top\":\"stripes\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "I have read every book in this town. *nose grows*",
+    "I am a real boy. With a real TBR pile.",
+    "Nose is fine. It’s a reading lamp now."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Jiminy Cricket",
+   "i": "🦗",
+   "look": "{\"h\":100,\"s\":4,\"sh\":\"drop\",\"z\":0,\"e\":\"antenna\",\"f\":\"cool\",\"pt\":\"none\",\"o\":{\"hat\":\"tophat\",\"hand\":\"umbrella\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Let your conscience be your guide. And your library card.",
+    "Hey. Hey. Go to bed. That’s chapter four.",
+    "I’m the voice in your head saying “one more chapter.” My bad."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Peter Pan",
+   "i": "🧚",
+   "look": "{\"h\":120,\"s\":4,\"sh\":\"tall\",\"z\":1,\"e\":\"elf\",\"f\":\"cool\",\"pt\":\"none\",\"o\":{\"hat\":\"cap\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Never growing up. Never finishing a series either.",
+    "Second star to the right, then straight on to the bookshop.",
+    "Lost my shadow. Found a great book though."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Tinker Bell",
+   "i": "✨",
+   "look": "{\"h\":90,\"s\":4,\"sh\":\"drop\",\"z\":0,\"e\":\"elf\",\"f\":\"starry\",\"pt\":\"sparkle\",\"o\":{\"neck\":\"dragonwings\",\"hand\":\"wand\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "If you believe in books, clap your paws!",
+    "Pixie dust works on bookmarks too.",
+    "I’m small but I’m in charge."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Captain Hook (retired)",
+   "i": "🪝",
+   "look": "{\"h\":0,\"s\":4,\"sh\":\"tall\",\"z\":1,\"e\":\"none\",\"f\":\"angry\",\"pt\":\"none\",\"o\":{\"hat\":\"cowboy\",\"neck\":\"cape\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "I don’t like ticking clocks. Or reading timers.",
+    "Retired pirate. Now I collect first editions.",
+    "Do you hear that? *tick tock* Oh, it’s just your bedtime."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Lost Kid",
+   "i": "🧒",
+   "look": "{\"h\":60,\"s\":3,\"sh\":\"bean\",\"z\":0,\"e\":\"fox\",\"f\":\"cute\",\"pt\":\"none\",\"o\":{\"top\":\"hoodie\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "We’re lost on purpose. It’s a vibe.",
+    "Pretend you’re a pirate. Now pretend you finished your book.",
+    "No grown-ups allowed. Except librarians."
+   ],
+   "count": 6
+  },
+  {
+   "n": "Tortoise",
+   "i": "🐢",
+   "look": "{\"h\":110,\"s\":4,\"sh\":\"mochi\",\"z\":0,\"e\":\"none\",\"f\":\"shy\",\"pt\":\"spots\",\"o\":{\"hat\":\"beanie\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Slow and steady finishes the book.",
+    "The hare has DNF’d six books this week.",
+    "Speed reading is for hares."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Hare",
+   "i": "🐰",
+   "look": "{\"h\":30,\"s\":4,\"sh\":\"tall\",\"z\":1,\"e\":\"bunny\",\"f\":\"cool\",\"pt\":\"none\",\"o\":{\"shoes\":\"sneakers\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Read 40 books this year. Finished 2. Speedrun any%.",
+    "I would win the race but I’m doing a quick nap.",
+    "Bro I could read that in like an hour."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Ugly Duckling",
+   "i": "🦢",
+   "look": "{\"h\":200,\"s\":4,\"sh\":\"birdy\",\"z\":1,\"e\":\"none\",\"f\":\"shy\",\"pt\":\"none\",\"o\":{},\"bg\":\"meadow\"}",
+   "lines": [
+    "Glow-up arc incoming.",
+    "Was a duck. Am a swan. Read the book, it’s inspiring.",
+    "Main character development: unlocked."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Frog Prince",
+   "i": "🐸",
+   "look": "{\"h\":95,\"s\":4,\"sh\":\"mochi\",\"z\":1,\"e\":\"none\",\"f\":\"goofy\",\"pt\":\"spots\",\"o\":{\"hat\":\"crown\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "One kiss and I’m a prince. Zero kisses and I’m a great frog.",
+    "Ribbit means “recommend me a book.”",
+    "Pond to palace pipeline."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Robin Hood",
+   "i": "🏹",
+   "look": "{\"h\":120,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"fox\",\"f\":\"cool\",\"pt\":\"none\",\"o\":{\"hat\":\"beret\",\"neck\":\"bandana\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Steal from the rich, lend to the poor. It’s called a library.",
+    "Merry men book club meets at dawn.",
+    "Archery is just aiming for the bookshelf."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Merry Man",
+   "i": "🌳",
+   "look": "{\"h\":100,\"s\":4,\"sh\":\"round\",\"z\":1,\"e\":\"none\",\"f\":\"goofy\",\"pt\":\"none\",\"o\":{\"hat\":\"cap\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "We are very merry. It’s in the name.",
+    "Robin says we’re outlaws. We just have overdue books.",
+    "Sherwood is a vibe."
+   ],
+   "count": 4
+  },
+  {
+   "n": "Tin Woodman",
+   "i": "🪓",
+   "look": "{\"h\":210,\"s\":4,\"sh\":\"square\",\"z\":1,\"e\":\"none\",\"f\":\"shy\",\"pt\":\"none\",\"o\":{\"hat\":\"party\",\"top\":\"robot\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "If I only had a heart. Oh wait, this book gave me one.",
+    "Oil can? Yes please.",
+    "Crying at chapter 9 again. Rust risk."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Cowardly Lion",
+   "i": "🦁",
+   "look": "{\"h\":38,\"s\":4,\"sh\":\"round\",\"z\":1,\"e\":\"bear\",\"f\":\"shy\",\"pt\":\"belly\",\"o\":{\"neck\":\"medal\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Put ’em up! Actually, put the book down, I’m scared.",
+    "I only read cozy books. Courage is a journey.",
+    "Horror town? Absolutely not."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Scarecrow",
+   "i": "🌾",
+   "look": "{\"h\":45,\"s\":4,\"sh\":\"pear\",\"z\":1,\"e\":\"none\",\"f\":\"derp\",\"pt\":\"patch\",\"o\":{\"hat\":\"cowboy\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "If I only had a brain. Reading helps.",
+    "Professional bird scarer. Amateur poet.",
+    "Hay is for horses. Books are for me."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Mr. Toad",
+   "i": "🚗",
+   "look": "{\"h\":95,\"s\":4,\"sh\":\"mochi\",\"z\":1,\"e\":\"none\",\"f\":\"goofy\",\"pt\":\"spots\",\"o\":{\"eye\":\"goggles\",\"neck\":\"scarf\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Poop-poop! Beep beep! Reading in the fast lane!",
+    "I bought a car, a boat and a bookshop. In one week.",
+    "Speed limits are a suggestion. Library fines are not."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Water Rat",
+   "i": "🐀",
+   "look": "{\"h\":30,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"mouse\",\"f\":\"dreamy\",\"pt\":\"none\",\"o\":{\"hat\":\"cap\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "There is nothing half so much worth doing as messing about in boats. With a book.",
+    "Picnic? With books? Say less.",
+    "Toad borrowed my canoe. It’s gone forever."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Badger",
+   "i": "🦡",
+   "look": "{\"h\":0,\"s\":4,\"sh\":\"round\",\"z\":1,\"e\":\"bear\",\"f\":\"cool\",\"pt\":\"stripes\",\"o\":{\"top\":\"sweater\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "I don’t do parties. I do libraries.",
+    "Come in, come in. Tea is on, books are out.",
+    "Badger rules: no spoilers in my burrow."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Peter Rabbit",
+   "i": "🥕",
+   "look": "{\"h\":28,\"s\":3,\"sh\":\"bean\",\"z\":0,\"e\":\"bunny\",\"f\":\"cute\",\"pt\":\"belly\",\"o\":{\"top\":\"hoodie\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Mr. McGregor is NOT invited to book club.",
+    "Lost my jacket. Kept my book. Priorities.",
+    "Radish of the day: crunchy."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Toy Soldier",
+   "i": "💂",
+   "look": "{\"h\":0,\"s\":4,\"sh\":\"tall\",\"z\":1,\"e\":\"none\",\"f\":\"cool\",\"pt\":\"none\",\"o\":{\"hat\":\"cap\",\"top\":\"jersey\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Standing guard over the bookshop. Steadfast.",
+    "Left, right, left, right, chapter.",
+    "I was made of tin. Now I’m made of vibes."
+   ],
+   "count": 5
+  },
+  {
+   "n": "Nutcracker",
+   "i": "🎄",
+   "look": "{\"h\":0,\"s\":4,\"sh\":\"square\",\"z\":1,\"e\":\"none\",\"f\":\"angry\",\"pt\":\"none\",\"o\":{\"hat\":\"crown\",\"top\":\"tux\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "I crack nuts and plot holes.",
+    "Mouse King owes me a book.",
+    "Ballet is just reading with your feet."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Sleeping Beauty",
+   "i": "😴",
+   "look": "{\"h\":320,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"none\",\"f\":\"dreamy\",\"pt\":\"sparkle\",\"o\":{\"hat\":\"tiara\",\"dress\":\"gown\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Slept for 100 years. Still not caught up on my TBR.",
+    "Don’t wake me unless it’s a plot twist.",
+    "Spindle? I don’t know her."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Pied Piper",
+   "i": "🎶",
+   "look": "{\"h\":150,\"s\":4,\"sh\":\"tall\",\"z\":1,\"e\":\"elf\",\"f\":\"cool\",\"pt\":\"stripes\",\"o\":{\"hat\":\"party\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Follow me to the bookshop! *plays flute*",
+    "The rats were in a book club. I just led the meeting.",
+    "My playlist is called “Lure.”"
+   ],
+   "count": 1
+  },
+  {
+   "n": "Town Rat",
+   "i": "🐀",
+   "look": "{\"h\":20,\"s\":3,\"sh\":\"bean\",\"z\":0,\"e\":\"mouse\",\"f\":\"cute\",\"pt\":\"none\",\"o\":{},\"bg\":\"meadow\"}",
+   "lines": [
+    "Following the music. Where are we going?",
+    "Squeak. That means “good book.”",
+    "Cheese and a chapter."
+   ],
+   "count": 4
+  },
+  {
+   "n": "Baba Yaga’s House",
+   "i": "🏚️",
+   "look": "{\"h\":25,\"s\":4,\"sh\":\"pear\",\"z\":1,\"e\":\"none\",\"f\":\"creepy\",\"pt\":\"patch\",\"o\":{\"shoes\":\"boots\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "I’m a house. With chicken legs. Don’t be weird about it.",
+    "I turn around when you say the magic words. It’s “please.”",
+    "Interior: books. Exterior: legs."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Headless Horseman",
+   "i": "🎃",
+   "look": "{\"h\":28,\"s\":4,\"sh\":\"tall\",\"z\":1,\"e\":\"none\",\"f\":\"creepy\",\"pt\":\"none\",\"o\":{\"neck\":\"cape\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Lost my head over a cliffhanger.",
+    "I’m not scary. I’m just looking for my reading glasses. And head.",
+    "Pumpkin is my head now. It’s a whole aesthetic."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Ichabod Crane",
+   "i": "📚",
+   "look": "{\"h\":60,\"s\":4,\"sh\":\"tall\",\"z\":1,\"e\":\"none\",\"f\":\"shy\",\"pt\":\"none\",\"o\":{\"hat\":\"tophat\",\"hand\":\"book\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "I’m a schoolteacher. I will grade your reading log.",
+    "I heard hooves. I’m reading faster.",
+    "Sleepy Hollow is not sleepy. It is very awake."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Friendly Ghost",
+   "i": "👻",
+   "look": "{\"h\":220,\"s\":3,\"sh\":\"ghost\",\"z\":1,\"e\":\"none\",\"f\":\"cute\",\"pt\":\"none\",\"o\":{},\"bg\":\"meadow\"}",
+   "lines": [
+    "Boo! Sorry. Reflex.",
+    "I haunt the library. Quietly. As one should.",
+    "Ghost reading: you can read through the cover."
+   ],
+   "count": 4
+  },
+  {
+   "n": "Moon Witch",
+   "i": "🧙",
+   "look": "{\"h\":280,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"none\",\"f\":\"dreamy\",\"pt\":\"galaxy\",\"o\":{\"hat\":\"wizard\",\"hand\":\"wand\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Hex: you will start a new series tonight.",
+    "My cat is my book club.",
+    "Broom parking only."
+   ],
+   "count": 3
+  },
+  {
+   "n": "Sea Witch",
+   "i": "🐙",
+   "look": "{\"h\":270,\"s\":4,\"sh\":\"octo\",\"z\":1,\"e\":\"none\",\"f\":\"cool\",\"pt\":\"spots\",\"o\":{\"neck\":\"pearls\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Trade me your voice for a book. Audiobook, naturally.",
+    "Poor unfortunate souls who DNF.",
+    "Eight arms, eight books open at once."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Little Mermaid",
+   "i": "🧜",
+   "look": "{\"h\":170,\"s\":4,\"sh\":\"drop\",\"z\":1,\"e\":\"none\",\"f\":\"dreamy\",\"pt\":\"waves\",\"o\":{\"hat\":\"flowers\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "I want to be where the bookshops are.",
+    "Dinglehopper is a bookmark now.",
+    "Walked on land for love. Stayed for paperbacks."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Sea Sailor",
+   "i": "⚓",
+   "look": "{\"h\":200,\"s\":4,\"sh\":\"round\",\"z\":1,\"e\":\"none\",\"f\":\"goofy\",\"pt\":\"stripes\",\"o\":{\"hat\":\"cap\",\"top\":\"stripes\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Yo ho ho and a bottle of… lemonade.",
+    "Swabbing the deck. Reading the deck. Same thing.",
+    "Aye, this book be a whale of a tale."
+   ],
+   "count": 5
+  },
+  {
+   "n": "Sherlock-ish Detective",
+   "i": "🔍",
+   "look": "{\"h\":30,\"s\":4,\"sh\":\"tall\",\"z\":1,\"e\":\"none\",\"f\":\"cool\",\"pt\":\"none\",\"o\":{\"hat\":\"beret\",\"neck\":\"scarf\",\"hand\":\"pencil\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Elementary. You haven’t finished it yet.",
+    "The butler is innocent. The bookmark is guilty.",
+    "I deduced your TBR from your shoes."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Detective’s Sidekick",
+   "i": "🩺",
+   "look": "{\"h\":200,\"s\":4,\"sh\":\"round\",\"z\":1,\"e\":\"bear\",\"f\":\"cute\",\"pt\":\"belly\",\"o\":{\"top\":\"sweater\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "I just write it all down. He takes the credit.",
+    "Me when the twist hits: 😮",
+    "I brought snacks for the stakeout."
+   ],
+   "count": 2
+  },
+  {
+   "n": "Shady Informant",
+   "i": "🕶️",
+   "look": "{\"h\":260,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"cat\",\"f\":\"cool\",\"pt\":\"none\",\"o\":{\"eye\":\"shades\",\"top\":\"hoodie\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Psst. Wanna buy a spoiler? Kidding. Never.",
+    "I know a guy who knows a guy who has a first edition.",
+    "You didn’t see me. I didn’t see you. We both saw that ending."
+   ],
+   "count": 3
+  },
+  {
+   "n": "Knight Errant",
+   "i": "🛡️",
+   "look": "{\"h\":210,\"s\":4,\"sh\":\"tall\",\"z\":1,\"e\":\"none\",\"f\":\"cool\",\"pt\":\"none\",\"o\":{\"hat\":\"astro\",\"neck\":\"cape\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Questing for the Holy Grail. Or a good sequel.",
+    "My horse is named Chapter.",
+    "Dragons are just misunderstood readers."
+   ],
+   "count": 3
+  },
+  {
+   "n": "Baby Dragon",
+   "i": "🐉",
+   "look": "{\"h\":120,\"s\":3,\"sh\":\"dino\",\"z\":0,\"e\":\"horns\",\"f\":\"cute\",\"pt\":\"belly\",\"o\":{},\"bg\":\"meadow\"}",
+   "lines": [
+    "Rawr means “read with me” in dragon.",
+    "I hoard books, not gold. Gold doesn’t have plot.",
+    "Breathes fire. Never near books. Responsible dragon."
+   ],
+   "count": 3
+  },
+  {
+   "n": "Unicorn",
+   "i": "🦄",
+   "look": "{\"h\":300,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"unicorn\",\"f\":\"starry\",\"pt\":\"sparkle\",\"o\":{},\"bg\":\"meadow\"}",
+   "lines": [
+    "Yes I’m real. No you can’t ride me. Yes I read.",
+    "Glitter is my love language.",
+    "Sparkly cover = instant buy."
+   ],
+   "count": 2
+  },
+  {
+   "n": "Satyr Poet",
+   "i": "🌿",
+   "look": "{\"h\":80,\"s\":4,\"sh\":\"pear\",\"z\":1,\"e\":\"horns\",\"f\":\"dreamy\",\"pt\":\"none\",\"o\":{\"hat\":\"flowers\",\"hand\":\"pencil\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Odes, but make it goat.",
+    "I wrote an epic. It’s 40,000 lines. You’ll love it.",
+    "Panpipes and paperbacks."
+   ],
+   "count": 2
+  },
+  {
+   "n": "Medusa (sunglasses on)",
+   "i": "🐍",
+   "look": "{\"h\":110,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"none\",\"f\":\"cool\",\"pt\":\"spots\",\"o\":{\"eye\":\"shades\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Sunglasses stay ON. For your safety.",
+    "People are stone cold readers here. Literally.",
+    "Snake hair, don’t care."
+   ],
+   "count": 1
+  },
+  {
+   "n": "Cowpoke",
+   "i": "🤠",
+   "look": "{\"h\":30,\"s\":4,\"sh\":\"round\",\"z\":1,\"e\":\"none\",\"f\":\"goofy\",\"pt\":\"none\",\"o\":{\"hat\":\"cowboy\",\"neck\":\"bandana\",\"shoes\":\"boots\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Yeehaw, I finished a chapter.",
+    "This town ain’t big enough for two bookworms. Jk, it’s huge.",
+    "Lasso’d a library book. It was overdue."
+   ],
+   "count": 5
+  },
+  {
+   "n": "Robot Reader",
+   "i": "🤖",
+   "look": "{\"h\":200,\"s\":4,\"sh\":\"square\",\"z\":1,\"e\":\"antenna\",\"f\":\"cute\",\"pt\":\"none\",\"o\":{\"top\":\"robot\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "BEEP. TBR LIST: OVERFLOW ERROR.",
+    "I read 0.3 seconds per book. I feel nothing. I feel everything.",
+    "01101100 = “love this book.”"
+   ],
+   "count": 4
+  },
+  {
+   "n": "Space Cadet",
+   "i": "🚀",
+   "look": "{\"h\":230,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"antenna\",\"f\":\"starry\",\"pt\":\"galaxy\",\"o\":{\"hat\":\"astro\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "To infinity and beyond. Or at least chapter 12.",
+    "Houston, we have a cliffhanger.",
+    "In space, no one can hear you scream at the ending."
+   ],
+   "count": 3
+  },
+  {
+   "n": "Rebel Reader",
+   "i": "📕",
+   "look": "{\"h\":10,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"fox\",\"f\":\"angry\",\"pt\":\"none\",\"o\":{\"top\":\"hoodie\",\"neck\":\"bandana\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Reading is resistance.",
+    "They banned this book. So obviously I read it twice.",
+    "Big Brother is watching. I’m watching the plot."
+   ],
+   "count": 4
+  },
+  {
+   "n": "Poet in a Beret",
+   "i": "🎨",
+   "look": "{\"h\":260,\"s\":4,\"sh\":\"tall\",\"z\":1,\"e\":\"none\",\"f\":\"dreamy\",\"pt\":\"none\",\"o\":{\"hat\":\"beret\",\"neck\":\"scarf\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "I’m not sad. I’m in my blue period.",
+    "Wrote a haiku about you. It’s mostly about soup.",
+    "Vibes > rhymes."
+   ],
+   "count": 4
+  },
+  {
+   "n": "Tea Party Guest",
+   "i": "🫖",
+   "look": "{\"h\":330,\"s\":4,\"sh\":\"round\",\"z\":1,\"e\":\"bunny\",\"f\":\"cute\",\"pt\":\"hearts\",\"o\":{\"hat\":\"bow\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "More tea? More chapters? Yes to both.",
+    "Pinky out while reading, obviously.",
+    "I’m here for the gossip and the scones."
+   ],
+   "count": 4
+  },
+  {
+   "n": "Village Baker",
+   "i": "🥐",
+   "look": "{\"h\":35,\"s\":4,\"sh\":\"round\",\"z\":1,\"e\":\"bear\",\"f\":\"cute\",\"pt\":\"belly\",\"o\":{\"hat\":\"chef\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Fresh croissants and fresh releases.",
+    "I knead a good book.",
+    "Bread pun count today: too many."
+   ],
+   "count": 2
+  },
+  {
+   "n": "Lovestruck Bard",
+   "i": "💘",
+   "look": "{\"h\":340,\"s\":4,\"sh\":\"bean\",\"z\":1,\"e\":\"none\",\"f\":\"starry\",\"pt\":\"hearts\",\"o\":{\"hand\":\"sunflower\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Enemies to lovers? I live for it.",
+    "I’m in love. With a fictional character. Again.",
+    "Slow burn? More like slow BURN."
+   ],
+   "count": 3
+  },
+  {
+   "n": "Bookworm Gossip",
+   "i": "🗞️",
+   "look": "{\"h\":80,\"s\":4,\"sh\":\"pear\",\"z\":1,\"e\":\"none\",\"f\":\"goofy\",\"pt\":\"freckles\",\"o\":{\"eye\":\"round\"},\"bg\":\"meadow\"}",
+   "lines": [
+    "Did you hear the ending of that one? NO SPOILERS.",
+    "The pigs and the wolf had brunch. Witnessed it.",
+    "Not me reading the last page first. Okay it’s me."
+   ],
+   "count": 6
+  }
+ ]
+}

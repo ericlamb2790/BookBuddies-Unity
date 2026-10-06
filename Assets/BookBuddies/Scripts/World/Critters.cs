@@ -4,9 +4,9 @@ using UnityEngine;
 namespace BookBuddies.World
 {
     /// <summary>
-    /// Little lives on the road and in the caves (the site's lifeStep): rabbits that dash away, birds that hop and
-    /// fly off when you get close, butterflies and bats that flutter, ducks paddling on the ponds.
-    /// Which critters live where comes from the map's Wild block.
+    /// Little lives on the road, in the caves and in the genre towns (the site's lifeStep): rabbits that dash away, birds
+    /// that hop and fly off when you get close, butterflies and bats that flutter, ducks paddling on the ponds.
+    /// Which critters live where comes from the map's life list.
     /// </summary>
     public sealed class Critters : MonoBehaviour
     {
@@ -33,7 +33,7 @@ namespace BookBuddies.World
         {
             map = town;
             var centre = new Vector2(map.Start.x, map.Start.y);
-            foreach (var kind in map.Wild.Life)
+            foreach (var kind in map.Life)
                 for (int i = 0; i < kind.Count; i++)
                     Add(kind, i % 2 == 0 ? centre : (Vector2?)null, false);
         }
@@ -156,7 +156,7 @@ namespace BookBuddies.World
         void ReplaceBird()
         {
             comebackAt = 0;
-            var birds = map.Wild.Life.FindAll(k => k.Kind == 'g');
+            var birds = map.Life.FindAll(k => k.Kind == 'g');
             if (birds.Count == 0) return;
             int before = all.Count;
             Add(birds[Random.Range(0, birds.Count)], null, true);

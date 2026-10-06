@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using BookBuddies.Economy;
 using BookBuddies.Net;
 using BookBuddies.Pets;
 using UnityEngine;
@@ -360,6 +361,7 @@ namespace BookBuddies.UI
                 if (int.TryParse(v, out int coins) && coins >= 0) Run("coins", Body("coins", coins));
                 else Say("Coins must be a whole number, 0 or more.", true);
             });
+            Note(detail, "Setting coins adds one entry for the difference to their coin history, so the change shows up there.");
             if (self) { Note(detail, "You can’t change your own admin rights or delete your own account here."); return; }
             var grid = Grid(detail);
             bool admin = player.Truthy("is_admin");
@@ -464,6 +466,7 @@ namespace BookBuddies.UI
                 var log = reply.Arr("log");
                 Say(log.Count > 0 ? Capital(Describe((Dictionary<string, object>)log[0])) + "." : "Done.", false, true);
                 Sound.Play(action == "delete" || action == "ban" ? "close" : "pop");
+                if (action == "coins" && id == Settings.AccountId) _ = Wallet.Refresh(); // your own coins: the HUD counts to the new number
                 ShowPlayer(reply);
                 Search();
             }

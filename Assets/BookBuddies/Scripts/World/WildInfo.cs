@@ -36,13 +36,20 @@ namespace BookBuddies.World
                 Music = j.Str("music", "wild"), Weather = j.Str("fx"), GrassArt = j.Str("grass", null),
                 West = ReadEnd(j.Obj("west")), East = ReadEnd(j.Obj("east")),
             };
-            foreach (List<object> c in j.Arr("life"))
-                w.Life.Add(new Critter { Emoji = (string)c[0], Kind = ((string)c[1])[0], Count = (int)(double)c[2] });
+            w.Life.AddRange(ReadLife(j.Arr("life")));
             foreach (List<object> l in j.Arr("lights"))
                 w.Lights.Add(new Light { At = new Vector2((float)(double)l[0], (float)(double)l[1]), Color = Palette.Hex((string)l[2]), Radius = (float)(double)l[3] });
             foreach (List<object> t in j.Arr("tall"))
                 w.Tall[(int)(double)t[1] * width + (int)(double)t[0]] = (int)(double)t[2];
             return w;
+        }
+
+        /// <summary>Critters as exported: [emoji, kind, count] each.</summary>
+        public static List<Critter> ReadLife(List<object> rows)
+        {
+            var life = new List<Critter>();
+            foreach (List<object> c in rows) life.Add(new Critter { Emoji = (string)c[0], Kind = ((string)c[1])[0], Count = (int)(double)c[2] });
+            return life;
         }
 
         static End ReadEnd(Dictionary<string, object> o) => o == null ? null : new End { Key = o.Str("k"), Name = o.Str("n"), Icon = o.Str("i") };

@@ -1,0 +1,5169 @@
+{
+ "note": "Genre towns and Bramble Road links 2–17 (made by tools/export_towns.js); size is in tiles, any PNG resolution works",
+ "objects": {
+  "romance_shop": {
+   "file": "Town/Romance/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "romance_station": {
+   "file": "Town/Romance/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "romance_sign": {
+   "file": "Town/Romance/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "romance_landmark": {
+   "file": "Town/Romance/Objects/landmark",
+   "size": [
+    3.8906,
+    3.1484
+   ],
+   "pivot": [
+    0.5,
+    0.0918
+   ],
+   "shadows": []
+  },
+  "romance_cottage_0": {
+   "file": "Town/Romance/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "romance_cottage_1": {
+   "file": "Town/Romance/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "romance_cottage_2": {
+   "file": "Town/Romance/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "romance_cottage_3": {
+   "file": "Town/Romance/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "romance_cottage_4": {
+   "file": "Town/Romance/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "bench": {
+   "file": "Town/Props/bench",
+   "size": [
+    1.9844,
+    1.2656
+   ],
+   "pivot": [
+    0.5,
+    0.1358
+   ],
+   "shadows": []
+  },
+  "lamp": {
+   "file": "Town/Props/lamp",
+   "size": [
+    1.0781,
+    3.0625
+   ],
+   "pivot": [
+    0.5,
+    0.023
+   ],
+   "shadows": []
+  },
+  "tree_blossom": {
+   "file": "Town/Props/tree_blossom",
+   "size": [
+    1.5781,
+    2.0547
+   ],
+   "pivot": [
+    0.5,
+    0.0798
+   ],
+   "shadows": []
+  },
+  "tree_oak": {
+   "file": "Town/Props/tree_oak",
+   "size": [
+    1.5781,
+    2.0547
+   ],
+   "pivot": [
+    0.5,
+    0.0798
+   ],
+   "shadows": []
+  },
+  "rosebush": {
+   "file": "Town/Props/rosebush",
+   "size": [
+    1.0781,
+    1.1172
+   ],
+   "pivot": [
+    0.5,
+    0.0699
+   ],
+   "shadows": []
+  },
+  "heartlamp": {
+   "file": "Town/Props/heartlamp",
+   "size": [
+    0.9844,
+    3.0625
+   ],
+   "pivot": [
+    0.5,
+    0.023
+   ],
+   "shadows": []
+  },
+  "sign_old_quill_e": {
+   "file": "Town/Props/sign_old_quill_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_pawtopia_town_w": {
+   "file": "Town/Props/sign_pawtopia_town_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "romance_gym": {
+   "file": "Town/Romance/Objects/gym",
+   "size": [
+    2.9844,
+    2.7578
+   ],
+   "pivot": [
+    0.4319,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "romance_curio_0": {
+   "file": "Town/Romance/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "romance_curio_1": {
+   "file": "Town/Romance/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "romance_curio_2": {
+   "file": "Town/Romance/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "romance_curio_3": {
+   "file": "Town/Romance/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "romance_curio_4": {
+   "file": "Town/Romance/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "romance_curio_5": {
+   "file": "Town/Romance/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "romance_curio_6": {
+   "file": "Town/Romance/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "classics_shop": {
+   "file": "Town/Classics/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "classics_station": {
+   "file": "Town/Classics/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "classics_sign": {
+   "file": "Town/Classics/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "classics_landmark": {
+   "file": "Town/Classics/Objects/landmark",
+   "size": [
+    3.8906,
+    5.1328
+   ],
+   "pivot": [
+    0.5,
+    0.0563
+   ],
+   "shadows": []
+  },
+  "classics_cottage_0": {
+   "file": "Town/Classics/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "classics_cottage_1": {
+   "file": "Town/Classics/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "classics_cottage_2": {
+   "file": "Town/Classics/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "classics_cottage_3": {
+   "file": "Town/Classics/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "classics_cottage_4": {
+   "file": "Town/Classics/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "tree_fruit": {
+   "file": "Town/Props/tree_fruit",
+   "size": [
+    1.5781,
+    2.0547
+   ],
+   "pivot": [
+    0.5,
+    0.0798
+   ],
+   "shadows": []
+  },
+  "hedge": {
+   "file": "Town/Props/hedge",
+   "size": [
+    1.1875,
+    1.6328
+   ],
+   "pivot": [
+    0.5,
+    0.0574
+   ],
+   "shadows": []
+  },
+  "statue2": {
+   "file": "Town/Props/statue2",
+   "size": [
+    0.9844,
+    2.625
+   ],
+   "pivot": [
+    0.5,
+    0.0506
+   ],
+   "shadows": []
+  },
+  "sign_driftwood_cove_e": {
+   "file": "Town/Props/sign_driftwood_cove_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_rosewater_w": {
+   "file": "Town/Props/sign_rosewater_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "classics_gym": {
+   "file": "Town/Classics/Objects/gym",
+   "size": [
+    3.0313,
+    2.7578
+   ],
+   "pivot": [
+    0.4253,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "classics_curio_0": {
+   "file": "Town/Classics/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "classics_curio_1": {
+   "file": "Town/Classics/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "classics_curio_2": {
+   "file": "Town/Classics/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "classics_curio_3": {
+   "file": "Town/Classics/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "classics_curio_4": {
+   "file": "Town/Classics/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "classics_curio_5": {
+   "file": "Town/Classics/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "classics_curio_6": {
+   "file": "Town/Classics/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "adventure_shop": {
+   "file": "Town/Adventure/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "adventure_station": {
+   "file": "Town/Adventure/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "adventure_sign": {
+   "file": "Town/Adventure/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "adventure_landmark": {
+   "file": "Town/Adventure/Objects/landmark",
+   "size": [
+    3.8906,
+    3.5781
+   ],
+   "pivot": [
+    0.5,
+    0.0808
+   ],
+   "shadows": []
+  },
+  "adventure_cottage_0": {
+   "file": "Town/Adventure/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "adventure_cottage_1": {
+   "file": "Town/Adventure/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "adventure_cottage_2": {
+   "file": "Town/Adventure/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "adventure_cottage_3": {
+   "file": "Town/Adventure/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "adventure_cottage_4": {
+   "file": "Town/Adventure/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "tree_palm": {
+   "file": "Town/Props/tree_palm",
+   "size": [
+    1.7813,
+    2.3203
+   ],
+   "pivot": [
+    0.443,
+    0.0707
+   ],
+   "shadows": []
+  },
+  "crate": {
+   "file": "Town/Props/crate",
+   "size": [
+    0.9844,
+    1.3516
+   ],
+   "pivot": [
+    0.5,
+    0.0809
+   ],
+   "shadows": []
+  },
+  "rock": {
+   "file": "Town/Props/rock",
+   "size": [
+    1.0781,
+    0.9297
+   ],
+   "pivot": [
+    0.5,
+    0.042
+   ],
+   "shadows": []
+  },
+  "sign_foghollow_e": {
+   "file": "Town/Props/sign_foghollow_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_old_quill_w": {
+   "file": "Town/Props/sign_old_quill_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "adventure_gym": {
+   "file": "Town/Adventure/Objects/gym",
+   "size": [
+    3.0391,
+    2.7578
+   ],
+   "pivot": [
+    0.4242,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "adventure_curio_0": {
+   "file": "Town/Adventure/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "adventure_curio_1": {
+   "file": "Town/Adventure/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "adventure_curio_2": {
+   "file": "Town/Adventure/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "adventure_curio_3": {
+   "file": "Town/Adventure/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "adventure_curio_4": {
+   "file": "Town/Adventure/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "adventure_curio_5": {
+   "file": "Town/Adventure/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "adventure_curio_6": {
+   "file": "Town/Adventure/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "mystery_shop": {
+   "file": "Town/Mystery/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "mystery_station": {
+   "file": "Town/Mystery/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "mystery_sign": {
+   "file": "Town/Mystery/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "mystery_landmark": {
+   "file": "Town/Mystery/Objects/landmark",
+   "size": [
+    3.8906,
+    5.3281
+   ],
+   "pivot": [
+    0.5,
+    0.0543
+   ],
+   "shadows": []
+  },
+  "mystery_cottage_0": {
+   "file": "Town/Mystery/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "mystery_cottage_1": {
+   "file": "Town/Mystery/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "mystery_cottage_2": {
+   "file": "Town/Mystery/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "mystery_cottage_3": {
+   "file": "Town/Mystery/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "mystery_cottage_4": {
+   "file": "Town/Mystery/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "gaslamp": {
+   "file": "Town/Props/gaslamp",
+   "size": [
+    1.1875,
+    3.2109
+   ],
+   "pivot": [
+    0.5,
+    0.0219
+   ],
+   "shadows": []
+  },
+  "tree_pine": {
+   "file": "Town/Props/tree_pine",
+   "size": [
+    1.3203,
+    2.7031
+   ],
+   "pivot": [
+    0.4615,
+    0.0607
+   ],
+   "shadows": []
+  },
+  "sign_dragonmere_e": {
+   "file": "Town/Props/sign_dragonmere_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_driftwood_cove_w": {
+   "file": "Town/Props/sign_driftwood_cove_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "mystery_gym": {
+   "file": "Town/Mystery/Objects/gym",
+   "size": [
+    3.0234,
+    2.7578
+   ],
+   "pivot": [
+    0.4264,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "mystery_curio_0": {
+   "file": "Town/Mystery/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "mystery_curio_1": {
+   "file": "Town/Mystery/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "mystery_curio_2": {
+   "file": "Town/Mystery/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "mystery_curio_3": {
+   "file": "Town/Mystery/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "mystery_curio_4": {
+   "file": "Town/Mystery/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "mystery_curio_5": {
+   "file": "Town/Mystery/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "mystery_curio_6": {
+   "file": "Town/Mystery/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "fantasy_shop": {
+   "file": "Town/Fantasy/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "fantasy_station": {
+   "file": "Town/Fantasy/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "fantasy_sign": {
+   "file": "Town/Fantasy/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "fantasy_landmark": {
+   "file": "Town/Fantasy/Objects/landmark",
+   "size": [
+    3.8906,
+    4.2813
+   ],
+   "pivot": [
+    0.5,
+    0.0675
+   ],
+   "shadows": []
+  },
+  "fantasy_cottage_0": {
+   "file": "Town/Fantasy/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "fantasy_cottage_1": {
+   "file": "Town/Fantasy/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "fantasy_cottage_2": {
+   "file": "Town/Fantasy/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "fantasy_cottage_3": {
+   "file": "Town/Fantasy/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "fantasy_cottage_4": {
+   "file": "Town/Fantasy/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "tree_crystal": {
+   "file": "Town/Props/tree_crystal",
+   "size": [
+    1.3203,
+    2.6641
+   ],
+   "pivot": [
+    0.4615,
+    0.0616
+   ],
+   "shadows": []
+  },
+  "mushroom": {
+   "file": "Town/Props/mushroom",
+   "size": [
+    1.2813,
+    1.8125
+   ],
+   "pivot": [
+    0.5,
+    0.0388
+   ],
+   "shadows": []
+  },
+  "crystal": {
+   "file": "Town/Props/crystal",
+   "size": [
+    0.9219,
+    2.2344
+   ],
+   "pivot": [
+    0.5,
+    0.0629
+   ],
+   "shadows": []
+  },
+  "sign_nova_port_e": {
+   "file": "Town/Props/sign_nova_port_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_foghollow_w": {
+   "file": "Town/Props/sign_foghollow_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "fantasy_gym": {
+   "file": "Town/Fantasy/Objects/gym",
+   "size": [
+    2.9688,
+    2.7578
+   ],
+   "pivot": [
+    0.4342,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "fantasy_curio_0": {
+   "file": "Town/Fantasy/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "fantasy_curio_1": {
+   "file": "Town/Fantasy/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "fantasy_curio_2": {
+   "file": "Town/Fantasy/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "fantasy_curio_3": {
+   "file": "Town/Fantasy/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "fantasy_curio_4": {
+   "file": "Town/Fantasy/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "fantasy_curio_5": {
+   "file": "Town/Fantasy/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "fantasy_curio_6": {
+   "file": "Town/Fantasy/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "scifi_shop": {
+   "file": "Town/Scifi/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "scifi_station": {
+   "file": "Town/Scifi/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "scifi_sign": {
+   "file": "Town/Scifi/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "scifi_landmark": {
+   "file": "Town/Scifi/Objects/landmark",
+   "size": [
+    3.8906,
+    5.2266
+   ],
+   "pivot": [
+    0.5,
+    0.0553
+   ],
+   "shadows": []
+  },
+  "scifi_cottage_0": {
+   "file": "Town/Scifi/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "scifi_cottage_1": {
+   "file": "Town/Scifi/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "scifi_cottage_2": {
+   "file": "Town/Scifi/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "scifi_cottage_3": {
+   "file": "Town/Scifi/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "scifi_cottage_4": {
+   "file": "Town/Scifi/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "tree_neon": {
+   "file": "Town/Props/tree_neon",
+   "size": [
+    1.375,
+    2.2734
+   ],
+   "pivot": [
+    0.483,
+    0.0722
+   ],
+   "shadows": []
+  },
+  "antenna": {
+   "file": "Town/Props/antenna",
+   "size": [
+    1.1094,
+    2.2422
+   ],
+   "pivot": [
+    0.5,
+    0.0418
+   ],
+   "shadows": []
+  },
+  "sign_grimsby_hollow_e": {
+   "file": "Town/Props/sign_grimsby_hollow_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_dragonmere_w": {
+   "file": "Town/Props/sign_dragonmere_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "scifi_gym": {
+   "file": "Town/Scifi/Objects/gym",
+   "size": [
+    2.9297,
+    2.7578
+   ],
+   "pivot": [
+    0.44,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "scifi_curio_0": {
+   "file": "Town/Scifi/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "scifi_curio_1": {
+   "file": "Town/Scifi/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "scifi_curio_2": {
+   "file": "Town/Scifi/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "scifi_curio_3": {
+   "file": "Town/Scifi/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "scifi_curio_4": {
+   "file": "Town/Scifi/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "scifi_curio_5": {
+   "file": "Town/Scifi/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "scifi_curio_6": {
+   "file": "Town/Scifi/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "horror_shop": {
+   "file": "Town/Horror/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "horror_station": {
+   "file": "Town/Horror/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "horror_sign": {
+   "file": "Town/Horror/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "horror_landmark": {
+   "file": "Town/Horror/Objects/landmark",
+   "size": [
+    3.8906,
+    4.8125
+   ],
+   "pivot": [
+    0.5,
+    0.0601
+   ],
+   "shadows": []
+  },
+  "horror_cottage_0": {
+   "file": "Town/Horror/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "horror_cottage_1": {
+   "file": "Town/Horror/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "horror_cottage_2": {
+   "file": "Town/Horror/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "horror_cottage_3": {
+   "file": "Town/Horror/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "horror_cottage_4": {
+   "file": "Town/Horror/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "tree_dead": {
+   "file": "Town/Props/tree_dead",
+   "size": [
+    1.3203,
+    2.2422
+   ],
+   "pivot": [
+    0.4615,
+    0.0732
+   ],
+   "shadows": []
+  },
+  "tomb": {
+   "file": "Town/Props/tomb",
+   "size": [
+    0.8906,
+    1.6875
+   ],
+   "pivot": [
+    0.5,
+    0.0556
+   ],
+   "shadows": []
+  },
+  "pumpkin": {
+   "file": "Town/Props/pumpkin",
+   "size": [
+    0.9844,
+    1
+   ],
+   "pivot": [
+    0.5,
+    0.1094
+   ],
+   "shadows": []
+  },
+  "sign_hearthside_e": {
+   "file": "Town/Props/sign_hearthside_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_nova_port_w": {
+   "file": "Town/Props/sign_nova_port_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "horror_gym": {
+   "file": "Town/Horror/Objects/gym",
+   "size": [
+    2.9219,
+    2.7578
+   ],
+   "pivot": [
+    0.4412,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "horror_curio_0": {
+   "file": "Town/Horror/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "horror_curio_1": {
+   "file": "Town/Horror/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "horror_curio_2": {
+   "file": "Town/Horror/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "horror_curio_3": {
+   "file": "Town/Horror/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "horror_curio_4": {
+   "file": "Town/Horror/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "horror_curio_5": {
+   "file": "Town/Horror/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "horror_curio_6": {
+   "file": "Town/Horror/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "cozy_shop": {
+   "file": "Town/Cozy/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "cozy_station": {
+   "file": "Town/Cozy/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "cozy_sign": {
+   "file": "Town/Cozy/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "cozy_landmark": {
+   "file": "Town/Cozy/Objects/landmark",
+   "size": [
+    3.8906,
+    4.6797
+   ],
+   "pivot": [
+    0.5,
+    0.0618
+   ],
+   "shadows": []
+  },
+  "cozy_cottage_0": {
+   "file": "Town/Cozy/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "cozy_cottage_1": {
+   "file": "Town/Cozy/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "cozy_cottage_2": {
+   "file": "Town/Cozy/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "cozy_cottage_3": {
+   "file": "Town/Cozy/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "cozy_cottage_4": {
+   "file": "Town/Cozy/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "deco_honey": {
+   "file": "Town/Props/deco_honey",
+   "size": [
+    0.9219,
+    1.3438
+   ],
+   "pivot": [
+    0.5085,
+    0.0581
+   ],
+   "shadows": []
+  },
+  "deco_sunflower": {
+   "file": "Town/Props/deco_sunflower",
+   "size": [
+    0.8984,
+    1.3359
+   ],
+   "pivot": [
+    0.5043,
+    0.0585
+   ],
+   "shadows": []
+  },
+  "deco_pie": {
+   "file": "Town/Props/deco_pie",
+   "size": [
+    1.1484,
+    1.3047
+   ],
+   "pivot": [
+    0.5034,
+    0.0599
+   ],
+   "shadows": []
+  },
+  "deco_basket": {
+   "file": "Town/Props/deco_basket",
+   "size": [
+    1.1484,
+    1.2344
+   ],
+   "pivot": [
+    0.5034,
+    0.0633
+   ],
+   "shadows": []
+  },
+  "sign_thornbriar_e": {
+   "file": "Town/Props/sign_thornbriar_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_grimsby_hollow_w": {
+   "file": "Town/Props/sign_grimsby_hollow_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "cozy_gym": {
+   "file": "Town/Cozy/Objects/gym",
+   "size": [
+    2.9531,
+    2.7578
+   ],
+   "pivot": [
+    0.4365,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "cozy_curio_0": {
+   "file": "Town/Cozy/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "cozy_curio_1": {
+   "file": "Town/Cozy/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "cozy_curio_2": {
+   "file": "Town/Cozy/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "cozy_curio_3": {
+   "file": "Town/Cozy/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "cozy_curio_4": {
+   "file": "Town/Cozy/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "cozy_curio_5": {
+   "file": "Town/Cozy/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "cozy_curio_6": {
+   "file": "Town/Cozy/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "fairytale_shop": {
+   "file": "Town/Fairytale/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "fairytale_station": {
+   "file": "Town/Fairytale/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "fairytale_sign": {
+   "file": "Town/Fairytale/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "fairytale_landmark": {
+   "file": "Town/Fairytale/Objects/landmark",
+   "size": [
+    3.8906,
+    4.6797
+   ],
+   "pivot": [
+    0.5,
+    0.0618
+   ],
+   "shadows": []
+  },
+  "fairytale_cottage_0": {
+   "file": "Town/Fairytale/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "fairytale_cottage_1": {
+   "file": "Town/Fairytale/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "fairytale_cottage_2": {
+   "file": "Town/Fairytale/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "fairytale_cottage_3": {
+   "file": "Town/Fairytale/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "fairytale_cottage_4": {
+   "file": "Town/Fairytale/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "deco_frog": {
+   "file": "Town/Props/deco_frog",
+   "size": [
+    1.1406,
+    1.2188
+   ],
+   "pivot": [
+    0.5,
+    0.0641
+   ],
+   "shadows": []
+  },
+  "deco_toadstool": {
+   "file": "Town/Props/deco_toadstool",
+   "size": [
+    1.1094,
+    1.3438
+   ],
+   "pivot": [
+    0.5,
+    0.0581
+   ],
+   "shadows": []
+  },
+  "deco_crown": {
+   "file": "Town/Props/deco_crown",
+   "size": [
+    1.1563,
+    1.3047
+   ],
+   "pivot": [
+    0.5,
+    0.0599
+   ],
+   "shadows": []
+  },
+  "sign_versewood_e": {
+   "file": "Town/Props/sign_versewood_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_hearthside_w": {
+   "file": "Town/Props/sign_hearthside_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "fairytale_gym": {
+   "file": "Town/Fairytale/Objects/gym",
+   "size": [
+    3.0313,
+    2.7578
+   ],
+   "pivot": [
+    0.4253,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "fairytale_curio_0": {
+   "file": "Town/Fairytale/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "fairytale_curio_1": {
+   "file": "Town/Fairytale/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "fairytale_curio_2": {
+   "file": "Town/Fairytale/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "fairytale_curio_3": {
+   "file": "Town/Fairytale/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "fairytale_curio_4": {
+   "file": "Town/Fairytale/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "fairytale_curio_5": {
+   "file": "Town/Fairytale/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "fairytale_curio_6": {
+   "file": "Town/Fairytale/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "poetry_shop": {
+   "file": "Town/Poetry/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "poetry_station": {
+   "file": "Town/Poetry/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "poetry_sign": {
+   "file": "Town/Poetry/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "poetry_landmark": {
+   "file": "Town/Poetry/Objects/landmark",
+   "size": [
+    3.8906,
+    4.6797
+   ],
+   "pivot": [
+    0.5,
+    0.0618
+   ],
+   "shadows": []
+  },
+  "poetry_cottage_0": {
+   "file": "Town/Poetry/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "poetry_cottage_1": {
+   "file": "Town/Poetry/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "poetry_cottage_2": {
+   "file": "Town/Poetry/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "poetry_cottage_3": {
+   "file": "Town/Poetry/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "poetry_cottage_4": {
+   "file": "Town/Poetry/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "lantern": {
+   "file": "Town/Props/lantern",
+   "size": [
+    0.6875,
+    2.1953
+   ],
+   "pivot": [
+    0.5,
+    0.0463
+   ],
+   "shadows": []
+  },
+  "deco_candle": {
+   "file": "Town/Props/deco_candle",
+   "size": [
+    0.8438,
+    1.3438
+   ],
+   "pivot": [
+    0.5,
+    0.0581
+   ],
+   "shadows": []
+  },
+  "deco_scroll": {
+   "file": "Town/Props/deco_scroll",
+   "size": [
+    1.1484,
+    1.3047
+   ],
+   "pivot": [
+    0.4966,
+    0.0599
+   ],
+   "shadows": []
+  },
+  "deco_owl": {
+   "file": "Town/Props/deco_owl",
+   "size": [
+    0.8438,
+    1.3203
+   ],
+   "pivot": [
+    0.5,
+    0.0592
+   ],
+   "shadows": []
+  },
+  "sign_dustwater_gulch_e": {
+   "file": "Town/Props/sign_dustwater_gulch_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_thornbriar_w": {
+   "file": "Town/Props/sign_thornbriar_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "poetry_gym": {
+   "file": "Town/Poetry/Objects/gym",
+   "size": [
+    3.0234,
+    2.7578
+   ],
+   "pivot": [
+    0.4264,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "poetry_curio_0": {
+   "file": "Town/Poetry/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "poetry_curio_1": {
+   "file": "Town/Poetry/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "poetry_curio_2": {
+   "file": "Town/Poetry/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "poetry_curio_3": {
+   "file": "Town/Poetry/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "poetry_curio_4": {
+   "file": "Town/Poetry/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "poetry_curio_5": {
+   "file": "Town/Poetry/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "poetry_curio_6": {
+   "file": "Town/Poetry/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "western_shop": {
+   "file": "Town/Western/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "western_station": {
+   "file": "Town/Western/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "western_sign": {
+   "file": "Town/Western/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "western_landmark": {
+   "file": "Town/Western/Objects/landmark",
+   "size": [
+    3.8906,
+    4.6797
+   ],
+   "pivot": [
+    0.5,
+    0.0618
+   ],
+   "shadows": []
+  },
+  "western_cottage_0": {
+   "file": "Town/Western/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "western_cottage_1": {
+   "file": "Town/Western/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "western_cottage_2": {
+   "file": "Town/Western/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "western_cottage_3": {
+   "file": "Town/Western/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "western_cottage_4": {
+   "file": "Town/Western/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "deco_cactus": {
+   "file": "Town/Props/deco_cactus",
+   "size": [
+    0.8828,
+    1.3438
+   ],
+   "pivot": [
+    0.4956,
+    0.0581
+   ],
+   "shadows": []
+  },
+  "deco_horse": {
+   "file": "Town/Props/deco_horse",
+   "size": [
+    1.1719,
+    1.2891
+   ],
+   "pivot": [
+    0.4933,
+    0.0606
+   ],
+   "shadows": []
+  },
+  "sign_saltmere_harbor_e": {
+   "file": "Town/Props/sign_saltmere_harbor_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_versewood_w": {
+   "file": "Town/Props/sign_versewood_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "western_gym": {
+   "file": "Town/Western/Objects/gym",
+   "size": [
+    2.9609,
+    2.7578
+   ],
+   "pivot": [
+    0.4354,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "western_curio_0": {
+   "file": "Town/Western/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "western_curio_1": {
+   "file": "Town/Western/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "western_curio_2": {
+   "file": "Town/Western/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "western_curio_3": {
+   "file": "Town/Western/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "western_curio_4": {
+   "file": "Town/Western/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "western_curio_5": {
+   "file": "Town/Western/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "western_curio_6": {
+   "file": "Town/Western/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "ocean_shop": {
+   "file": "Town/Ocean/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "ocean_station": {
+   "file": "Town/Ocean/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "ocean_sign": {
+   "file": "Town/Ocean/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "ocean_landmark": {
+   "file": "Town/Ocean/Objects/landmark",
+   "size": [
+    3.8906,
+    4.6797
+   ],
+   "pivot": [
+    0.5,
+    0.0618
+   ],
+   "shadows": []
+  },
+  "ocean_cottage_0": {
+   "file": "Town/Ocean/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "ocean_cottage_1": {
+   "file": "Town/Ocean/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "ocean_cottage_2": {
+   "file": "Town/Ocean/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "ocean_cottage_3": {
+   "file": "Town/Ocean/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "ocean_cottage_4": {
+   "file": "Town/Ocean/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "deco_anchor": {
+   "file": "Town/Props/deco_anchor",
+   "size": [
+    0.8438,
+    1.1797
+   ],
+   "pivot": [
+    0.5,
+    0.0662
+   ],
+   "shadows": []
+  },
+  "deco_shell": {
+   "file": "Town/Props/deco_shell",
+   "size": [
+    1.0469,
+    1.2813
+   ],
+   "pivot": [
+    0.5224,
+    0.061
+   ],
+   "shadows": []
+  },
+  "deco_crab": {
+   "file": "Town/Props/deco_crab",
+   "size": [
+    1.2109,
+    1.1953
+   ],
+   "pivot": [
+    0.5032,
+    0.0654
+   ],
+   "shadows": []
+  },
+  "sign_old_ironbridge_e": {
+   "file": "Town/Props/sign_old_ironbridge_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_dustwater_gulch_w": {
+   "file": "Town/Props/sign_dustwater_gulch_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "ocean_gym": {
+   "file": "Town/Ocean/Objects/gym",
+   "size": [
+    2.9219,
+    2.7578
+   ],
+   "pivot": [
+    0.4412,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "ocean_curio_0": {
+   "file": "Town/Ocean/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "ocean_curio_1": {
+   "file": "Town/Ocean/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "ocean_curio_2": {
+   "file": "Town/Ocean/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "ocean_curio_3": {
+   "file": "Town/Ocean/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "ocean_curio_4": {
+   "file": "Town/Ocean/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "ocean_curio_5": {
+   "file": "Town/Ocean/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "ocean_curio_6": {
+   "file": "Town/Ocean/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "historical_shop": {
+   "file": "Town/Historical/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "historical_station": {
+   "file": "Town/Historical/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "historical_sign": {
+   "file": "Town/Historical/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "historical_landmark": {
+   "file": "Town/Historical/Objects/landmark",
+   "size": [
+    3.8906,
+    4.6797
+   ],
+   "pivot": [
+    0.5,
+    0.0618
+   ],
+   "shadows": []
+  },
+  "historical_cottage_0": {
+   "file": "Town/Historical/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "historical_cottage_1": {
+   "file": "Town/Historical/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "historical_cottage_2": {
+   "file": "Town/Historical/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "historical_cottage_3": {
+   "file": "Town/Historical/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "historical_cottage_4": {
+   "file": "Town/Historical/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "deco_amphora": {
+   "file": "Town/Props/deco_amphora",
+   "size": [
+    0.8438,
+    1.3359
+   ],
+   "pivot": [
+    0.5,
+    0.0585
+   ],
+   "shadows": []
+  },
+  "deco_horn": {
+   "file": "Town/Props/deco_horn",
+   "size": [
+    1.1406,
+    1.2188
+   ],
+   "pivot": [
+    0.5,
+    0.0641
+   ],
+   "shadows": []
+  },
+  "sign_shadowmark_e": {
+   "file": "Town/Props/sign_shadowmark_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_saltmere_harbor_w": {
+   "file": "Town/Props/sign_saltmere_harbor_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "historical_gym": {
+   "file": "Town/Historical/Objects/gym",
+   "size": [
+    2.9688,
+    2.7578
+   ],
+   "pivot": [
+    0.4342,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "historical_curio_0": {
+   "file": "Town/Historical/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "historical_curio_1": {
+   "file": "Town/Historical/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "historical_curio_2": {
+   "file": "Town/Historical/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "historical_curio_3": {
+   "file": "Town/Historical/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "historical_curio_4": {
+   "file": "Town/Historical/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "historical_curio_5": {
+   "file": "Town/Historical/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "historical_curio_6": {
+   "file": "Town/Historical/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "thriller_shop": {
+   "file": "Town/Thriller/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "thriller_station": {
+   "file": "Town/Thriller/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "thriller_sign": {
+   "file": "Town/Thriller/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "thriller_landmark": {
+   "file": "Town/Thriller/Objects/landmark",
+   "size": [
+    3.8906,
+    4.6797
+   ],
+   "pivot": [
+    0.5,
+    0.0618
+   ],
+   "shadows": []
+  },
+  "thriller_cottage_0": {
+   "file": "Town/Thriller/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "thriller_cottage_1": {
+   "file": "Town/Thriller/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "thriller_cottage_2": {
+   "file": "Town/Thriller/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "thriller_cottage_3": {
+   "file": "Town/Thriller/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "thriller_cottage_4": {
+   "file": "Town/Thriller/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "deco_folder": {
+   "file": "Town/Props/deco_folder",
+   "size": [
+    0.9844,
+    1.1719
+   ],
+   "pivot": [
+    0.5,
+    0.0667
+   ],
+   "shadows": []
+  },
+  "deco_key": {
+   "file": "Town/Props/deco_key",
+   "size": [
+    1.1406,
+    1.2969
+   ],
+   "pivot": [
+    0.5,
+    0.0602
+   ],
+   "shadows": []
+  },
+  "deco_siren": {
+   "file": "Town/Props/deco_siren",
+   "size": [
+    1.0547,
+    1.3359
+   ],
+   "pivot": [
+    0.5037,
+    0.0585
+   ],
+   "shadows": []
+  },
+  "sign_greywall_e": {
+   "file": "Town/Props/sign_greywall_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_old_ironbridge_w": {
+   "file": "Town/Props/sign_old_ironbridge_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "thriller_gym": {
+   "file": "Town/Thriller/Objects/gym",
+   "size": [
+    3.0313,
+    2.7578
+   ],
+   "pivot": [
+    0.4253,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "thriller_curio_0": {
+   "file": "Town/Thriller/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "thriller_curio_1": {
+   "file": "Town/Thriller/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "thriller_curio_2": {
+   "file": "Town/Thriller/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "thriller_curio_3": {
+   "file": "Town/Thriller/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "thriller_curio_4": {
+   "file": "Town/Thriller/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "thriller_curio_5": {
+   "file": "Town/Thriller/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "thriller_curio_6": {
+   "file": "Town/Thriller/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "dystopia_shop": {
+   "file": "Town/Dystopia/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "dystopia_station": {
+   "file": "Town/Dystopia/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "dystopia_sign": {
+   "file": "Town/Dystopia/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "dystopia_landmark": {
+   "file": "Town/Dystopia/Objects/landmark",
+   "size": [
+    3.8906,
+    4.6797
+   ],
+   "pivot": [
+    0.5,
+    0.0618
+   ],
+   "shadows": []
+  },
+  "dystopia_cottage_0": {
+   "file": "Town/Dystopia/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "dystopia_cottage_1": {
+   "file": "Town/Dystopia/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "dystopia_cottage_2": {
+   "file": "Town/Dystopia/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "dystopia_cottage_3": {
+   "file": "Town/Dystopia/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "dystopia_cottage_4": {
+   "file": "Town/Dystopia/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "deco_roadworks": {
+   "file": "Town/Props/deco_roadworks",
+   "size": [
+    1.1406,
+    1.2734
+   ],
+   "pivot": [
+    0.5,
+    0.0613
+   ],
+   "shadows": []
+  },
+  "deco_speaker": {
+   "file": "Town/Props/deco_speaker",
+   "size": [
+    1.1484,
+    1.3438
+   ],
+   "pivot": [
+    0.5034,
+    0.0581
+   ],
+   "shadows": []
+  },
+  "deco_torch": {
+   "file": "Town/Props/deco_torch",
+   "size": [
+    1.1406,
+    1.3359
+   ],
+   "pivot": [
+    0.5,
+    0.0585
+   ],
+   "shadows": []
+  },
+  "sign_laurelpeak_e": {
+   "file": "Town/Props/sign_laurelpeak_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_shadowmark_w": {
+   "file": "Town/Props/sign_shadowmark_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "dystopia_gym": {
+   "file": "Town/Dystopia/Objects/gym",
+   "size": [
+    3.0313,
+    2.7578
+   ],
+   "pivot": [
+    0.4253,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "dystopia_curio_0": {
+   "file": "Town/Dystopia/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "dystopia_curio_1": {
+   "file": "Town/Dystopia/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "dystopia_curio_2": {
+   "file": "Town/Dystopia/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "dystopia_curio_3": {
+   "file": "Town/Dystopia/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "dystopia_curio_4": {
+   "file": "Town/Dystopia/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "dystopia_curio_5": {
+   "file": "Town/Dystopia/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "dystopia_curio_6": {
+   "file": "Town/Dystopia/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "myth_shop": {
+   "file": "Town/Myth/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "myth_station": {
+   "file": "Town/Myth/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "myth_sign": {
+   "file": "Town/Myth/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "myth_landmark": {
+   "file": "Town/Myth/Objects/landmark",
+   "size": [
+    3.8906,
+    4.6797
+   ],
+   "pivot": [
+    0.5,
+    0.0618
+   ],
+   "shadows": []
+  },
+  "myth_cottage_0": {
+   "file": "Town/Myth/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "myth_cottage_1": {
+   "file": "Town/Myth/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "myth_cottage_2": {
+   "file": "Town/Myth/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "myth_cottage_3": {
+   "file": "Town/Myth/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "myth_cottage_4": {
+   "file": "Town/Myth/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "deco_herb": {
+   "file": "Town/Props/deco_herb",
+   "size": [
+    1.1328,
+    1.3438
+   ],
+   "pivot": [
+    0.4966,
+    0.0581
+   ],
+   "shadows": []
+  },
+  "sign_ravenmoor_e": {
+   "file": "Town/Props/sign_ravenmoor_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_greywall_w": {
+   "file": "Town/Props/sign_greywall_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "myth_gym": {
+   "file": "Town/Myth/Objects/gym",
+   "size": [
+    2.9609,
+    2.7578
+   ],
+   "pivot": [
+    0.4354,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "myth_curio_0": {
+   "file": "Town/Myth/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "myth_curio_1": {
+   "file": "Town/Myth/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "myth_curio_2": {
+   "file": "Town/Myth/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "myth_curio_3": {
+   "file": "Town/Myth/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "myth_curio_4": {
+   "file": "Town/Myth/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "myth_curio_5": {
+   "file": "Town/Myth/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "myth_curio_6": {
+   "file": "Town/Myth/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "gothic_shop": {
+   "file": "Town/Gothic/Objects/shop",
+   "size": [
+    14.7813,
+    6.8359
+   ],
+   "pivot": [
+    0.49,
+    0.0571
+   ],
+   "shadows": []
+  },
+  "gothic_station": {
+   "file": "Town/Gothic/Objects/station",
+   "size": [
+    10.7813,
+    5.6328
+   ],
+   "pivot": [
+    0.4862,
+    0.0693
+   ],
+   "shadows": []
+  },
+  "gothic_sign": {
+   "file": "Town/Gothic/Objects/sign",
+   "size": [
+    1.6875,
+    2.1875
+   ],
+   "pivot": [
+    0.5,
+    0.0429
+   ],
+   "shadows": []
+  },
+  "gothic_landmark": {
+   "file": "Town/Gothic/Objects/landmark",
+   "size": [
+    3.8906,
+    4.6797
+   ],
+   "pivot": [
+    0.5,
+    0.0618
+   ],
+   "shadows": []
+  },
+  "gothic_cottage_0": {
+   "file": "Town/Gothic/Objects/cottage_0",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "gothic_cottage_1": {
+   "file": "Town/Gothic/Objects/cottage_1",
+   "size": [
+    7.7813,
+    5.0703
+   ],
+   "pivot": [
+    0.4809,
+    0.077
+   ],
+   "shadows": []
+  },
+  "gothic_cottage_2": {
+   "file": "Town/Gothic/Objects/cottage_2",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "gothic_cottage_3": {
+   "file": "Town/Gothic/Objects/cottage_3",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "gothic_cottage_4": {
+   "file": "Town/Gothic/Objects/cottage_4",
+   "size": [
+    6.7813,
+    4.75
+   ],
+   "pivot": [
+    0.4781,
+    0.0822
+   ],
+   "shadows": []
+  },
+  "deco_wilted_rose": {
+   "file": "Town/Props/deco_wilted_rose",
+   "size": [
+    1.0078,
+    1.3438
+   ],
+   "pivot": [
+    0.5039,
+    0.0581
+   ],
+   "shadows": []
+  },
+  "deco_bat": {
+   "file": "Town/Props/deco_bat",
+   "size": [
+    1.1953,
+    1.1328
+   ],
+   "pivot": [
+    0.5033,
+    0.069
+   ],
+   "shadows": []
+  },
+  "sign_laurelpeak_w": {
+   "file": "Town/Props/sign_laurelpeak_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "gothic_gym": {
+   "file": "Town/Gothic/Objects/gym",
+   "size": [
+    2.9219,
+    2.7578
+   ],
+   "pivot": [
+    0.4412,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "gothic_curio_0": {
+   "file": "Town/Gothic/Objects/curio_0",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "gothic_curio_1": {
+   "file": "Town/Gothic/Objects/curio_1",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "gothic_curio_2": {
+   "file": "Town/Gothic/Objects/curio_2",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "gothic_curio_3": {
+   "file": "Town/Gothic/Objects/curio_3",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "gothic_curio_4": {
+   "file": "Town/Gothic/Objects/curio_4",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "gothic_curio_5": {
+   "file": "Town/Gothic/Objects/curio_5",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "gothic_curio_6": {
+   "file": "Town/Gothic/Objects/curio_6",
+   "size": [
+    1.0469,
+    1.9609
+   ],
+   "pivot": [
+    0.5,
+    0.0797
+   ],
+   "shadows": []
+  },
+  "stones": {
+   "file": "Town/Props/stones",
+   "size": [
+    4.2813,
+    4.3672
+   ],
+   "pivot": [
+    0.5,
+    0.0894
+   ],
+   "shadows": []
+  },
+  "cavemouth": {
+   "file": "Town/Props/cavemouth",
+   "size": [
+    3.6875,
+    4.6328
+   ],
+   "pivot": [
+    0.5,
+    0.0843
+   ],
+   "shadows": []
+  },
+  "shrine_classics": {
+   "file": "Town/Props/shrine_classics",
+   "size": [
+    1.8906,
+    3.1875
+   ],
+   "pivot": [
+    0.5,
+    0.076
+   ],
+   "shadows": []
+  },
+  "camp": {
+   "file": "Town/Props/camp",
+   "size": [
+    2.0938,
+    2.4375
+   ],
+   "pivot": [
+    0.5112,
+    0.0705
+   ],
+   "shadows": []
+  },
+  "stump": {
+   "file": "Town/Props/stump",
+   "size": [
+    1.2813,
+    1.3828
+   ],
+   "pivot": [
+    0.5,
+    0.0734
+   ],
+   "shadows": []
+  },
+  "chest": {
+   "file": "Town/Props/chest",
+   "size": [
+    1,
+    1.75
+   ],
+   "pivot": [
+    0.5,
+    0.0893
+   ],
+   "shadows": []
+  },
+  "sign_rosewater_back_w": {
+   "file": "Town/Props/sign_rosewater_back_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_old_quill_next_town_e": {
+   "file": "Town/Props/sign_old_quill_next_town_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_trailhead_n": {
+   "file": "Town/Props/sign_trailhead_n",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_caves_s": {
+   "file": "Town/Props/sign_caves_s",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_wayshrine_n": {
+   "file": "Town/Props/sign_wayshrine_n",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_camp_s": {
+   "file": "Town/Props/sign_camp_s",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "shrine_adventure": {
+   "file": "Town/Props/shrine_adventure",
+   "size": [
+    1.8906,
+    3.1875
+   ],
+   "pivot": [
+    0.5,
+    0.076
+   ],
+   "shadows": []
+  },
+  "sign_old_quill_back_w": {
+   "file": "Town/Props/sign_old_quill_back_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_driftwood_cove_next_town_e": {
+   "file": "Town/Props/sign_driftwood_cove_next_town_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "shrine_mystery": {
+   "file": "Town/Props/shrine_mystery",
+   "size": [
+    1.8906,
+    3.1875
+   ],
+   "pivot": [
+    0.5,
+    0.076
+   ],
+   "shadows": []
+  },
+  "sign_driftwood_cove_back_w": {
+   "file": "Town/Props/sign_driftwood_cove_back_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_foghollow_next_town_e": {
+   "file": "Town/Props/sign_foghollow_next_town_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "shrine_fantasy": {
+   "file": "Town/Props/shrine_fantasy",
+   "size": [
+    1.8906,
+    3.1875
+   ],
+   "pivot": [
+    0.5,
+    0.076
+   ],
+   "shadows": []
+  },
+  "sign_foghollow_back_w": {
+   "file": "Town/Props/sign_foghollow_back_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_dragonmere_next_town_e": {
+   "file": "Town/Props/sign_dragonmere_next_town_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "shrine_scifi": {
+   "file": "Town/Props/shrine_scifi",
+   "size": [
+    1.8906,
+    3.1875
+   ],
+   "pivot": [
+    0.5,
+    0.076
+   ],
+   "shadows": []
+  },
+  "sign_dragonmere_back_w": {
+   "file": "Town/Props/sign_dragonmere_back_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_nova_port_next_town_e": {
+   "file": "Town/Props/sign_nova_port_next_town_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "shrine_horror": {
+   "file": "Town/Props/shrine_horror",
+   "size": [
+    1.8906,
+    3.1875
+   ],
+   "pivot": [
+    0.5,
+    0.076
+   ],
+   "shadows": []
+  },
+  "sign_nova_port_back_w": {
+   "file": "Town/Props/sign_nova_port_back_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_grimsby_hollow_next_town_e": {
+   "file": "Town/Props/sign_grimsby_hollow_next_town_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "shrine_cozy": {
+   "file": "Town/Props/shrine_cozy",
+   "size": [
+    1.8906,
+    3.1875
+   ],
+   "pivot": [
+    0.5,
+    0.076
+   ],
+   "shadows": []
+  },
+  "sign_grimsby_hollow_back_w": {
+   "file": "Town/Props/sign_grimsby_hollow_back_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_hearthside_next_town_e": {
+   "file": "Town/Props/sign_hearthside_next_town_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "shrine_fairytale": {
+   "file": "Town/Props/shrine_fairytale",
+   "size": [
+    1.8906,
+    3.1875
+   ],
+   "pivot": [
+    0.5,
+    0.076
+   ],
+   "shadows": []
+  },
+  "sign_hearthside_back_w": {
+   "file": "Town/Props/sign_hearthside_back_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_thornbriar_next_town_e": {
+   "file": "Town/Props/sign_thornbriar_next_town_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "shrine_poetry": {
+   "file": "Town/Props/shrine_poetry",
+   "size": [
+    1.8906,
+    3.1875
+   ],
+   "pivot": [
+    0.5,
+    0.076
+   ],
+   "shadows": []
+  },
+  "sign_thornbriar_back_w": {
+   "file": "Town/Props/sign_thornbriar_back_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_versewood_next_town_e": {
+   "file": "Town/Props/sign_versewood_next_town_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "shrine_western": {
+   "file": "Town/Props/shrine_western",
+   "size": [
+    1.8906,
+    3.1875
+   ],
+   "pivot": [
+    0.5,
+    0.076
+   ],
+   "shadows": []
+  },
+  "sign_versewood_back_w": {
+   "file": "Town/Props/sign_versewood_back_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_dustwater_gulch_next_town_e": {
+   "file": "Town/Props/sign_dustwater_gulch_next_town_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "shrine_ocean": {
+   "file": "Town/Props/shrine_ocean",
+   "size": [
+    1.8906,
+    3.1875
+   ],
+   "pivot": [
+    0.5,
+    0.076
+   ],
+   "shadows": []
+  },
+  "sign_dustwater_gulch_back_w": {
+   "file": "Town/Props/sign_dustwater_gulch_back_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_saltmere_harbor_next_town_e": {
+   "file": "Town/Props/sign_saltmere_harbor_next_town_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "shrine_historical": {
+   "file": "Town/Props/shrine_historical",
+   "size": [
+    1.8906,
+    3.1875
+   ],
+   "pivot": [
+    0.5,
+    0.076
+   ],
+   "shadows": []
+  },
+  "sign_saltmere_harbor_back_w": {
+   "file": "Town/Props/sign_saltmere_harbor_back_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_old_ironbridge_next_town_e": {
+   "file": "Town/Props/sign_old_ironbridge_next_town_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "shrine_thriller": {
+   "file": "Town/Props/shrine_thriller",
+   "size": [
+    1.8906,
+    3.1875
+   ],
+   "pivot": [
+    0.5,
+    0.076
+   ],
+   "shadows": []
+  },
+  "sign_old_ironbridge_back_w": {
+   "file": "Town/Props/sign_old_ironbridge_back_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_shadowmark_next_town_e": {
+   "file": "Town/Props/sign_shadowmark_next_town_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "shrine_dystopia": {
+   "file": "Town/Props/shrine_dystopia",
+   "size": [
+    1.8906,
+    3.1875
+   ],
+   "pivot": [
+    0.5,
+    0.076
+   ],
+   "shadows": []
+  },
+  "sign_shadowmark_back_w": {
+   "file": "Town/Props/sign_shadowmark_back_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_greywall_next_town_e": {
+   "file": "Town/Props/sign_greywall_next_town_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "shrine_myth": {
+   "file": "Town/Props/shrine_myth",
+   "size": [
+    1.8906,
+    3.1875
+   ],
+   "pivot": [
+    0.5,
+    0.076
+   ],
+   "shadows": []
+  },
+  "sign_greywall_back_w": {
+   "file": "Town/Props/sign_greywall_back_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_laurelpeak_next_town_e": {
+   "file": "Town/Props/sign_laurelpeak_next_town_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "shrine_gothic": {
+   "file": "Town/Props/shrine_gothic",
+   "size": [
+    1.8906,
+    3.1875
+   ],
+   "pivot": [
+    0.5,
+    0.076
+   ],
+   "shadows": []
+  },
+  "sign_laurelpeak_back_w": {
+   "file": "Town/Props/sign_laurelpeak_back_w",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.502,
+    0.0595
+   ],
+   "shadows": []
+  },
+  "sign_ravenmoor_next_town_e": {
+   "file": "Town/Props/sign_ravenmoor_next_town_e",
+   "size": [
+    1.9922,
+    2.625
+   ],
+   "pivot": [
+    0.498,
+    0.0595
+   ],
+   "shadows": []
+  }
+ },
+ "sway": [
+  "rosebush",
+  "hedge"
+ ],
+ "emotes": {
+  "🏠": "Town/Emoji/1f3e0",
+  "🛤️": "Town/Emoji/1f6e4",
+  "🐣": "Town/Emoji/1f423",
+  "🎐": "Town/Emoji/1f390",
+  "🪧": "Town/Emoji/1faa7",
+  "🛟": "Town/Emoji/1f6df",
+  "📞": "Town/Emoji/1f4de",
+  "📻": "Town/Emoji/1f4fb",
+  "🍇": "Town/Emoji/1f347",
+  "🖼️": "Town/Emoji/1f5bc",
+  "🧦": "Town/Emoji/1f9e6",
+  "🍕": "Town/Emoji/1f355",
+  "🎺": "Town/Emoji/1f3ba",
+  "🧌": "Town/Emoji/1f9cc",
+  "🦗": "Town/Emoji/1f997",
+  "🧒": "Town/Emoji/1f9d2",
+  "🚗": "Town/Emoji/1f697",
+  "🎄": "Town/Emoji/1f384",
+  "🏚️": "Town/Emoji/1f3da",
+  "🩺": "Town/Emoji/1fa7a",
+  "🎨": "Town/Emoji/1f3a8",
+  "🥐": "Town/Emoji/1f950"
+ }
+}

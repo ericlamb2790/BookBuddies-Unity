@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using BookBuddies.Economy;
 using BookBuddies.Live;
 using BookBuddies.Pets;
 using BookBuddies.Tales;
@@ -10,19 +11,39 @@ using UnityEngine.UI;
 namespace BookBuddies.UI
 {
     /// <summary>
-    /// Everything on screen over the town: where you are and who's around, area banners, toasts, the place card
-    /// (with its action button), the minimap, the chat log and bar, the bag and hero buttons, and the emote, trick,
-    /// pet and town menus. Photo mode (H hides it all, P takes a picture) lives here too, and so do the keyboard
-    /// and gamepad shortcuts.
+    /// Everything on screen over the town, laid out for 1920×1080 and kept tidy down to small windows: your pet's card
+    /// (top left, the road's objective card under it), controls help, the menu, the minimap and where you are (top right),
+    /// toasts and chapter titles (top centre), the dock of emotes, tricks, pets, bag, hero and map (bottom centre), the
+    /// chat box with recent chat over it (bottom left), and the card for the place you're standing at (over the dock).
+    /// Also the emote, trick, pet, coins and town menus. Photo mode (H hides it all, P takes a picture) lives here too,
+    /// and so do the keyboard and gamepad shortcuts.
     /// </summary>
     [DefaultExecutionOrder(-10)]
     public sealed class Hud : MonoBehaviour
     {
+        /// <summary>Space kept clear at the screen's edges, and between HUD cards (reference pixels).</summary>
+        public const float Margin = 20, Gap = 12;
+        const float CornerHeight = 48, TileWidth = 80, TileHeight = 66, SmallTile = 58, DockPad = 8, TileGap = 6;
+        /// <summary>Where the minimap starts, under the top-right buttons.</summary>
+        public const float BelowCorner = Margin + CornerHeight + Gap;
+        /// <summary>Where cards under the pet card start (the road's objective card).</summary>
+        public const float BelowPetCard = Margin + PetBadge.Height + Gap;
+        /// <summary>Where cards that open from the dock sit (emotes, tricks, another pet's card).</summary>
+        public const float AboveDock = Margin + TileHeight + DockPad * 2 + Gap;
+
+        const float WideWidth = 1180;  // narrower: dock tiles without words
+        const float TinyWidth = 600;   // narrower still: bag and hero live in the menu only
+        const float ChatHeight = 54, ChatWidth = 420, ChatOpenWidth = 560, ChatMinWidth = 240;
+        const float PlaceHalf = 250, PlaceHeight = 76, ObjectiveHeight = 64, MinLane = 400;
         const int ChatLines = 6;
         const float ChatFadeAfter = 12f;
-        const float CompactWidth = 820f;  // narrower: icon-only buttons
-        const float TinyWidth = 600f;     // narrower still: bag and hero live in the menu only
-        const float BarHeight = 56f;
+        const string GiftOfferedKey = "bb.giftOffered"; // the account and day the gift last opened by itself
+
+        /// <summary>True while the HUD is hidden (photo mode), so the road's corner hides with it.</summary>
+        public static bool Hidden { get; private set; }
+
+        /// <summary>A dock button: an icon over a word, its key or gamepad button in the corner, amber while its menu is open.</summary>
+        sealed class Tile { public Button Button; public Image Back; public Text Word; public GameObject Key, Pad; public System.Func<bool> IsOpen; }
 
         PlazaWorld world;
         PlazaNetwork net;
@@ -30,23 +51,23 @@ namespace BookBuddies.UI
         RectTransform root, layer; // layer: everything except the menus
         CanvasGroup layerGroup;
         Overlays labels;
+        Notices notices;
 
+        RectTransform where, hint, dock, chatBox, logLines;
         Image liveDot;
-        HorizontalLayoutGroup statusRow;
-        Text placeText, detailText;
-        Button playHere;
-        CanvasGroup banner; Text bannerTitle, bannerSub; float bannerAt = -99;
-        RectTransform toast; Text toastText; Image toastIcon; float toastUntil;
-        RectTransform hint; Image hintIcon; Text hintName, hintSub, hintLater, verbLabel; Button verb; Image verbKey; Text verbKeyText;
-        CanvasGroup log; RectTransform logLines; float lastLineAt = -99;
-        InputField chat; float chatOpenedAt;
-        readonly List<Text> wideOnly = new List<Text>(); // button words hidden on narrow screens
-        Button bag, hero;                                // in the menu too, so phones can drop them from the corner
-        Sheet emotes, tricks, controls, pause, petCard;
+        Text placeText, detailText, chatHint;
+        Button playHere, send;
+        Image hintIcon; Text hintName, hintSub, hintLater, verbLabel; Button verb; Image verbKey; Text verbKeyText;
+        CanvasGroup log; float lastLineAt = -99;
+        InputField chat; float chatOpenedAt = -99;
+        readonly List<Tile> tiles = new List<Tile>();
+        Tile chatTile, bagTile, heroTile;
+        Sheet emotes, tricks, controls, pause, petCard, coins;
         Minimap minimap;
         CanvasGroup photoHint;
-        bool hidden;
-        float lastWidth, shownAt, photoHintAt = -99;
+        Vector2 laidOut;
+        float shownAt, photoHintAt = -99, dockTop, chatRest, chatOpen;
+        bool narrowChat;
 
         /// <summary>Builds the HUD over the town. "toTitle" goes back to the title screen (from the menu, or after signing out).</summary>
         public static Hud Create(PlazaWorld world, System.Action toTitle)
@@ -67,6 +88,7 @@ namespace BookBuddies.UI
             hud.net.StateChanged += hud.OnNetState;
             hud.Refresh();
             hud.shownAt = Time.unscaledTime;
+            hud.StartCoroutine(hud.OfferGift());
             return hud;
         }
 
@@ -83,6 +105,7 @@ namespace BookBuddies.UI
             }
             if (net != null) net.StateChanged -= OnNetState;
             PlazaInput.MenuOpen = false;
+            Hidden = false;
             if (labels) Destroy(labels.gameObject);
         }
 
@@ -95,16 +118,19 @@ namespace BookBuddies.UI
             layer = UiKit.Node("hud", root).Fill();
             layerGroup = layer.gameObject.AddComponent<CanvasGroup>();
             layerGroup.alpha = 0; // floats in (see Animate)
-            BuildStatus();
+            PetBadge.Create(layer, world, () => Toggle(coins));
             BuildCorner();
-            BuildBanner();
-            BuildNotices();
+            BuildWhere();
+            BuildPlaceCard();
+            BuildDock();
             BuildChat();
+            notices = Notices.Create(layer);
             minimap = Minimap.Create(layer, world);
             emotes = Menus.Emotes(root, world);
             tricks = Menus.Tricks(root, world);
             controls = Menus.Controls(root);
-            pause = Menus.Pause(root, world, () => SetHidden(true), () => toTitle());
+            pause = Menus.Pause(root, world, () => SetHidden(true), () => toTitle(), () => Toggle(coins));
+            coins = WalletSheet.Create(root);
             BuildPhotoHint();
         }
 
@@ -129,93 +155,56 @@ namespace BookBuddies.UI
             photoHint.alpha = 0;
         }
 
-        // Top left: a live dot, the town and area, and how many readers are here.
-        void BuildStatus()
-        {
-            var pill = UiKit.Panel(layer, "status", Palette.Cream, 24);
-            var r = pill.rectTransform.Pin(new Vector2(0, 1), new Vector2(16, -16), new Vector2(10, 48));
-            statusRow = UiKit.Row(r, 10, new RectOffset(18, 20, 0, 0));
-            UiKit.Hug(r, true, false);
-            UiKit.Outline(pill, Palette.Ink.WithAlpha(.08f), 24, 1);
-            UiKit.Shadow(r, 24, 12, 4, .22f);
-            liveDot = UiKit.Panel(r, "live", Palette.InkSoft, 6);
-            UiKit.Size(liveDot, 12, 12);
-            placeText = UiKit.Label(r, "", UiKit.BodySize, Palette.Ink, UiKit.Bold);
-            placeText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            detailText = UiKit.Label(r, "", UiKit.SmallSize + 1, Palette.InkSoft);
-            detailText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            playHere = Quiet(UiKit.Primary(r, "Play here", () => world.Net.Start(), null, 38));
-        }
-
-        // Top right: bag, hero, controls help and the town menu.
+        // Top right: controls help and the town menu (the minimap sits under them).
         void BuildCorner()
         {
-            var r = UiKit.Node("corner", layer).Pin(new Vector2(1, 1), new Vector2(-16, -16), new Vector2(10, 48));
+            var r = UiKit.Node("corner", layer).Pin(new Vector2(1, 1), new Vector2(-Margin, -Margin), new Vector2(10, CornerHeight));
             UiKit.Row(r, 10, null, TextAnchor.MiddleRight);
             UiKit.Hug(r, true, false);
-            bag = CornerButton(r, "🎒", "Bag", () => TalesUi.OpenBag());
-            hero = CornerButton(r, "🦊", "Hero", () => TalesUi.OpenHero());
             var help = Quiet(UiKit.Button(r, "Controls", Palette.Cream, () => Toggle(controls), 24));
-            UiKit.Size(help, 48, 48);
+            UiKit.Size(help, CornerHeight, CornerHeight);
             ((RectTransform)UiKit.Label(help.transform, "?", UiKit.HeadingSize, Palette.Ink, UiKit.Bold, TextAnchor.MiddleCenter).transform).Fill();
             UiKit.Shadow((RectTransform)help.transform, 24, 12, 4, .22f);
-            CornerButton(r, null, "Menu", () => Toggle(pause));
+            var menu = Quiet(UiKit.TextButton(r, "Menu", null, Palette.Cream, Palette.Ink, () => Toggle(pause), (int)CornerHeight));
+            UiKit.Shadow((RectTransform)menu.transform, 24, 12, 4, .22f);
         }
 
-        Button CornerButton(Transform corner, string emoji, string label, System.Action onClick)
+        // Under the minimap: the town, then quietly the area, who's here and the connection (and "Play here" when needed).
+        void BuildWhere()
         {
-            var b = Quiet(UiKit.TextButton(corner, label, emoji, Palette.Cream, Palette.Ink, onClick, 48));
-            UiKit.Shadow((RectTransform)b.transform, 24, 12, 4, .22f);
-            if (emoji != null) wideOnly.Add(b.GetComponentInChildren<Text>());
-            return b;
+            var card = UiKit.Panel(layer, "where", Palette.Cream);
+            where = card.rectTransform.Pin(new Vector2(1, 1), Vector2.zero, new Vector2(10, 10));
+            where.pivot = new Vector2(.5f, 1);
+            UiKit.Column(where, 2, new RectOffset(16, 16, 8, 10), TextAnchor.MiddleCenter).childForceExpandWidth = false;
+            UiKit.Hug(where);
+            UiKit.Outline(card, Palette.Ink.WithAlpha(.08f), UiKit.CardRadius, 1);
+            UiKit.Shadow(where, UiKit.CardRadius, 12, 4, .2f);
+            placeText = UiKit.Label(where, "", UiKit.BodySize, Palette.Ink, UiKit.Bold, TextAnchor.MiddleCenter);
+            placeText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            var status = UiKit.Node("status", where);
+            UiKit.Row(status, 6, null, TextAnchor.MiddleCenter);
+            liveDot = UiKit.Panel(status, "live", Palette.InkSoft, 5);
+            UiKit.Size(liveDot, 10, 10);
+            detailText = UiKit.Label(status, "", UiKit.SmallSize, Palette.InkSoft);
+            detailText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            playHere = Quiet(UiKit.Primary(where, "Play here", () => world.Net.Start(), null, 44));
         }
 
-        // Centre top: the area you just walked into, in the site's display face.
-        void BuildBanner()
+        // Over the dock: a card for the place you're standing at, with its action when it has one.
+        void BuildPlaceCard()
         {
-            var card = UiKit.Panel(layer, "banner", Palette.Cream);
-            card.raycastTarget = false;
-            var r = card.rectTransform.Pin(new Vector2(.5f, 1), new Vector2(0, -84), new Vector2(10, 10));
-            UiKit.Column(r, 2, new RectOffset(28, 28, 12, 14), TextAnchor.MiddleCenter);
-            UiKit.Hug(r);
-            UiKit.Shadow(r, UiKit.CardRadius, 18, 6, .26f);
-            bannerTitle = UiKit.Label(r, "", UiKit.TitleSize + 4, Palette.Ink, UiKit.Title, TextAnchor.MiddleCenter);
-            bannerTitle.horizontalOverflow = HorizontalWrapMode.Overflow;
-            bannerSub = UiKit.Label(r, "", UiKit.SmallSize + 1, Palette.InkSoft, UiKit.Body, TextAnchor.MiddleCenter);
-            bannerSub.horizontalOverflow = HorizontalWrapMode.Overflow;
-            banner = card.gameObject.AddComponent<CanvasGroup>();
-            banner.alpha = 0;
-            banner.blocksRaycasts = false;
-        }
-
-        // Above the chat bar: a toast, and a card for the place you're standing at (with its action, when it has one).
-        void BuildNotices()
-        {
-            var stack = UiKit.Node("notices", layer).Pin(new Vector2(.5f, 0), new Vector2(0, BarHeight + 28), new Vector2(10, 10));
-            UiKit.Column(stack, 10, null, TextAnchor.LowerCenter).childForceExpandWidth = false;
-            UiKit.Hug(stack);
-
-            var t = UiKit.Panel(stack, "toast", Palette.Ink, 22);
-            t.raycastTarget = false;
-            toast = t.rectTransform;
-            UiKit.Row(toast, 10, new RectOffset(16, 20, 10, 10), TextAnchor.MiddleCenter);
-            toastIcon = UiKit.Icon(toast, null, 24);
-            toastText = UiKit.Label(toast, "", UiKit.BodySize - 1, Palette.Paper, UiKit.Bold);
-            toastText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            UiKit.Shadow(toast, 22, 12, 4, .3f);
-            UiKit.Show(toast, false);
-
-            var h = UiKit.Panel(stack, "place", Palette.Cream);
+            var h = UiKit.Panel(layer, "place", Palette.Cream);
             h.raycastTarget = false;
-            hint = h.rectTransform;
+            hint = h.rectTransform.Pin(new Vector2(.5f, 0), new Vector2(0, AboveDock), new Vector2(10, 10));
             UiKit.Row(hint, 14, new RectOffset(14, 14, 12, 12));
+            UiKit.Hug(hint);
             UiKit.Outline(h, Palette.Ink.WithAlpha(.08f), UiKit.CardRadius, 1);
             hintIcon = UiKit.Icon(hint, null, 48);
             var words = UiKit.Node("words", hint);
             UiKit.Column(words, 1, null, TextAnchor.MiddleLeft);
             UiKit.Size(words, 260);
             hintName = UiKit.Label(words, "", UiKit.BodySize + 2, Palette.Ink, UiKit.Bold);
-            hintSub = UiKit.Label(words, "", UiKit.SmallSize, Palette.InkSoft);
+            hintSub = UiKit.Label(words, "", UiKit.SmallSize + 1, Palette.InkSoft);
             hintLater = UiKit.Label(words, "Opens in a later version", UiKit.SmallSize, UiKit.EmberInk);
             verb = Quiet(UiKit.Primary(hint, "Use", () => UseSpot(), null, 52));
             verbLabel = verb.GetComponentInChildren<Text>();
@@ -226,53 +215,103 @@ namespace BookBuddies.UI
             UiKit.Show(hint, false);
         }
 
-        // Bottom: recent chat, the chat box, and the emote and trick buttons.
+        // Bottom centre: the dock, the pet game's hotbar. Chat joins it on narrow screens.
+        void BuildDock()
+        {
+            var tray = UiKit.Panel(layer, "dock", Palette.Cream, 22);
+            dock = tray.rectTransform.Pin(new Vector2(.5f, 0), new Vector2(0, Margin), new Vector2(10, 10));
+            UiKit.Row(dock, TileGap, new RectOffset((int)DockPad, (int)DockPad, (int)DockPad, (int)DockPad), TextAnchor.MiddleCenter);
+            UiKit.Hug(dock);
+            UiKit.Outline(tray, Palette.Ink.WithAlpha(.08f), 22, 1);
+            UiKit.Shadow(dock, 22, 16, 5, .24f);
+            chatTile = AddTile("💬", "Chat", "T", null, OpenChat);
+            AddTile("❤️", "Emotes", "Q", "X", () => Toggle(emotes), () => emotes.IsOpen);
+            AddTile("🌀", "Tricks", "F", "Y", () => Toggle(tricks), () => tricks.IsOpen);
+            AddTile("🐾", "Pets", null, "Select", OpenPets);
+            bagTile = AddTile("🎒", "Bag", "I", null, () => TalesUi.OpenBag());
+            heroTile = AddTile("🦊", "Hero", "C", null, () => TalesUi.OpenHero());
+            AddTile("🗺️", "Map", "M", "RS", () => minimap.Toggle(), () => minimap.IsBig);
+        }
+
+        Tile AddTile(string emoji, string word, string key, string pad, System.Action onClick, System.Func<bool> isOpen = null)
+        {
+            var b = Quiet(UiKit.Button(dock, word, Palette.Paper, onClick, 14));
+            UiKit.Outline(b, Palette.Ink.WithAlpha(.08f), 14, 1);
+            var r = (RectTransform)b.transform;
+            UiKit.Column(r, 2, new RectOffset(4, 4, 6, 8), TextAnchor.MiddleCenter).childForceExpandWidth = false;
+            UiKit.Icon(r, emoji, 32);
+            var tile = new Tile { Button = b, Back = (Image)b.targetGraphic, IsOpen = isOpen };
+            tile.Word = UiKit.Label(r, word, UiKit.SmallSize + 1, Palette.Ink, UiKit.Bold, TextAnchor.MiddleCenter);
+            tile.Word.horizontalOverflow = HorizontalWrapMode.Overflow;
+            if (key != null && !Application.isMobilePlatform) tile.Key = Corner(KeyCap(r, key));
+            if (pad != null) tile.Pad = Corner(UiKit.PadGlyph(r, pad, 22));
+            tiles.Add(tile);
+            return tile;
+        }
+
+        // the keyboard key for a dock tile, like the world's "E" prompt
+        static Image KeyCap(Transform parent, string key)
+        {
+            var cap = UiKit.Panel(parent, "key " + key, Palette.Ink.WithAlpha(.72f), 6);
+            cap.raycastTarget = false;
+            UiKit.Size(cap, 22, 22);
+            ((RectTransform)UiKit.Label(cap.transform, key, 13, Palette.Cream, UiKit.Bold, TextAnchor.MiddleCenter).transform).Fill();
+            return cap;
+        }
+
+        // a key hint worn like a badge on a tile's top-right corner, outside its layout
+        static GameObject Corner(Image glyph)
+        {
+            var size = UiKit.Size(glyph);
+            size.ignoreLayout = true;
+            var r = glyph.rectTransform.Pin(Vector2.one, new Vector2(TileGap, TileGap), new Vector2(size.preferredWidth, size.preferredHeight));
+            r.SetAsLastSibling();
+            return glyph.gameObject;
+        }
+
+        // Bottom left: the chat box (Enter or T), with recent chat floating over it and fading.
         void BuildChat()
         {
-            var bg = UiKit.Panel(layer, "chat log", Palette.Cream.WithAlpha(.9f));
+            var bg = UiKit.Panel(layer, "chat log", Palette.Cream.WithAlpha(.92f));
             bg.raycastTarget = false;
-            logLines = bg.rectTransform.Pin(Vector2.zero, new Vector2(16, BarHeight + 28), new Vector2(420, 10));
-            UiKit.Column(logLines, 4, new RectOffset(14, 14, 10, 12));
+            logLines = bg.rectTransform.Pin(Vector2.zero, new Vector2(Margin, AboveDock), new Vector2(ChatWidth, 10));
+            UiKit.Column(logLines, 4, new RectOffset(16, 16, 10, 12));
             UiKit.Hug(logLines, false, true);
             log = bg.gameObject.AddComponent<CanvasGroup>();
             log.alpha = 0;
             log.blocksRaycasts = false;
 
-            var bar = UiKit.Node("chat bar", layer);
-            bar.anchorMin = Vector2.zero; bar.anchorMax = new Vector2(1, 0); bar.pivot = new Vector2(.5f, 0);
-            bar.offsetMin = new Vector2(16, 16); bar.offsetMax = new Vector2(-16, 16 + BarHeight);
-            UiKit.Row(bar, 10).childForceExpandHeight = true;
-
-            chat = Quiet(UiKit.Input(bar, "Say something…"));
+            chat = Quiet(UiKit.Input(layer, "Say something…", UiKit.BodySize, (int)(ChatHeight / 2)));
             chat.characterLimit = 140;
             chat.onEndEdit.AddListener(OnChatEnd);
-            UiKit.Size(chat, 140, -1, 1);
-            UiKit.Shadow((RectTransform)chat.transform, 12, 12, 4, .2f);
-
-            var send = Quiet(UiKit.Primary(bar, "Send", SendChat, null, (int)BarHeight));
-            UiKit.Shadow((RectTransform)send.transform, 28, 12, 4, .2f);
-            BarButton(bar, "❤️", "Emotes", () => Toggle(emotes));
-            BarButton(bar, "🐾", "Tricks", () => Toggle(tricks));
-        }
-
-        void BarButton(Transform bar, string emoji, string label, System.Action onClick)
-        {
-            var b = Quiet(UiKit.TextButton(bar, label, emoji, Palette.Cream, Palette.Ink, onClick, (int)BarHeight));
-            UiKit.Shadow((RectTransform)b.transform, 28, 12, 4, .2f);
-            wideOnly.Add(b.GetComponentInChildren<Text>());
+            chatBox = ((RectTransform)chat.transform).Pin(Vector2.zero, new Vector2(Margin, Margin), new Vector2(ChatWidth, ChatHeight));
+            UiKit.Shadow(chatBox, (int)(ChatHeight / 2), 14, 4, .22f);
+            ((RectTransform)UiKit.Icon(chatBox, "💬", 24).transform).Pin(new Vector2(0, .5f), new Vector2(18, 0), new Vector2(24, 24));
+            chatHint = (Text)chat.placeholder;
+            foreach (var t in new[] { chat.textComponent, chatHint })
+            {
+                t.rectTransform.offsetMin = new Vector2(52, 0);
+                t.rectTransform.offsetMax = new Vector2(-58, 0);
+            }
+            send = Quiet(UiKit.Button(chatBox, "Send", Palette.Amber, SendChat, 22));
+            ((RectTransform)send.transform).Pin(new Vector2(1, .5f), new Vector2(-5, 0), new Vector2(44, 44));
+            UiKit.Arrow(send.transform, Palette.Ink);
         }
 
         // ---- every frame ----
 
         void Update()
         {
-            if (!Mathf.Approximately(root.rect.width, lastWidth)) Fit(root.rect.width);
+            if (root.rect.size != laidOut) Fit(root.rect.size);
             bool sheetOpen = AnySheetOpen();
             PlazaInput.MenuOpen = sheetOpen || minimap.IsBig || UiStack.Any;
             HandleKeys();
             if (!PlazaInput.MenuOpen && !chat.isFocused && EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
                 EventSystem.current.SetSelectedGameObject(null); // so A or Enter doesn't press a button you clicked earlier
             ShowVerbKey();
+            ShowTiles();
+            FitChat();
+            FitWhere();
             Animate();
         }
 
@@ -283,7 +322,7 @@ namespace BookBuddies.UI
                 if (chat.isFocused) CloseChat();
                 else if (UiStack.Any) return;
                 else if (minimap.IsBig) minimap.Toggle();
-                else if (hidden) SetHidden(false);
+                else if (Hidden) SetHidden(false);
                 else if (!PlazaInput.Locked) Toggle(pause);
                 return;
             }
@@ -291,13 +330,14 @@ namespace BookBuddies.UI
             if (UiStack.Any && !AnySheetOpen()) return; // a full screen (settings, the bag, admin tools) has the keys
             if (PlazaInput.Down(PlazaAction.Menu)) { if (minimap.IsBig) minimap.Toggle(); Toggle(pause); return; }
             if (PlazaInput.Down(PlazaAction.Photo)) { StartCoroutine(TakePhoto()); return; }
-            if (PlazaInput.Down(PlazaAction.HideHud) || (hidden && PlazaInput.TwoFingerTap())) { SetHidden(!hidden); return; }
+            if (PlazaInput.Down(PlazaAction.HideHud) || (Hidden && PlazaInput.TwoFingerTap())) { SetHidden(!Hidden); return; }
             if (PlazaInput.Down(PlazaAction.Map) && !AnyMenuOpen()) { minimap.Toggle(); return; }
             if (PlazaInput.Down(PlazaAction.Emotes)) Toggle(emotes);
             else if (PlazaInput.Down(PlazaAction.Tricks)) Toggle(tricks);
             else if (PlazaInput.MenuOpen) return;
             else if (PlazaInput.Down(PlazaAction.Bag)) TalesUi.OpenBag();
             else if (PlazaInput.Down(PlazaAction.Hero)) TalesUi.OpenHero();
+            else if (PlazaInput.Down(PlazaAction.Pets)) OpenPets();
             else if (PlazaInput.Down(PlazaAction.Chat)) OpenChat();
             else if (PlazaInput.Down(PlazaAction.Use) && !UseSpot()) world.UseNearby();
         }
@@ -308,20 +348,12 @@ namespace BookBuddies.UI
         void Animate()
         {
             // the HUD floats in after arriving, and slips away in photo mode
-            float shown = hidden ? 0 : UiKit.Ease((Time.unscaledTime - shownAt) / .6f);
+            float shown = Hidden ? 0 : UiKit.Ease((Time.unscaledTime - shownAt) / .6f);
             layerGroup.alpha = Mathf.MoveTowards(layerGroup.alpha, shown, Time.unscaledDeltaTime * 4);
-            layerGroup.blocksRaycasts = !hidden;
-            if (labels) labels.gameObject.SetActive(!hidden);
+            layerGroup.blocksRaycasts = !Hidden;
+            if (labels) labels.gameObject.SetActive(!Hidden);
             float hintAge = Time.unscaledTime - photoHintAt;
-            photoHint.alpha = hidden && hintAge < 3.5f ? Mathf.Clamp01(Mathf.Min(hintAge / .3f, (3.5f - hintAge) / .5f)) : 0;
-
-            // banner: rise in quickly, hold, fade away
-            float age = Time.unscaledTime - bannerAt;
-            float show = age < .35f ? 1 - Mathf.Pow(1 - age / .35f, 3) : age < 3f ? 1 : Mathf.Clamp01(1 - (age - 3f) / .6f);
-            banner.alpha = show;
-            ((RectTransform)banner.transform).anchoredPosition = new Vector2(0, -84 + (1 - show) * 10);
-
-            if (toast.gameObject.activeSelf && Time.unscaledTime > toastUntil) UiKit.Show(toast, false);
+            photoHint.alpha = Hidden && hintAge < 3.5f ? Mathf.Clamp01(Mathf.Min(hintAge / .3f, (3.5f - hintAge) / .5f)) : 0;
 
             float idle = Time.unscaledTime - lastLineAt;
             float target = chat.isFocused ? 1 : idle < ChatFadeAfter ? 1 : 0;
@@ -341,28 +373,106 @@ namespace BookBuddies.UI
             verbKey.color = PlazaInput.UsingGamepad ? UiKit.LeafInk : Palette.Ink;
         }
 
-        /// <summary>Narrow screens get icon-only buttons, and the chat log moves up under the status pill.</summary>
-        void Fit(float width)
+        // dock tiles: amber while their menu is open; keys for the keyboard, buttons for a gamepad
+        void ShowTiles()
         {
-            lastWidth = width;
-            bool compact = width < CompactWidth;
-            foreach (var label in wideOnly)
+            bool pad = PlazaInput.UsingGamepad;
+            foreach (var t in tiles)
             {
-                UiKit.Show(label, !compact);
-                label.transform.parent.GetComponent<HorizontalLayoutGroup>().padding.right = compact ? 14 : 20;
+                var back = t.IsOpen != null && t.IsOpen() ? Palette.Amber : Palette.Paper;
+                if (t.Back.color != back) t.Back.color = back;
+                if (t.Key && t.Key.activeSelf == pad) t.Key.SetActive(!pad);
+                if (t.Pad && t.Pad.activeSelf != pad) t.Pad.SetActive(pad);
             }
-            UiKit.Show(bag, width >= TinyWidth);
-            UiKit.Show(hero, width >= TinyWidth);
-            var size = new Vector2(Mathf.Min(420, width - 32), logLines.sizeDelta.y);
-            if (compact) logLines.Pin(new Vector2(0, 1), new Vector2(16, -76), size);
-            else logLines.Pin(Vector2.zero, new Vector2(16, BarHeight + 28), size);
+        }
+
+        /// <summary>
+        /// Lays the HUD out for a new screen size: dock tiles lose their words on narrow screens, the chat box takes the room
+        /// left of the dock (or joins the dock when there's too little), and toasts and titles find their lane.
+        /// </summary>
+        void Fit(Vector2 screen)
+        {
+            laidOut = screen;
+            bool wide = screen.x >= WideWidth;
+            foreach (var t in tiles)
+            {
+                UiKit.Size(t.Button, wide ? TileWidth : SmallTile, wide ? TileHeight : SmallTile);
+                UiKit.Show(t.Word, wide);
+            }
+            UiKit.Show(bagTile.Button, screen.x >= TinyWidth);
+            UiKit.Show(heroTile.Button, screen.x >= TinyWidth);
+            UiKit.Show(chatTile.Button, false);
+            int count = 0;
+            foreach (var t in tiles) if (t.Button.gameObject.activeSelf) count++;
+            float tile = wide ? TileWidth : SmallTile;
+            float dockLeft = (screen.x - (count * tile + (count - 1) * TileGap + DockPad * 2)) / 2;
+            chatRest = Mathf.Min(ChatWidth, dockLeft - Margin - Gap);
+            chatOpen = Mathf.Min(ChatOpenWidth, dockLeft - Margin - Gap);
+            narrowChat = chatRest < ChatMinWidth;
+            UiKit.Show(chatTile.Button, narrowChat);
+            dockTop = Margin + (wide ? TileHeight : SmallTile) + DockPad * 2;
+            hint.anchoredPosition = new Vector2(0, dockTop + Gap);
+            FitLog(screen.x);
+            FitNotices(screen);
+        }
+
+        // recent chat over the chat box, clear of the place card; on narrow screens over the place card instead
+        void FitLog(float width)
+        {
+            float w = Mathf.Min(chatRest, width / 2 - PlaceHalf - Gap - Margin), y = Mathf.Max(Margin + ChatHeight, dockTop) + Gap;
+            if (narrowChat || w < ChatMinWidth) { w = Mathf.Min(ChatWidth, width - Margin * 2); y = dockTop + Gap + PlaceHeight + Gap; }
+            logLines.Pin(Vector2.zero, new Vector2(Margin, y), new Vector2(w, logLines.sizeDelta.y));
+        }
+
+        // toasts and chapter titles go in the lane between the pet card and the minimap, or under the pet card when it's too narrow
+        void FitNotices(Vector2 screen)
+        {
+            int most = screen.y < 800 ? 2 : 3;
+            float right = Minimap.ShowsSmall(screen.x) ? Minimap.Width : 0;
+            float lane = screen.x - (Margin + Mathf.Max(PetBadge.Width, right) + Gap) * 2;
+            if (lane >= MinLane)
+            {
+                float titleTop = Mathf.Max(screen.y * .2f, Margin + Notices.StackHeight(most) + Gap * 2);
+                notices.Fit(0, Margin, Mathf.Min(lane, 760), most, titleTop, Mathf.Min(lane, 960));
+                return;
+            }
+            float top = BelowPetCard + ObjectiveHeight + Gap, room = screen.x - (Margin + (right > 0 ? right + Gap : 0)) * 2;
+            notices.Fit(0, top, room, most, top, room);
+        }
+
+        // the chat box: a pill left of the dock that widens while you type; on narrow screens it opens over the dock
+        void FitChat()
+        {
+            bool typing = chat.isFocused || chat.text.Length > 0 || Time.unscaledTime - chatOpenedAt < .3f;
+            UiKit.Show(send, typing);
+            string hintText = typing || Application.isMobilePlatform ? "Say something…" : "Press Enter to chat";
+            if (chatHint.text != hintText) chatHint.text = hintText;
+            if (narrowChat)
+            {
+                UiKit.Show(chat, typing);
+                chatBox.anchoredPosition = new Vector2(Margin, dockTop + Gap);
+                chatBox.sizeDelta = new Vector2(laidOut.x - Margin * 2, ChatHeight);
+                return;
+            }
+            UiKit.Show(chat, true);
+            chatBox.anchoredPosition = new Vector2(Margin, Margin);
+            float w = typing ? chatOpen : chatRest, glide = GameSettings.ReduceMotion ? 1 : 1 - Mathf.Exp(-Time.unscaledDeltaTime * 14);
+            chatBox.sizeDelta = new Vector2(Mathf.Lerp(chatBox.sizeDelta.x, w, glide), ChatHeight);
+        }
+
+        // the "where" card sits centred under the minimap (or right under the corner buttons without it)
+        void FitWhere()
+        {
+            bool map = Minimap.ShowsSmall(laidOut.x);
+            float half = Mathf.Max(map ? Minimap.Width : 0, where.rect.width) / 2;
+            where.anchoredPosition = new Vector2(-Margin - half, -(map ? BelowCorner + Minimap.Width + Gap : BelowCorner));
         }
 
         // ---- menus ----
 
         IEnumerable<Sheet> Sheets()
         {
-            yield return petCard; yield return emotes; yield return tricks; yield return controls; yield return pause;
+            yield return petCard; yield return emotes; yield return tricks; yield return controls; yield return pause; yield return coins;
         }
 
         bool AnyMenuOpen() => AnySheetOpen() || (minimap != null && minimap.IsBig);
@@ -373,11 +483,35 @@ namespace BookBuddies.UI
             return false;
         }
 
+        void OpenPets()
+        {
+            foreach (var s in Sheets()) if (s != null) s.Close();
+            PetsScreen.Open(world.Me);
+        }
+
+        // ---- the daily gift ----
+
+        /// <summary>
+        /// Arriving in town loads the wallet; once a day, while the gift waits, the coins sheet opens with it on top
+        /// (the site greets you with its gift card the same way).
+        /// </summary>
+        System.Collections.IEnumerator OfferGift()
+        {
+            var refresh = Wallet.Refresh();
+            yield return new WaitUntil(() => refresh.IsCompleted);
+            yield return new WaitForSecondsRealtime(1.2f);
+            string day = Wallet.State.Day;
+            if (!Wallet.Ready || Wallet.State.GiftClaimed || Hidden || UiStack.Any || PlazaInput.Locked) yield break;
+            if (PlayerPrefs.GetString(GiftOfferedKey, "") == Settings.AccountId + day) yield break;
+            PlayerPrefs.SetString(GiftOfferedKey, Settings.AccountId + day);
+            Toggle(coins);
+        }
+
         // ---- photo mode ----
 
         void SetHidden(bool hide)
         {
-            hidden = hide;
+            Hidden = hide;
             photoHintAt = Time.unscaledTime;
             foreach (var s in Sheets()) if (s != null) s.Close();
             Sound.Play(hide ? "close" : "open");
@@ -386,8 +520,8 @@ namespace BookBuddies.UI
         /// <summary>Saves a picture of the town without the HUD to the Photos folder, with a flash and a click.</summary>
         System.Collections.IEnumerator TakePhoto()
         {
-            bool wasHidden = hidden;
-            hidden = true;
+            bool wasHidden = Hidden;
+            Hidden = true;
             layerGroup.alpha = 0;
             photoHint.alpha = 0;
             if (labels) labels.gameObject.SetActive(false);
@@ -402,8 +536,8 @@ namespace BookBuddies.UI
             var flash = UiKit.Cover(root, "flash", Color.white);
             for (float t = 0; t < .35f; t += Time.unscaledDeltaTime) { flash.color = new Color(1, 1, 1, 1 - t / .35f); yield return null; }
             Destroy(flash.gameObject);
-            hidden = wasHidden;
-            if (!hidden) layerGroup.alpha = 1;
+            Hidden = wasHidden;
+            if (!Hidden) layerGroup.alpha = 1;
             ShowToast("✨ Photo saved to " + folder);
         }
 
@@ -426,6 +560,7 @@ namespace BookBuddies.UI
         void OpenChat()
         {
             chatOpenedAt = Time.unscaledTime;
+            UiKit.Show(chat, true);
             chat.Select();
             chat.ActivateInputField();
         }
@@ -456,7 +591,7 @@ namespace BookBuddies.UI
         {
             string words = UiKit.SplitEmoji(text, out _);
             if (words.Length == 0) return;
-            var line = UiKit.Label(logLines, "", UiKit.SmallSize + 1, Palette.Ink);
+            var line = UiKit.Label(logLines, "", UiKit.BodySize, Palette.Ink);
             line.supportRichText = true;
             string colour = villager ? "#2f5fb0" : "#b4521f";
             line.text = $"<color={colour}>{Escape(who)}</color>  {Escape(words)}";
@@ -468,30 +603,17 @@ namespace BookBuddies.UI
 
         // ---- notices ----
 
-        void ShowToast(string text)
-        {
-            toastText.text = UiKit.SplitEmoji(text, out string icon);
-            UiKit.SetIcon(toastIcon, icon);
-            UiKit.Show(toast, true);
-            toastUntil = Time.unscaledTime + 2.8f;
-        }
+        void ShowToast(string text) => notices.Show(text);
 
-        void ShowBanner(string title, string sub)
-        {
-            if (string.IsNullOrEmpty(title)) return;
-            bannerTitle.text = UiKit.SplitEmoji(title, out _);
-            bannerSub.text = UiKit.SplitEmoji(sub, out _);
-            UiKit.Show(bannerSub, bannerSub.text.Length > 0);
-            bannerAt = Time.unscaledTime;
-        }
+        void ShowBanner(string title, string sub) => notices.Title(title, sub);
 
-        /// <summary>Updates the status pill and the place card.</summary>
+        /// <summary>Updates the "where" card and the place card.</summary>
         void Refresh()
         {
             if (!this || !placeText || world == null || world.Net == null) return;
             var live = world.Net;
             string area = world.Area ?? world.Map.Name;
-            placeText.text = area == world.Map.Name ? area : world.Map.Name + " · " + area;
+            placeText.text = world.Map.Name;
 
             string detail;
             Color dot = Palette.InkSoft;
@@ -510,12 +632,9 @@ namespace BookBuddies.UI
                 case LiveState.SentHome: detail = "Taking a short break"; break;
                 default: detail = Settings.SignedIn ? "Offline" : "Exploring offline"; break;
             }
-            detailText.text = detail;
+            detailText.text = area == world.Map.Name ? detail : area + " · " + detail;
             liveDot.color = dot;
-            bool elsewhere = live.State == LiveState.Elsewhere;
-            UiKit.Show(playHere, elsewhere);
-            statusRow.padding.right = elsewhere ? 6 : 20;
-            LayoutRebuilder.MarkLayoutForRebuild((RectTransform)statusRow.transform);
+            UiKit.Show(playHere, live.State == LiveState.Elsewhere);
 
             var spot = world.Hint;
             UiKit.Show(hint, spot != null);

@@ -25,7 +25,8 @@ namespace BookBuddies.Tales
     /// </list>
     /// A Fx entry is a hit when Damage &gt; 0, Absorbed &gt; 0 or Miss; Small marks splash and gear damage. Hp, Max and Shield are the unit's values right after it.
     /// Pops are short callouts: (unit key, or null for the whole arena, text).
-    /// Not in the wild: twists, hazards, boons, intro banter, the meta revive (Unity has no meta upgrades), gold.
+    /// The library's Second Wind (defeat's meta revive) is a heal event: every pet back up at half HP, once a battle.
+    /// Not in the wild: twists, hazards, boons, intro banter, gold.
     /// </remarks>
     public sealed partial class BattleEngine
     {
@@ -43,7 +44,7 @@ namespace BookBuddies.Tales
         readonly TalesSave save;                 // where your lane choice is kept (null for a ready-made hero)
         readonly List<string> queue = new List<string>();
         readonly Dictionary<BattleUnit, int> buffs = new Dictionary<BattleUnit, int>();
-        bool intro, mid, cheered;
+        bool intro, mid, cheered, revived;
         int nextFate = 2, nat20s, helpers;
         (string name, string move, double d)? best;
 
@@ -119,7 +120,7 @@ namespace BookBuddies.Tales
             BossRise(evs);
             if (evs.Count > 0) return;
             if (LiveFoes().Count == 0) { End(evs, true); return; }
-            if (LiveHeroes().Count == 0) { End(evs, false); return; }
+            if (LiveHeroes().Count == 0) { if (!SecondWind(evs)) End(evs, false); return; }
             if (queue.Count == 0 && NewRound(evs)) return;
 
             var u = Find(queue[0]);
@@ -153,8 +154,8 @@ namespace BookBuddies.Tales
             return true;
         }
 
-        // startBattle and gearStart: fresh statuses and the gear shield. Ink is the ink carried in from the road plus gear ink
-        // (deliberate fix: the site's startBattle reset the carried ink to 1 right after wildRun copied it in)
+        // startBattle and gearStart: fresh statuses and the gear shield. Ink is the ink carried in from the road plus gear ink and
+        // the library's Inkwell (deliberate fix: the site's startBattle reset the carried ink to 1 right after wildRun copied it in)
         void StartHero(BattleUnit h)
         {
             var info = h.Hero;
@@ -163,8 +164,20 @@ namespace BookBuddies.Tales
             info.WantUlt = false;
             info.Dark = 0;
             info.PhoenixUsed = false;
-            h.Ink = Math.Min(6, Setup.Ink + info.GearInk);
+            h.Ink = Math.Min(6, Setup.Ink + info.GearInk + info.MetaInk);
             if (info.Sh != 0) h.St["shield"] = h.S("shield") + JsMath.Round(h.Max * info.Sh / 100);
+        }
+
+        // defeat with the library's Second Wind: the party is back up at half HP with fresh statuses, once. True if it happened.
+        bool SecondWind(List<BattleEvent> evs)
+        {
+            if (revived || !Heroes.Exists(h => h.Hero.MetaRev)) return false;
+            revived = true;
+            var e = new BattleEvent { Kind = "heal", Actor = Heroes[0].Key, Name = "Second Wind", Icon = "🪽" };
+            foreach (var h in Heroes) { h.St.Clear(); Revive(h, .5, e); }
+            e.Pops.Add(Pop(null, "🪽 Second Wind!"));
+            Emit(evs, e);
+            return true;
         }
 
         BattleEvent IntroEvent()

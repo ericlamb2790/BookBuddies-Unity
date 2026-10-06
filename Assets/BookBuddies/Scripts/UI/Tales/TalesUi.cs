@@ -21,8 +21,8 @@ namespace BookBuddies.Tales
         /// <summary>The bag and gear screen (equip, compare, salvage), optionally highlighting one item (its item string).</summary>
         public static void OpenBag(string highlight = null) => BagScreen.Open(highlight);
 
-        /// <summary>The hero card: class, Pet Lv, stats, moves and tactics.</summary>
-        public static void OpenHero() => HeroCard.Open();
+        /// <summary>The hero card: class, Pet Lv, stats and tactics, and its shop tabs ("moves", "class", "library").</summary>
+        public static void OpenHero(string tab = null) => HeroCard.Open(tab);
 
         /// <summary>A short "you found…" reveal for new items (stash, shrine, chest), then optional bag button.</summary>
         public static void Reveal(IList<string> items, string title, System.Action closed = null) => RevealScreen.Open(items, title, closed);

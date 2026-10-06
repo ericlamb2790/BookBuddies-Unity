@@ -79,7 +79,8 @@ Run these with `npx wrangler d1 execute bookbuddies-unity --remote --command "�
 
 | To | Command |
 |---|---|
-| Find a player | `SELECT id, name, coins, created_at FROM players WHERE name LIKE '%Pip%'` |
+| Find a player | `SELECT id, name, created_at FROM players WHERE name LIKE '%Pip%'` |
+| See someone's coins | `SELECT kind, amount, day FROM coin_tx WHERE player_id = 'their id' ORDER BY id DESC LIMIT 20` (the balance is `SUM(amount)`) |
 | Make someone an admin | `UPDATE players SET is_admin = 1 WHERE name = 'Their Name'` |
 | See recent admin actions | `SELECT datetime(at / 1000, 'unixepoch'), admin_name, action, target_name, detail FROM admin_log ORDER BY id DESC LIMIT 20` |
 | Pause someone's chat for an hour | `UPDATE players SET mute_until = (strftime('%s','now') + 3600) * 1000 WHERE name = 'Their Name'` |
@@ -104,7 +105,10 @@ The routes and live messages match the website's, so the game works with this se
 | Switch the active pet | `POST /api/me/pets/<id>/active`; its look becomes your `pet` |
 | Show the recovery code again | `GET /api/me/recovery` |
 | Delete the account | `POST /api/me/delete` |
-| Live ticket | `GET /api/plaza/world/ticket?s=1-6&town=pawtopia` (or `road1`, `caves`) → a 60-second ticket and a 15-minute pass |
+| Your coins | `GET /api/wallet` → `balance`, Book Fair tickets `fair`, today's `gift` `{claimed, run}`, today's counts per kind `used`, the last 20 coin rows `recent`, the `day` (US Eastern) and the Book Fair counters. A new account gets 1000 coins the first time. |
+| Daily gift | `POST /api/wallet/earn {kind: 'gift'}` → `granted` and `run` (200, 250, 300, 400, 500, 600, 1000 for days in a row) |
+| Buy something | `POST /api/wallet/spend {kind: 'shop', item, ref}` → `paid`; the server prices `item` from `src/economy.json` (`decor:<id>`, `move:<class>:<move>`, `unlock:<class>`, `meta:<upgrade>:<level>`, `stock:<day>:<town>:<i>` with `amount`, `satchel:<town>`). `{kind: 'fair', n}` trades coins for 1, 5, 12 or 30 Book Fair tickets. |
+| Live ticket | `GET /api/plaza/world/ticket?s=1-6&town=pawtopia` (or a town on Bramble Road such as `romance`, a road link `road1` … `road17`, or `caves`) → a 60-second ticket and a 15-minute pass |
 | Live town | WebSocket `/api/world/live?ticket=…` into the Durable Object `<town>:<room>` |
 | Admin: find players | `GET /api/admin/players?q=part of a name` (`&exact=1` for the whole name) |
 | Admin: one player and their history | `GET /api/admin/players/<id>` |
@@ -113,6 +117,8 @@ The routes and live messages match the website's, so the game works with this se
 
 Admin routes answer `403` unless the signed-in player is an admin.
 
-Each room holds up to 300 pets. Six villagers wander, chat and sit while anyone is there, and coins, coin bags and gift boxes turn up around town. Each player can collect up to 25 finds a day. A room stops ticking when the last pet leaves, so an empty town costs nothing.
+Each room holds up to 300 pets. In Pawtopia six villagers wander, chat and sit while anyone is there, and in every town (Pawtopia and the 17 on Bramble Road) coins, coin bags and gift boxes turn up. The road links and the caves have neither. Each player can collect up to 25 finds a day (US Eastern days, like the website); the coins go straight into their wallet. A room stops ticking when the last pet leaves, so an empty town costs nothing.
 
-Tested locally with `wrangler dev`: signing up, signing in with a recovery code, renaming, deleting an account, tickets and passes, joining rooms, walking, chat filtering, emotes, hugs, ping, collecting coins, and signing in elsewhere.
+Tested locally with `wrangler dev`: signing up, signing in with a recovery code, renaming, deleting an account, tickets and passes, joining rooms, walking, chat filtering, emotes, hugs, ping, collecting coins, and signing in elsewhere; the wallet (starter coins, the daily gift and its run, purchases, refusals, find limits, admin changes and moving old coin totals into the ledger).
+
+Coins are a ledger (`coin_tx`): every coin earned or spent is one row, and a balance is the sum, so there's no total to edit by mistake. Prices and rewards live in `src/economy.json`, made from the website by `tools/export_econ.js` (the game reads the same file). Coins from before v0.4 (`players.coins`) move into the ledger once, by themselves, the first time the new Worker starts.

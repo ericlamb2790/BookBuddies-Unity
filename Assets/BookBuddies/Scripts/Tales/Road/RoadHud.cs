@@ -9,25 +9,26 @@ using UnityEngine.UI;
 namespace BookBuddies.Road
 {
     /// <summary>
-    /// The road's own corner of the HUD: your pet's HP and ink between fights (in the wilds), and the compass
-    /// that points the way on ("On to Rosewater" in town, "East to Rosewater · 42 steps" on the road).
-    /// Tapping the compass walks you there. It sits under the status pill (above the chat bar on narrow screens).
+    /// The road's own corner of the HUD: the objective card under the pet card (and as wide), pointing the way on
+    /// ("On to Rosewater" in town, "East to Rosewater · 42 steps" on the road). Tapping it walks you there; its – button
+    /// tucks it into a small arrow, and tapping the arrow brings the card back. HP and ink are on the pet card.
     /// </summary>
     public sealed class RoadHud : MonoBehaviour
     {
-        const float CompactWidth = 640, BarWidth = 150, RefreshEvery = .25f;
-        static readonly Color HpGood = Palette.Hex("#4f9a48"), HpLow = Palette.Hex("#e6a23c"), HpBad = Palette.Hex("#d64545");
+        const float Height = 64, RefreshEvery = .25f;
+        const string TuckedKey = "bb.goalTucked";
 
         PlazaWorld world;
-        RectTransform root, column, arrow;
-        Image hpFill, goalIcon;
+        RectTransform root, card, arrow;
+        Image goalIcon;
         CanvasGroup group;
-        Text hpText, goalTitle, goalSub;
-        Image[] pips;
-        Button compass;
+        Text goalTitle, goalSub;
+        GameObject words;
+        Button compass, tuck;
         Goal goal;
         float refreshAt;
         string shownGoal;
+        bool tucked;
 
         /// <summary>Where the compass points: a map point, what to call it, and what a tap does.</summary>
         sealed class Goal { public Vector2 At; public string Icon, Title, Sub; public TownMap.Spot Spot; }
@@ -39,127 +40,76 @@ namespace BookBuddies.Road
             hud.world = world;
             hud.root = (RectTransform)canvas.transform;
             hud.group = canvas.gameObject.AddComponent<CanvasGroup>();
-            hud.Build();
+            hud.BuildCompass();
+            hud.Tuck(PlayerPrefs.GetInt(TuckedKey, 0) == 1);
             return hud;
         }
 
-        void Build()
-        {
-            column = UiKit.Node("road", root);
-            UiKit.Column(column, 8).childForceExpandWidth = false;
-            UiKit.Hug(column);
-            if (world.Map.Wild != null) BuildVitals();
-            BuildCompass();
-        }
-
-        // ❤️ HP [bar] 86%  /  Ink ● ● ● ○ ○ ○
-        void BuildVitals()
-        {
-            var card = UiKit.Panel(column, "vitals", Palette.Cream);
-            card.raycastTarget = false;
-            var r = card.rectTransform;
-            UiKit.Column(r, 6, new RectOffset(14, 16, 10, 12));
-            UiKit.Hug(r);
-            UiKit.Shadow(r, UiKit.CardRadius, 12, 4, .22f);
-
-            var hp = Row(r);
-            UiKit.Icon(hp, "❤️", 20);
-            UiKit.Size(UiKit.Label(hp, "HP", UiKit.SmallSize, Palette.InkSoft, UiKit.Bold), 34);
-            var track = UiKit.Panel(hp, "bar", Palette.Paper, 6);
-            UiKit.Size(track, BarWidth, 12);
-            UiKit.Outline(track, Palette.Ink.WithAlpha(.12f), 6, 1);
-            hpFill = UiKit.Panel(track.transform, "fill", HpGood, 6);
-            hpFill.raycastTarget = false;
-            hpFill.rectTransform.Fill();
-            hpText = UiKit.Label(hp, "100%", UiKit.SmallSize, Palette.Ink, UiKit.Bold, TextAnchor.MiddleRight);
-            UiKit.Size(hpText, 46);
-
-            var ink = Row(r);
-            UiKit.Icon(ink, "🖋️", 20);
-            UiKit.Size(UiKit.Label(ink, "Ink", UiKit.SmallSize, Palette.InkSoft, UiKit.Bold), 34);
-            pips = new Image[RoadVitals.MaxInk];
-            for (int i = 0; i < pips.Length; i++)
-            {
-                pips[i] = UiKit.Panel(ink, "pip", Palette.Paper, 7);
-                UiKit.Size(pips[i], 14, 14);
-                UiKit.Outline(pips[i], UiKit.SkyInk.WithAlpha(.45f), 7, 1);
-            }
-        }
-
-        static RectTransform Row(RectTransform parent)
-        {
-            var row = UiKit.Node("row", parent);
-            UiKit.Row(row, 8).childForceExpandWidth = false;
-            UiKit.Size(row, -1, 22);
-            return row;
-        }
-
-        // [➜] East to Rosewater / Bramble Road · 42 steps
+        // [➜] 🌾 On to Rosewater / Take Bramble Road east  [–]
         void BuildCompass()
         {
-            compass = UiKit.Button(column, "compass", Palette.Cream, Follow, 24);
-            var r = (RectTransform)compass.transform;
-            UiKit.Row(r, 12, new RectOffset(8, 18, 6, 6)).childForceExpandWidth = false;
-            UiKit.Hug(r);
-            UiKit.Size(compass, -1, 56);
-            UiKit.Shadow(r, 24, 12, 4, .22f);
+            compass = UiKit.Button(root, "objective", Palette.Cream, Follow, UiKit.CardRadius);
+            compass.navigation = new Navigation { mode = Navigation.Mode.None };
+            card = ((RectTransform)compass.transform).Pin(new Vector2(0, 1), new Vector2(Hud.Margin, -Hud.BelowPetCard), new Vector2(PetBadge.Width, Height));
+            UiKit.Row(card, 10, new RectOffset(12, 12, 0, 0));
+            UiKit.Outline(compass, Palette.Ink.WithAlpha(.08f), UiKit.CardRadius, 1);
+            UiKit.Shadow(card, UiKit.CardRadius, 14, 4, .22f);
 
-            var disc = UiKit.Panel(r, "arrow", Palette.Amber, 20);
+            var disc = UiKit.Panel(card, "arrow", Palette.Amber, 20);
             disc.raycastTarget = false;
             UiKit.Size(disc, 40, 40);
-            arrow = UiKit.Node("pointer", disc.transform).Pin(new Vector2(.5f, .5f), Vector2.zero, new Vector2(24, 24));
-            arrow.pivot = new Vector2(.5f, .5f);
-            Bar(arrow, new Vector2(-2, 0), 16, 0);      // shaft
-            Bar(arrow, new Vector2(4, 3.6f), 11, -40);   // head
-            Bar(arrow, new Vector2(4, -3.6f), 11, 40);
+            arrow = UiKit.Arrow(disc.transform, Palette.Ink);
 
-            goalIcon = UiKit.Icon(r, null, 28);
-            var words = UiKit.Node("words", r);
-            UiKit.Column(words, 0, null, TextAnchor.MiddleLeft);
-            UiKit.Hug(words);
-            goalTitle = UiKit.Label(words, "", UiKit.BodySize - 1, Palette.Ink, UiKit.Bold);
-            goalTitle.horizontalOverflow = HorizontalWrapMode.Overflow;
-            goalSub = UiKit.Label(words, "", UiKit.SmallSize, Palette.InkSoft);
-            goalSub.horizontalOverflow = HorizontalWrapMode.Overflow;
+            goalIcon = UiKit.Icon(card, null, 28);
+            var column = UiKit.Node("words", card);
+            UiKit.Column(column, 0, null, TextAnchor.MiddleLeft);
+            UiKit.Size(column, 0, -1, 1);
+            words = column.gameObject;
+            goalTitle = OneLine(column, UiKit.BodySize, Palette.Ink, UiKit.Bold);
+            goalSub = OneLine(column, UiKit.SmallSize, Palette.InkSoft, UiKit.Body);
+
+            tuck = UiKit.Button(card, "Tuck away", Palette.Paper, () => Tuck(true), 22);
+            tuck.navigation = new Navigation { mode = Navigation.Mode.None };
+            UiKit.Size(tuck, 44, 44);
+            var bar = UiKit.Panel(tuck.transform, "–", Palette.Ink, 1);
+            bar.raycastTarget = false;
+            bar.rectTransform.Pin(new Vector2(.5f, .5f), Vector2.zero, new Vector2(16, 3));
         }
 
-        static void Bar(RectTransform parent, Vector2 at, float length, float angle)
+        // a label that keeps to one line, cut short rather than spilling out of the card
+        static Text OneLine(Transform parent, int size, Color color, Font font)
         {
-            var bar = UiKit.Panel(parent, "bar", Palette.Ink, 2);
-            bar.raycastTarget = false;
-            var r = bar.rectTransform.Pin(new Vector2(.5f, .5f), at, new Vector2(length, 3.5f));
-            r.pivot = new Vector2(.5f, .5f);
-            r.anchoredPosition = at;
-            r.localRotation = Quaternion.Euler(0, 0, angle);
+            var t = UiKit.Label(parent, "", size, color, font);
+            t.verticalOverflow = VerticalWrapMode.Truncate;
+            UiKit.Size(t, -1, Mathf.Ceil(size * 1.3f));
+            return t;
+        }
+
+        // tucked: only the arrow shows, in a small square; untucked: the whole card
+        void Tuck(bool on)
+        {
+            tucked = on;
+            PlayerPrefs.SetInt(TuckedKey, on ? 1 : 0);
+            UiKit.Show(goalIcon, !on && goalIcon.sprite != null);
+            words.SetActive(!on);
+            UiKit.Show(tuck, !on);
+            card.sizeDelta = new Vector2(on ? Height : PetBadge.Width, Height);
         }
 
         void Update()
         {
             var me = world ? world.Me : null;
             if (me == null) return;
-            bool compact = root.rect.width < CompactWidth;
-            if (compact) column.Pin(Vector2.zero, new Vector2(16, 84), column.sizeDelta);
-            else column.Pin(new Vector2(0, 1), new Vector2(16, -76), column.sizeDelta);
             bool fighting = world.Road != null && world.Road.Fighting;
-            group.alpha = Mathf.MoveTowards(group.alpha, PlazaInput.Locked || fighting ? 0 : 1, Time.unscaledDeltaTime / .2f);
+            group.alpha = Hud.Hidden ? 0 : Mathf.MoveTowards(group.alpha, PlazaInput.Locked || fighting ? 0 : 1, Time.unscaledDeltaTime / .2f);
             group.blocksRaycasts = group.alpha > .5f;
 
             if (Time.unscaledTime < refreshAt) { PointArrow(me); return; }
             refreshAt = Time.unscaledTime + RefreshEvery;
-            if (pips != null) ShowVitals();
             goal = fighting || UiStack.Any ? null : FindGoal();
             UiKit.Show(compass, goal != null);
             if (goal != null) ShowGoal(me);
             PointArrow(me);
-        }
-
-        void ShowVitals()
-        {
-            var (hp, ink) = RoadVitals.Now(world.Map.Wild == null);
-            hpFill.rectTransform.anchorMax = new Vector2((float)hp, 1);
-            hpFill.color = hp > .55 ? HpGood : hp > .25 ? HpLow : HpBad;
-            hpText.text = Mathf.RoundToInt((float)hp * 100) + "%";
-            for (int i = 0; i < pips.Length; i++) pips[i].color = i < ink ? Palette.Sky : Palette.Paper;
         }
 
         void ShowGoal(PetActor me)
@@ -170,6 +120,7 @@ namespace BookBuddies.Road
             if (key == shownGoal) return;
             shownGoal = key;
             UiKit.SetIcon(goalIcon, goal.Icon);
+            UiKit.Show(goalIcon, !tucked && goalIcon.sprite != null);
             goalTitle.text = goal.Title;
             goalSub.text = sub;
         }
@@ -209,10 +160,11 @@ namespace BookBuddies.Road
             return data.Towns.TryGetValue(data.Route[i + 1], out var t) ? t.Name : null;
         }
 
-        // a tap on the compass: off to the road's spot in town, or to the far sign on the road
+        // a tap on the card: off to the road's spot in town, or to the far sign on the road; on the tucked arrow, the card comes back
         void Follow()
         {
             if (goal == null) return;
+            if (tucked) { Tuck(false); return; }
             Sound.Play("boop");
             if (goal.Spot != null) world.GoToSpot(goal.Spot);
             else world.WalkTo(Mathf.FloorToInt(goal.At.x), Mathf.FloorToInt(goal.At.y) + 1);

@@ -125,8 +125,6 @@ namespace BookBuddies.UI
     /// <summary>The cards the HUD opens: emotes, tricks, a pet's card, controls and the town menu.</summary>
     public static class Menus
     {
-        const float AboveBar = 92; // HUD sheets sit just above the chat bar
-
         static readonly Dictionary<string, (string icon, string label)> TrickLook = new Dictionary<string, (string, string)>
         {
             ["hop"] = ("🐰", "Hop"), ["spin"] = ("🌀", "Spin"), ["wave"] = ("👋", "Wave"), ["dance"] = ("💃", "Dance"), ["nap"] = ("💤", "Nap"),
@@ -152,7 +150,7 @@ namespace BookBuddies.UI
 
         public static Sheet Emotes(Transform parent, PlazaWorld world)
         {
-            var s = Sheet.Create(parent, "Emotes", new Vector2(1, 0), new Vector2(-16, AboveBar), 352, "Emotes");
+            var s = Sheet.Create(parent, "Emotes", new Vector2(.5f, 0), new Vector2(0, Hud.AboveDock), 352, "Emotes");
             var grid = Grid(s.Card, 4, new Vector2(70, 70));
             for (int i = 0; i < PlazaWorld.Emotes.Length; i++)
             {
@@ -171,7 +169,7 @@ namespace BookBuddies.UI
 
         public static Sheet Tricks(Transform parent, PlazaWorld world)
         {
-            var s = Sheet.Create(parent, "Tricks", new Vector2(1, 0), new Vector2(-16, AboveBar), 352, "Tricks");
+            var s = Sheet.Create(parent, "Tricks", new Vector2(.5f, 0), new Vector2(0, Hud.AboveDock), 352, "Tricks");
             var grid = Grid(s.Card, 3, new Vector2(94, 84));
             foreach (string kind in PlazaWorld.Tricks)
             {
@@ -185,7 +183,7 @@ namespace BookBuddies.UI
         /// <summary>The card for a pet you tapped: say hi, play together, mute their chat, and (for admins) moderation.</summary>
         public static Sheet PetCard(Transform parent, PlazaWorld world, PetActor pet)
         {
-            var s = Sheet.Create(parent, "Pet card", new Vector2(.5f, 0), new Vector2(0, AboveBar), 460);
+            var s = Sheet.Create(parent, "Pet card", new Vector2(.5f, 0), new Vector2(0, Hud.AboveDock), 460);
 
             var head = UiKit.Node("head", s.Card);
             UiKit.Row(head, 14);
@@ -290,7 +288,7 @@ namespace BookBuddies.UI
             Section(into, "Mouse and touch", new[]
             {
                 ("Walk", "tap the ground"), ("Say hi or play", "tap a pet"), ("Sit", "tap a bench or chair"), ("Zoom", "scroll or pinch"),
-                ("Map", "tap the little map"),
+                ("Map", "tap the little map"), ("Pets, bag, hero", "the bar at the bottom"),
             });
             Section(into, "Keyboard", new[]
             {
@@ -300,7 +298,7 @@ namespace BookBuddies.UI
             });
             Section(into, "Gamepad", new[]
             {
-                ("Walk", "left stick or d-pad"), ("Use or sit", "pad:A"), ("Emotes", "pad:X"), ("Tricks", "pad:Y"), ("Chat", "pad:Select"),
+                ("Walk", "left stick or d-pad"), ("Use or sit", "pad:A"), ("Emotes", "pad:X"), ("Tricks", "pad:Y"), ("Pets", "pad:Select"),
                 ("Zoom", "pad:LB/RB"), ("Map", "pad:RS"), ("Menu", "pad:Start"), ("Back", "pad:B"),
                 ("In menus", "left stick moves the cursor"), ("Click", "pad:A"), ("Scroll", "right stick"),
             });
@@ -324,8 +322,8 @@ namespace BookBuddies.UI
             }
         }
 
-        /// <summary>The menu in town (Esc, Start or the Menu button): bag and hero, your pets, settings, photo mode, back to the title, quit.</summary>
-        public static Sheet Pause(Transform parent, PlazaWorld world, System.Action photo, System.Action toTitle)
+        /// <summary>The menu in town (Esc, Start or the Menu button): bag and hero, your pets and coins, travel and Recall, settings, photo mode, back to the title, quit.</summary>
+        public static Sheet Pause(Transform parent, PlazaWorld world, System.Action photo, System.Action toTitle, System.Action coins)
         {
             var s = Sheet.Create(parent, "Menu", new Vector2(.5f, .5f), Vector2.zero, 460);
             s.Dim(.35f);
@@ -342,10 +340,15 @@ namespace BookBuddies.UI
             var tiles = UiKit.Node("bag and hero", s.Card);
             UiKit.Row(tiles, 10).childForceExpandWidth = true;
             BigTile(tiles, "🎒", "Bag", "Gear and finds", () => { s.Close(); TalesUi.OpenBag(); });
-            BigTile(tiles, "🦊", "Hero", "Stats and moves", () => { s.Close(); TalesUi.OpenHero(); });
-            BigTile(s.Card, "🐾", "Pets", "Switch, hatch or reroll", () => { s.Close(); PetsScreen.Open(world.Me); });
+            BigTile(tiles, "🦊", "Hero", "Stats, moves and class", () => { s.Close(); TalesUi.OpenHero(); });
+            var more = UiKit.Node("pets and coins", s.Card);
+            UiKit.Row(more, 10).childForceExpandWidth = true;
+            BigTile(more, "🐾", "Pets", "Switch, hatch or reroll", () => { s.Close(); PetsScreen.Open(world.Me); });
+            BigTile(more, "🪙", "Coins", "Daily gift and more", () => { s.Close(); coins(); });
 
             s.First = UiKit.Primary(s.Card, "Back to town", s.Close, null, 52);
+            UiKit.Secondary(s.Card, "Towns on Bramble Road", () => { s.Close(); TownSheets.Route(world); }, "🛤️");
+            UiKit.Secondary(s.Card, "Keepsakes", () => { s.Close(); TownShop.OpenCollection(); }, "🏺");
             UiKit.Secondary(s.Card, "Settings", () => { s.Close(); SettingsPanel.Open(toTitle); }, "⚙️");
             UiKit.Secondary(s.Card, "Photo mode", () => { s.Close(); photo(); });
             if (Settings.IsAdmin) UiKit.Secondary(s.Card, "Admin tools", () => { s.Close(); AdminPanel.Open(); }, "🛡️");

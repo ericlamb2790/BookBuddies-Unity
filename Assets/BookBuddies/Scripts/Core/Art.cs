@@ -45,6 +45,7 @@ namespace BookBuddies
         }
 
         static readonly Dictionary<string, GroundSet> grounds = new Dictionary<string, GroundSet>();
+        static readonly Dictionary<string, Dictionary<Vector2Int, Sprite>> painted = new Dictionary<string, Dictionary<Vector2Int, Sprite>>();
 
         static readonly Dictionary<string, Sprite> cache = new Dictionary<string, Sprite>();
         static bool loaded;
@@ -55,7 +56,7 @@ namespace BookBuddies
             loaded = true;
             Merge(Json.ParseObject(Text("Data/art_index")));
             // features add their own indexes (Tales emoji, Bramble Road props), so each export writes only its own file
-            foreach (var extra in new[] { "Data/art_tales", "Data/art_road" })
+            foreach (var extra in new[] { "Data/art_tales", "Data/art_road", "Data/art_towns", "Data/art_shop" })
             {
                 var more = TryText(extra);
                 if (more != null) Merge(Json.ParseObject(more));
@@ -114,13 +115,33 @@ namespace BookBuddies
         /// <summary>Tiles per ground chunk for a map (16 when it has no painted ground).</summary>
         public static int GroundChunk(string town) => grounds.TryGetValue(town, out var set) ? set.Chunk : 16;
 
-        /// <summary>One chunk of a map's painted ground, pinned at its top-left corner, or null.</summary>
-        public static Sprite GroundSprite(string town, Vector2Int chunk) =>
-            grounds.TryGetValue(town, out var set) && set.Files.TryGetValue(chunk, out var file) ? Cached(file, new Vector2(set.Chunk, set.Chunk), new Vector2(0, 1)) : null;
+        /// <summary>One chunk of a map's ground, pinned at its top-left corner, or null: the baked picture, else the one painted in game.</summary>
+        public static Sprite GroundSprite(string town, Vector2Int chunk)
+        {
+            if (grounds.TryGetValue(town, out var set)) return set.Files.TryGetValue(chunk, out var file) ? Cached(file, new Vector2(set.Chunk, set.Chunk), new Vector2(0, 1)) : null;
+            return painted.TryGetValue(town, out var chunks) && chunks.TryGetValue(chunk, out var s) ? s : null;
+        }
+
+        /// <summary>True when a map ships baked ground pictures (otherwise TownView paints them).</summary>
+        public static bool HasBakedGround(string town) => grounds.ContainsKey(town);
+
+        /// <summary>Keeps a chunk of ground painted in game (`tiles` square, pinned at its top-left corner).</summary>
+        public static void AddPaintedGround(string town, Vector2Int chunk, Texture2D tex, int tiles)
+        {
+            if (!painted.TryGetValue(town, out var chunks)) painted[town] = chunks = new Dictionary<Vector2Int, Sprite>();
+            var s = UnityEngine.Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0, 1), (float)tex.width / tiles, 0, SpriteMeshType.FullRect);
+            s.name = town + " ground " + chunk;
+            chunks[chunk] = s;
+        }
 
         /// <summary>Frees a map's ground pictures after leaving it (they are the biggest images in the game).</summary>
         public static void ReleaseGround(string town)
         {
+            if (painted.TryGetValue(town, out var chunks))
+            {
+                foreach (var s in chunks.Values) { Object.Destroy(s.texture); Object.Destroy(s); }
+                painted.Remove(town);
+            }
             if (!grounds.TryGetValue(town, out var set)) return;
             foreach (var file in set.Files.Values)
             {

@@ -116,6 +116,17 @@ namespace BookBuddies.Net
             return viaPass ? $"{url}&town={Uri.EscapeDataString(town)}&s={shard}" : url;
         }
 
+        // ---- the wallet (every reply is the whole wallet: "balance", "fair", "gift", "used", "recent"…; see Economy/Wallet) ----
+
+        /// <summary>Your coins, Book Fair tickets, today's gift and limits. The first call on an account adds its starter coins.</summary>
+        public static Task<Dictionary<string, object>> Wallet() => Send("GET", "/wallet", null, true);
+
+        /// <summary>A reward the server pays from its own table: {kind: "gift"} (the daily gift). Adds "granted" and "run".</summary>
+        public static Task<Dictionary<string, object>> WalletEarn(Dictionary<string, object> body) => Send("POST", "/wallet/earn", body, true);
+
+        /// <summary>A purchase the server prices: {kind: "shop", item, ref, amount} or {kind: "fair", n, ref}. Adds "paid".</summary>
+        public static Task<Dictionary<string, object>> WalletSpend(Dictionary<string, object> body) => Send("POST", "/wallet/spend", body, true);
+
         // ---- admin tools (the server answers 403 unless you're a town admin) ----
 
         /// <summary>Players whose name contains the query (or whose id is it), newest visitors first; exact matches the whole name. Reply: "players", "total", "now".</summary>
@@ -128,7 +139,8 @@ namespace BookBuddies.Net
 
         /// <summary>
         /// Changes a player. action: mute {minutes}, unmute, ban {hours} or {permanent: true}, unban, kick, rename {name},
-        /// coins {coins}, admin {on}, delete. Reply: the updated "player" (null after delete) and their "log".
+        /// coins {coins} (sets the balance with one entry in their coin ledger), admin {on}, delete. Reply: the updated
+        /// "player" (null after delete) and their "log".
         /// </summary>
         public static Task<Dictionary<string, object>> AdminAct(string id, string action, Dictionary<string, object> body = null) =>
             Send("POST", $"/admin/players/{Uri.EscapeDataString(id)}/{action}", body ?? new Dictionary<string, object>(), true);

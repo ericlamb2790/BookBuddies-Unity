@@ -14,7 +14,11 @@ namespace BookBuddies.World
     {
         public sealed class Placed { public string Kind, Sprite; public int X, Y, W, H; }
         public sealed class Seat { public int X, Y; public string Kind; public int Facing; }
-        public sealed class Spot { public string Kind, Icon, Name, Sub, Verb; public RectInt Area; public Vector2Int Use; }
+        /// <summary>A place you can use. Side: which way a town gate's road runs ("w" = on east, "e" = back west).
+        /// Index: a door's cottage, a curio's or a gag's number (-1 when none).</summary>
+        public sealed class Spot { public string Kind, Icon, Name, Sub, Verb, Side; public int Index = -1; public RectInt Area; public Vector2Int Use; }
+        /// <summary>One storybook character living in a town: TownBook.Folk index, which copy of them, and where they stand.</summary>
+        public sealed class Resident { public int Folk, Copy; public Vector2Int At; }
         public sealed class Region { public RectInt Area; public string Name; }
 
         public string Key, Name;
@@ -22,6 +26,7 @@ namespace BookBuddies.World
         public Vector2Int Start;
         public WildInfo Wild;     // null in towns
         public Color Backdrop;    // what you see past the edge of the map: the sea, meadow or cave rock
+        public string[] GroundColors; // the ground's grass, path, stone and stone2 colours
         public Tile[] Tiles;
         public bool[] Blocked;
         public readonly List<Placed> Objects = new List<Placed>();
@@ -30,6 +35,11 @@ namespace BookBuddies.World
         public readonly List<Region> Areas = new List<Region>();
         public readonly List<Vector2Int> Plots = new List<Vector2Int>();
         public readonly Dictionary<string, float> SeatLift = new Dictionary<string, float>();
+        public readonly List<Resident> Folk = new List<Resident>();
+        /// <summary>The map's little animals (the road's, the caves' or a genre town's).</summary>
+        public List<WildInfo.Critter> Life { get; private set; } = new List<WildInfo.Critter>();
+
+        public bool IsTown => Wild == null;
 
         public static TownMap Load(string key)
         {
@@ -57,7 +67,8 @@ namespace BookBuddies.World
                 var use = s.Ints("use");
                 m.Spots.Add(new Spot
                 {
-                    Kind = s.Str("k"), Icon = s.Str("i"), Name = s.Str("n"), Sub = s.Str("sub"), Verb = s.Str("v", "Go"),
+                    Kind = s.Str("k"), Icon = s.Str("i"), Name = s.Str("n"), Sub = s.Str("sub"), Verb = s.Str("v", "Go"), Side = s.Str("e", null),
+                    Index = s.Int("hv", s.Int("ci", s.Int("gi", -1))),
                     Area = new RectInt(r[0], r[1], r[2] - r[0], r[3] - r[1]), Use = new Vector2Int(use[0], use[1]),
                 });
             }
@@ -66,9 +77,29 @@ namespace BookBuddies.World
             foreach (Dictionary<string, object> p in j.Arr("plots"))
                 m.Plots.Add(new Vector2Int(p.Int("x"), p.Int("y")));
             foreach (var kv in j.Obj("seatLift")) m.SeatLift[kv.Key] = (float)(double)kv.Value;
+            foreach (List<object> f in j.Arr("folk"))
+                m.Folk.Add(new Resident { Folk = (int)(double)f[0], Copy = (int)(double)f[1], At = new Vector2Int((int)(double)f[2], (int)(double)f[3]) });
             if (j.Obj("wild") != null) m.Wild = WildInfo.From(j.Obj("wild"), m.Width);
-            m.Backdrop = m.Wild == null ? Palette.Sea : m.Wild.IsCave ? Palette.Hex("#17121f") : Palette.Hex(j.Obj("pal").Str("grass", "#8cc468"));
+            m.Life = m.Wild != null ? m.Wild.Life : WildInfo.ReadLife(j.Arr("life"));
+            var pal = j.Obj("pal");
+            m.GroundColors = new[] { pal.Str("grass", "#8cc468"), pal.Str("path", "#d9bf8c"), pal.Str("stone", "#cfc3ae"), pal.Str("stone2", "#c2b59e") };
+            m.Backdrop = m.Key == "pawtopia" ? Palette.Sea : m.Wild != null && m.Wild.IsCave ? Palette.Hex("#17121f") : Palette.Hex(m.GroundColors[0]);
             return m;
+        }
+
+        /// <summary>A painter for this map's ground (used when no baked ground pictures ship with it).</summary>
+        public GroundPainter Painter()
+        {
+            var codes = new byte[Tiles.Length];
+            for (int i = 0; i < codes.Length; i++) codes[i] = (byte)Tiles[i];
+            var seats = new HashSet<int>();
+            foreach (var s in Seats) seats.Add(s.Y * Width + s.X);
+            return new GroundPainter(Width, Height, codes, seats, GroundColors)
+            {
+                Square = IsTown && Key != "pawtopia",
+                Tier = Wild != null && Wild.IsRoad ? Wild.Tier : 0,
+                Cave = Wild != null && Wild.IsCave,
+            };
         }
 
         public bool Inside(int x, int y) => x >= 0 && y >= 0 && x < Width && y < Height;

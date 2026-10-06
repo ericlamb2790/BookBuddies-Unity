@@ -11,9 +11,10 @@ namespace BookBuddies.World
     public sealed class TownView : MonoBehaviour
     {
         const float MapEdge = 40f; // tiles of sea, meadow or rock drawn past the map edge
+        const int PaintPpu = 64;   // pixels per tile for ground painted in game (the baked pictures' size)
 
         public TownMap Map { get; private set; }
-        /// <summary>The road's and caves' little animals (null in towns, which have their own ambience).</summary>
+        /// <summary>The map's little animals (null in Pawtopia, which has its own ambience).</summary>
         public Critters Life { get; private set; }
         readonly Dictionary<int, SpriteRenderer> plants = new Dictionary<int, SpriteRenderer>();
         readonly Dictionary<string, GameObject> items = new Dictionary<string, GameObject>();
@@ -34,6 +35,11 @@ namespace BookBuddies.World
             props = Group("Props");
             garden = Group("Garden");
             pickups = Group("Pickups");
+            if (!Art.HasBakedGround(map.Key))
+            {
+                var paint = PaintGround(progress);
+                while (paint.MoveNext()) yield return null;
+            }
             BuildGround();
             progress?.Invoke(.3f);
             yield return null;
@@ -53,7 +59,7 @@ namespace BookBuddies.World
                     progress?.Invoke(.3f + .6f * done / steps);
                     yield return null;
                 }
-            if (map.Wild == null) gameObject.AddComponent<Ambience>().Build(map);
+            if (map.Key == "pawtopia") gameObject.AddComponent<Ambience>().Build(map);
             else (Life = gameObject.AddComponent<Critters>()).Build(map);
             progress?.Invoke(1);
         }
@@ -72,6 +78,28 @@ namespace BookBuddies.World
                     if (!sprite) continue;
                     var r = Draw.Sprite($"Ground {cx},{cy}", ground, sprite, Draw.GroundOrder);
                     r.transform.SetPositionAndRotation(TownMap.ToWorld(cx * n, cy * n), Quaternion.Euler(90, 0, 0));
+                }
+        }
+
+        // Paints the ground chunk by chunk (one per frame), then compresses each and frees its pixels.
+        System.Collections.IEnumerator PaintGround(System.Action<float> progress)
+        {
+            const int n = 16;
+            var painter = Map.Painter();
+            int across = (Map.Width + n - 1) / n, down = (Map.Height + n - 1) / n, size = n * PaintPpu;
+            var rgb = new byte[size * size * 3];
+            for (int cy = 0; cy < down; cy++)
+                for (int cx = 0; cx < across; cx++)
+                {
+                    painter.PaintChunk(cx, cy, n, PaintPpu, rgb, true);
+                    var tex = new Texture2D(size, size, TextureFormat.RGB24, true) { wrapMode = TextureWrapMode.Clamp, name = $"{Map.Key} ground {cx},{cy}" };
+                    tex.SetPixelData(rgb, 0);
+                    tex.Apply(true);
+                    tex.Compress(false);
+                    tex.Apply(false, true);
+                    Art.AddPaintedGround(Map.Key, new Vector2Int(cx, cy), tex, n);
+                    progress?.Invoke(.3f * (cy * across + cx + 1) / (across * down));
+                    yield return null;
                 }
         }
 

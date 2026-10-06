@@ -1,11 +1,12 @@
-// BookBuddies Unity server: accounts, pets and the live town, on one Cloudflare Worker.
+// BookBuddies Unity server: accounts, pets, the wallet and the live town, on one Cloudflare Worker.
 // D1 keeps players and sign-ins; each live town room is a Durable Object (see town.js).
 // The routes and messages match the website's, so the Unity game can talk to either server.
 
 import { textProblem, cleanText } from './safety.js';
-import { ensureSchema, blockedWords, countToday, bumpToday, TOWNS, ROOMS, Problem, json, readJson } from './db.js';
+import { ensureSchema, blockedWords, countToday, bumpToday, TOWNS, ROOMS, noteRoom, forgetRooms, Problem, json, readJson } from './db.js';
 import { adminRoute, breakMessage } from './admin.js';
 import { cleanPet, petsRoute, petList, activeLook } from './pets.js';
+import { walletRoute, balance, deleteWalletRows } from './wallet.js';
 export { TownRoom } from './town.js';
 
 const VERSION = '0.3';
@@ -38,12 +39,13 @@ async function route(request, env, url) {
   if (path === '/link/claim' && method === 'POST') return signIn(request, env);
 
   const me = await signedIn(request, env);
-  if (path === '/me' && method === 'GET') return json({ ...account(me), ...(await petList(env, me)) });
+  if (path === '/me' && method === 'GET') return json({ ...account(me), coins: await balance(env, me.id), ...(await petList(env, me)) });
   if (path === '/me' && method === 'PATCH') return updateMe(request, env, me);
   if (path === '/me/recovery' && method === 'GET') return json({ code: formatCode(me.recovery_code) });
   if (path === '/me/delete' && method === 'POST') return deleteMe(env, me);
   if (path === '/me/pets' || path.startsWith('/me/pets/')) return petsRoute(request, env, path, me);
   if (path === '/plaza/world/ticket' && method === 'GET') return townTicket(env, me, url);
+  if (path === '/wallet' || path.startsWith('/wallet/')) return walletRoute(request, env, path, me);
   if (path.startsWith('/admin/')) return adminRoute(request, env, path, url, me);
   throw new Problem('Not found', 404);
 }
@@ -109,14 +111,15 @@ async function updateMe(request, env, me) {
 async function deleteMe(env, me) {
   await env.DB.batch([
     env.DB.prepare('DELETE FROM tokens WHERE player_id = ?1').bind(me.id),
-    env.DB.prepare('DELETE FROM finds WHERE player_id = ?1').bind(me.id),
+    ...deleteWalletRows(env, me.id),
     env.DB.prepare('DELETE FROM pets WHERE player_id = ?1').bind(me.id),
+    forgetRooms(env, me.id),
     env.DB.prepare('DELETE FROM players WHERE id = ?1').bind(me.id),
   ]);
   return json({ ok: true });
 }
 
-const account = (p) => ({ id: p.id, name: p.name, pet: p.pet || '', coins: p.coins || 0, is_admin: !!p.is_admin });
+const account = (p) => ({ id: p.id, name: p.name, pet: p.pet || '', is_admin: !!p.is_admin });
 
 async function signedIn(request, env) {
   const m = (request.headers.get('authorization') || '').match(/^Bearer\s+([a-f0-9]{64})$/i);
@@ -143,7 +146,7 @@ const formatCode = (c) => (c ? `${c.slice(0, 2)}-${c.slice(2, 7)}-${c.slice(7)}`
 
 // ---------- the live town ----------
 
-/** A short-lived signed ticket for room 1-6 of a town (?town=pawtopia, road1 or caves), plus a 15-minute pass for quick rejoins. */
+/** A short-lived signed ticket for room 1-6 of a place (?town=pawtopia, romance, road2, caves… see TOWNS), plus a 15-minute pass for quick rejoins. */
 async function townTicket(env, me, url) {
   if (me.ban_until > Date.now()) return json({ live: false, reason: 'break', msg: breakMessage(me.ban_until) });
   const shard = Math.max(1, Math.min(ROOMS, parseInt(url.searchParams.get('s'), 10) || 1));
@@ -165,6 +168,7 @@ async function joinTown(request, env, url) {
   if (!who) return new Response('Bad or old ticket', { status: 401 });
   let room = who.room;
   if (room.endsWith(':*')) room = `${room.slice(0, -2)}:${Math.max(1, Math.min(ROOMS, parseInt(url.searchParams.get('s'), 10) || 1))}`;
+  await noteRoom(env, who.pid, room);
   const headers = new Headers(request.headers);
   headers.set('x-bb-pid', who.pid);
   headers.set('x-bb-name', encodeURIComponent(who.name));

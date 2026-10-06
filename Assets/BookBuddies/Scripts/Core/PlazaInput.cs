@@ -8,7 +8,7 @@ using UnityEngine.InputSystem;
 namespace BookBuddies
 {
     /// <summary>Things you can do from a keyboard or gamepad. See PlazaInput.Down for the bindings.</summary>
-    public enum PlazaAction { Use, Back, Menu, Emotes, Tricks, Chat, Hop, ZoomIn, ZoomOut, Map, HideHud, Photo, Bag, Hero, Emote1, Emote2, Emote3, Emote4, Emote5, Emote6, Emote7, Emote8 }
+    public enum PlazaAction { Use, Back, Menu, Emotes, Tricks, Chat, Hop, ZoomIn, ZoomOut, Map, HideHud, Photo, Bag, Hero, Pets, Emote1, Emote2, Emote3, Emote4, Emote5, Emote6, Emote7, Emote8 }
 
     /// <summary>
     /// Mouse, touch, keyboard and gamepad in one place. A tap on a touch screen works exactly like a mouse click.
@@ -17,7 +17,7 @@ namespace BookBuddies
     /// Keyboard: WASD or arrows walk, E use or sit, Space hop, Q emotes, F tricks, Enter or T chat, I bag, C hero,
     ///           1-8 quick emotes, + and - zoom, M map, H hide the HUD, P or F12 photo, Esc back or menu.
     /// Gamepad:  left stick or d-pad walk, A use, B back, X emotes, Y tricks, LB and RB zoom,
-    ///           Start menu, Select chat, right stick click map. With a menu open the left stick moves an
+    ///           Start menu, Select pets, right stick click map. With a menu open the left stick moves an
     ///           on-screen cursor (A clicks, B backs out, the right stick scrolls; see UI/VirtualCursor).
     /// </summary>
     public static class PlazaInput
@@ -144,10 +144,11 @@ namespace BookBuddies
                 case PlazaAction.Photo: return K(Key.P) || K(Key.F12);
                 case PlazaAction.Emotes: return K(Key.Q) || P(p => p.buttonWest);
                 case PlazaAction.Tricks: return K(Key.F) || P(p => p.buttonNorth);
-                case PlazaAction.Chat: return K(Key.Enter) || K(Key.T) || P(p => p.selectButton);
+                case PlazaAction.Chat: return K(Key.Enter) || K(Key.T);
                 case PlazaAction.Hop: return K(Key.Space);
                 case PlazaAction.Bag: return K(Key.I);
                 case PlazaAction.Hero: return K(Key.C);
+                case PlazaAction.Pets: return P(p => p.selectButton);
                 case PlazaAction.ZoomIn: return K(Key.Equals) || K(Key.NumpadPlus) || P(p => p.rightShoulder);
                 case PlazaAction.ZoomOut: return K(Key.Minus) || K(Key.NumpadMinus) || P(p => p.leftShoulder);
                 default: return K(Key.Digit1 + (a - PlazaAction.Emote1));
@@ -163,10 +164,11 @@ namespace BookBuddies
                 case PlazaAction.Photo: return Input.GetKeyDown(KeyCode.P) || Input.GetKeyDown(KeyCode.F12);
                 case PlazaAction.Emotes: return Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.JoystickButton2);
                 case PlazaAction.Tricks: return Input.GetKeyDown(KeyCode.F) || Input.GetKeyDown(KeyCode.JoystickButton3);
-                case PlazaAction.Chat: return Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.T) || Input.GetKeyDown(KeyCode.JoystickButton6);
+                case PlazaAction.Chat: return Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.T);
                 case PlazaAction.Hop: return Input.GetKeyDown(KeyCode.Space);
                 case PlazaAction.Bag: return Input.GetKeyDown(KeyCode.I);
                 case PlazaAction.Hero: return Input.GetKeyDown(KeyCode.C);
+                case PlazaAction.Pets: return Input.GetKeyDown(KeyCode.JoystickButton6);
                 case PlazaAction.ZoomIn: return Input.GetKeyDown(KeyCode.Equals) || Input.GetKeyDown(KeyCode.KeypadPlus) || Input.GetKeyDown(KeyCode.JoystickButton5);
                 case PlazaAction.ZoomOut: return Input.GetKeyDown(KeyCode.Minus) || Input.GetKeyDown(KeyCode.KeypadMinus) || Input.GetKeyDown(KeyCode.JoystickButton4);
                 default: return Input.GetKeyDown(KeyCode.Alpha1 + (a - PlazaAction.Emote1));

@@ -195,6 +195,7 @@ namespace BookBuddies.UI
         protected override void Update()
         {
             base.Update();
+            if (ReferenceEquals(UiStack.Top, this) && TalesUi.Pressed(PlazaAction.Pets)) Close(); // Select opened it, Select closes it
             while (toDraw.Count > 0)
             {
                 var (img, look) = toDraw.Dequeue();

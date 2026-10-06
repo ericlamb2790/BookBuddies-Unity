@@ -39,9 +39,10 @@ namespace BookBuddies.Tales
 
         /// <summary>
         /// lootRoll: a new item string. src (fight, elite, boss, find, satchel) shapes the rarity odds and luck lifts
-        /// rare and better; theme and slot are random when null; tier forces the rarity.
+        /// rare and better; theme and slot are random when null; tier forces the rarity; clock (ms) replaces the time in
+        /// the item's seed (a shop's stock passes 0, so its pieces are the same all day).
         /// </summary>
-        public static string RollItem(string src, double il, string theme, string slot, double luck, IRng rng, int? tier = null)
+        public static string RollItem(string src, double il, string theme, string slot, double luck, IRng rng, int? tier = null, long? clock = null)
         {
             var d = Data;
             var sm = SourceWeights.TryGetValue(src ?? "", out var m) ? m : SourceWeights["fight"];
@@ -72,12 +73,12 @@ namespace BookBuddies.Tales
                 b = th + sl + (int)Math.Floor(rng.Next() * d.Base[th][sl].Count);
             }
             int an = t >= 2 && rng.Next() < .06 + luck / 1000 ? 1 : 0;
-            return $"{b}~{t}~{level}~{Seed(rng)}~{an}";
+            return $"{b}~{t}~{level}~{Seed(rng, clock)}~{an}";
         }
 
-        // ltSeed: the clock and a random number, in base 36
-        static string Seed(IRng rng) =>
-            Base36(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() % 10000000) + Base36((long)Math.Floor(rng.Next() * 1e6));
+        // ltSeed: the clock (or the one given) and a random number, in base 36
+        static string Seed(IRng rng, long? clock = null) =>
+            Base36((clock ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()) % 10000000) + Base36((long)Math.Floor(rng.Next() * 1e6));
 
         static string Base36(long n)
         {
@@ -108,9 +109,9 @@ namespace BookBuddies.Tales
 
         /// <summary>
         /// A random item for a road find, added to the bag (see Found for what happened to it), or null when there's
-        /// nothing today. "stash" (the Bramble Stash: once a UTC day), "shrine" (the Wayshrine: once a UTC day, then a
-        /// 40% chance), "chest" or "boss" (the guardian's chest: call it twice, the site rolls two). Item level follows
-        /// the buddy's Pet Lv; the stash and shrine use the road's next town for their theme.
+        /// nothing today. "stash" (the Bramble Stash: once a UTC day per road link), "shrine" (the Wayshrine: once a UTC
+        /// day per link, then a town find), "chest" or "boss" (the guardian's chest: call it twice, the site rolls two).
+        /// Item level follows the buddy's Pet Lv; the stash and shrine use the road's next town for their theme.
         /// </summary>
         public static string Roll(string source, TalesSave save, IRng rng = null)
         {
@@ -124,16 +125,16 @@ namespace BookBuddies.Tales
             {
                 case "stash":
                     if (UsedToday(save, source)) return null;
-                    save.StashDay = Today;
+                    MarkToday(save, source);
                     int lv = TalesData.Current.Towns.TryGetValue(town, out var info) ? info.Lv : 1;
                     item = RollItem("satchel", 4 + lv * 2 + rn, theme, null, luck, rng);
                     break;
                 case "shrine":
                     if (UsedToday(save, source)) return null;
-                    save.ShrineDay = Today;
-                    if (rng.Next() > .4) { save.Touch(); return null; }
-                    item = RollItem("find", 5 + rn, theme ?? "Z", null, luck, rng);
-                    break;
+                    MarkToday(save, source);
+                    item = Find(town, save, rng);
+                    if (item == null) save.Touch();
+                    return item;
                 case "chest":
                 case "boss":
                     item = RollItem("boss", 10 + rn, "Z", null, luck + 15, rng);
@@ -146,8 +147,29 @@ namespace BookBuddies.Tales
             return item;
         }
 
-        /// <summary>True when the Bramble Stash or the Wayshrine ("stash" or "shrine") has given its find today (UTC).</summary>
-        public static bool UsedToday(TalesSave save, string source) => (source == "stash" ? save.StashDay : save.ShrineDay) == Today;
+        /// <summary>True when this road link's Bramble Stash or Wayshrine ("stash" or "shrine") has given its find today (UTC).</summary>
+        public static bool UsedToday(TalesSave save, string source) => save.RoadDays.TryGetValue(DayKey(save, source), out var day) && day == Today;
+
+        /// <summary>Marks this link's stash or shrine as used today (the caller saves).</summary>
+        public static void MarkToday(TalesSave save, string source) => save.RoadDays[DayKey(save, source)] = Today;
+
+        static string DayKey(TalesSave save, string source) => (source == "stash" ? "g" : "s") + save.Link;
+
+        /// <summary>
+        /// lootFind: gear hiding in a town's curio or at a wayshrine. At most 5 finds a UTC day, each 40% of the time,
+        /// themed by the town. Added to the bag (the caller saves and shows it), or null.
+        /// </summary>
+        public static string Find(string town, TalesSave save, IRng rng = null)
+        {
+            rng = rng ?? SystemRng.Shared;
+            if (save.FindDay != Today) { save.FindDay = Today; save.FindCount = 0; }
+            if (save.FindCount >= 5 || rng.Next() > .4) return null;
+            save.FindCount++;
+            string theme = town != null && Data.Towns.TryGetValue(town, out var th) ? th : "Z";
+            string item = RollItem("find", 5 + HeroFactory.Renown(save.Me.Rxp).lvl, theme, null, Luck(save), rng);
+            Add(save, item);
+            return item;
+        }
 
         static string Today => DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 

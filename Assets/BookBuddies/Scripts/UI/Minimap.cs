@@ -18,6 +18,9 @@ namespace BookBuddies.UI
     {
         const float SmallSize = 200;
         const float SmallScale = 4.3f;   // UI units per tile in the corner map
+        const float SmallFrom = 700;     // narrower screens keep only the big map (M or the dock's Map)
+        /// <summary>How wide the corner map is, with its border (reference pixels).</summary>
+        public const float Width = SmallSize + 10;
         const float MinArt = 1.6f;       // skip props smaller than this many square tiles (fences, lamps...)
 
         PlazaWorld world;
@@ -33,6 +36,9 @@ namespace BookBuddies.UI
         Vector2 laidOutFor;
 
         public bool IsBig => big;
+
+        /// <summary>Whether the corner map shows on a screen this wide (the setting is on and there's room).</summary>
+        public static bool ShowsSmall(float screenWidth) => GameSettings.ShowMinimap && screenWidth >= SmallFrom;
 
         public static Minimap Create(RectTransform parent, PlazaWorld world)
         {
@@ -155,7 +161,7 @@ namespace BookBuddies.UI
             else
             {
                 scale = SmallScale;
-                b.Pin(new Vector2(1, 1), new Vector2(-16, -76), Vector2.one * (SmallSize + 10)); // under the corner buttons
+                b.Pin(new Vector2(1, 1), new Vector2(-Hud.Margin, -Hud.BelowCorner), Vector2.one * Width); // under the corner buttons
                 border.sprite = UiKit.Rounded((int)(SmallSize / 2) + 5);
                 window.sprite = UiKit.Rounded((int)(SmallSize / 2));
             }
@@ -169,10 +175,10 @@ namespace BookBuddies.UI
         void LateUpdate()
         {
             if (world == null || world.Me == null) return;
-            bool show = big || GameSettings.ShowMinimap;
+            var screen = ((RectTransform)transform).rect.size;
+            bool show = big || ShowsSmall(screen.x);
             UiKit.Show(border, show);
             if (!show) return;
-            var screen = ((RectTransform)transform).rect.size;
             if (big && screen != laidOutFor) Layout(); // follows window resizes
 
             art.anchoredPosition = Point(Vector2.zero);

@@ -76,7 +76,10 @@ namespace BookBuddies
             if (clips != null) me.sfx.PlayOneShot(clips[Random.Range(0, clips.Length)], volume * GameSettings.SoundVolume * Loudness);
         }
 
-        /// <summary>Changes the music's mood (pawtopia, home, wild, cave) with a short fade, or stops it with null.</summary>
+        /// <summary>Adds or changes a music mood: a root note (MIDI) and a scale, like each town's own tune.</summary>
+        public static void AddMood(string name, int root, int[] scale) => Moods[name] = (root, scale);
+
+        /// <summary>Changes the music's mood (pawtopia, home, wild, cave or a town's) with a short fade, or stops it with null.</summary>
         public static void Music(string newMood)
         {
             if (me) me.wantMood = newMood;

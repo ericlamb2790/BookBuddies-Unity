@@ -294,7 +294,7 @@ namespace BookBuddies.UI
 
             float k = canvas.scaleFactor;
             m.Tag.anchoredPosition = (Vector2)feet / k;
-            UiKit.Show(m.Tag, a.IsMe || GameSettings.ShowNames);
+            UiKit.Show(m.Tag, a.IsMe || GameSettings.ShowNames && a.NameShown);
             Vector2 top = (Vector2)head / k;
 
             // chat bubble (clamped inside the screen like the site's)
