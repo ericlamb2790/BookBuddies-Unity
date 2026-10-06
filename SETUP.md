@@ -1,12 +1,21 @@
 # BookBuddies in Unity: setup
 
-Unity port v0.2, made from website build 530. It has your pet, Pawtopia and the live Plaza, plus an intro, a title screen with your egg or pet, egg hatching, loading screens, Settings, a town menu, a minimap and photo mode.
+Unity port v0.3. Pets come from website build 551 (every body, form, fur, mane and tail), and the rest is from build 530. It has your pets, Pawtopia and the live Plaza, plus an intro, a title screen, egg hatching, loading screens, Settings, a town menu, a minimap and photo mode.
+
+**New in v0.3:**
+- **Tales of Pages on Bramble Road.** Leave Pawtopia by the east gate. Villains roam the tall grass, chase you and ambush you. Touching one starts a full-screen battle: the website's own battle engine, with lanes, ink, Ultimates and speed 1×/2×/4×. Wins drop gear, and the reward card moves on by itself after 4 seconds. Inside the road are the Inkwell Caves, a camp, a stash, a wayshrine and the Guardian's Chest.
+- **Bag and gear:** equip weapon, armor, hat and charm. Compare items, salvage them for dust, and see your hero card.
+- **Pets screen** (Menu → Pets): keep up to 6 pets. Switch the active one (town, Tales and the title screen follow it), hatch a new egg, or reroll a pet's look.
+- **Controller everywhere:** whenever a menu is open, the left stick moves an on-screen cursor. **A** clicks, **B** goes back one step, and the right stick scrolls.
+- **Menus scale with the window** and follow F11 fullscreen. Settings has a 5-step "Menu and text size".
+- **Admin tools** for accounts: search, mute, kick, timed or permanent bans, rename, coins, grant admin, and a log.
+- Smoother walking, clearer highlights and prompts on things you can use, and the Play-mode error from the HUD is fixed.
 
 It's made for **Unity 6 (6000.3)** with the **Input System** package, and also works with 2022.3 LTS and the old input setting.
 
 ## 1. The Unity project
 
-Your project at `D:\AI\BB-Unity\BookBuddies Unity` is already set up. To update it from v0.1, close Unity, copy everything in this zip (`Assets`, `Packages`, `Server` and the two docs) into that folder, choose **Replace** for files that already exist, and reopen the project.
+Your project at `D:\AI\BB-Unity\BookBuddies Unity` is already set up. To update it, close Unity, copy everything in this zip (`Assets`, `Packages`, `Server` and the two docs) into that folder, choose **Replace** for files that already exist, and reopen the project.
 
 `Packages/manifest.json` removes Unity's **Engineering** feature, whose Code Coverage, Editor Coroutines, Profile Analyzer and Settings Manager packages showed *invalid signature* errors. The game uses none of them. Visual Studio support from that feature is kept. If you'd rather keep the feature, skip that file and instead delete the project's `Library\PackageCache` folder with Unity closed, so Unity downloads fresh copies.
 
@@ -20,7 +29,7 @@ For a fresh project:
 
 ## 2. Set up the server (once)
 
-v0.2 has its own Cloudflare Worker in the `Server` folder, with a new D1 database and Durable Objects for the live town. It's separate from the website's Worker and doesn't change it. Follow **`Server/README.md`**. In short:
+The game has its own Cloudflare Worker in the `Server` folder, with a new D1 database and Durable Objects for the live town. It's separate from the website's Worker and doesn't change it. Follow **`Server/README.md`**. In short:
 
 ```
 cd Server
@@ -62,6 +71,13 @@ Open any scene (the default `SampleScene` is fine) and press **Play**. The game 
 | Photo | Menu → Photo mode | P or F12 | |
 | Town menu | Menu button | Esc | Start (Menu) |
 | Close / back | tap outside it | Esc | B |
+| Bag and gear | 🎒 button | I | Menu → Bag |
+| Hero card | 🦊 button | C | Menu → Hero |
+| Use a place (stash, cave, camp…) | tap its button | E next to it | A next to it |
+| Battle: Ultimate | Ultimate button | E | A |
+| Battle: change lane | lane buttons | + and − | LB and RB |
+| Battle: speed | speed button | F | Y |
+| Any menu | mouse | mouse | left stick moves a cursor, A clicks, B backs out, right stick scrolls |
 
 In Settings, LB and RB switch tabs. A tap on a touch screen does exactly what a mouse click does. Photos are saved as PNG files in the game's data folder under `Photos` (on Windows: `%USERPROFILE%\AppData\LocalLow\<company>\<product>\Photos`).
 
@@ -99,6 +115,10 @@ Everything you see is a normal PNG in `Assets/BookBuddies/Resources/BookBuddies`
 | Pets and eggs | `Data/pet_parts.json` | The website's own pet parts |
 | Town layout | `Data/town_pawtopia.json` | Tiles, buildings, seats, places and area names |
 | Villagers | `Scripts/World/Townsfolk.cs` | Names and looks of the six villagers |
+| Villains | `Foes/<Name>.png` (make the folder) | Replaces the drawn villain, e.g. `Foes/Grimsby.png`. Leave it out to keep the website's drawing |
+| Battle arenas, effects, dice | `Battle/Arenas`, `Battle/Particles`, `Battle/Shapes`, `Battle/d20*.png` | Sizes in `Data/battle_art.json` |
+| Bramble Road and caves | `Town/Road/`, `Town/Caves/` | In `Data/art_road.json` |
+| Tales icons | `UI/Emotes/t_<code>.png` | Listed in `Data/art_tales.json` |
 | Intro shots and captions | `Scripts/UI/Cinema.cs` | `IntroShots` |
 | Loading tips | `Scripts/UI/LoadingScreen.cs` | `Tips` |
 
@@ -112,7 +132,9 @@ If art looks stretched or blurry after a swap, right-click `Resources/BookBuddie
 | `Scripts/Net` | The Worker's HTTP API and the live WebSocket |
 | `Scripts/Live` | The live town: connection, players, chat, emotes, tricks and interactions |
 | `Scripts/World` | The town map, camera, villagers and ambient life |
-| `Scripts/Pets` | Pet looks, the pet drawing (a port of the site's `petSVG`) and pets walking around |
+| `Scripts/Pets` | Pet looks, the pet drawing (a port of build 551's `petSVG`), DNA rolls, your pets list and pets walking around |
+| `Scripts/Tales` | Tales of Pages: data, battle engine, heroes, villains, loot, save, and Bramble Road |
+| `Scripts/UI/Tales` | Battle screen, reward card, bag, hero card and reveals |
 | `Scripts/UI` | Title, intro and arrival cinematics, hatching, loading, Settings, HUD, minimap, menus, name tags |
 | `Editor` | Import settings for the art |
 | `Server` (next to `Assets`) | The new Cloudflare Worker |
@@ -121,8 +143,11 @@ If art looks stretched or blurry after a swap, right-click `Resources/BookBuddie
 
 - **Live games:** one per build, starting with whichever you pick.
 - **Town places:** the board, café orders, shops, Tale Hall and the train show a card that says they open later.
-- **Other features:** garden tending, gatherings, friends lists, other towns and Bramble Road, holiday decorations, and Tales gear.
+- **Tales:** only Bramble Road link 1 and the Inkwell Caves. Rosewater and the other towns, the shop, class change, story, raids, gear reroll and ascend come later. Villains are only on your own screen, not shared with other players.
+- **Pets:** no stink or dirty mood, and no tail wag yet. Hatching and rerolling are free. Pet XP for evolution isn't tracked yet.
 - **Emoji in chat text** only show when they come first in a message, because Unity's built-in text can't draw colour emoji.
 - **WebGL** would need a browser WebSocket bridge. Desktop, Android and iOS work.
 
-This version was checked by compiling it against Unity's libraries for both input settings, and the server passed 20 local tests. It hasn't been run inside the Unity editor yet, so if something looks off, send a screenshot or the Console error.
+**After updating, redeploy the Worker** (`npx wrangler deploy` in `Server`). It adds the pets list and the admin log by itself. To become the first admin, see "Make the first admin" in `Server/README.md`.
+
+This version was checked by compiling it against Unity's libraries for both input settings with no errors or warnings. The C# tests pass: battles, loot, villains (40 of 40 match the website), and pets (1089 of 1089 match the website's drawing). The server passed its local tests (regression 21/21, admin 35/35, world 10/10, plus the pets routes). It hasn't been run inside the Unity editor yet, so if something looks off, send a screenshot or the Console error.

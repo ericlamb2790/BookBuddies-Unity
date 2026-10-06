@@ -31,7 +31,8 @@ namespace BookBuddies.World
         public float PlayerZoom { get; private set; } = 1f;
         public float BaseDistance => baseDistance;
         TownMap map;
-        float baseDistance = -1;
+        float baseDistance = -1, shakeAt = -9;
+        static readonly Vector2[] ShakeSteps = { Vector2.zero, new Vector2(-5, 2), new Vector2(4, -3) }; // pixels, like the site's pwshake
 
         public void Setup(TownMap town, Vector2 start)
         {
@@ -39,7 +40,7 @@ namespace BookBuddies.World
             Focus = start;
             Cam = GetComponent<Camera>();
             Cam.clearFlags = CameraClearFlags.SolidColor;
-            Cam.backgroundColor = Palette.Sea;
+            Cam.backgroundColor = town.Backdrop;
             Cam.nearClipPlane = .3f;
             Cam.farClipPlane = 400f;
             transform.rotation = Facing;
@@ -74,6 +75,12 @@ namespace BookBuddies.World
             Place();
         }
 
+        /// <summary>The jolt when a fight starts: a few pixels, three steps, twice over 0.6 s (off with reduce motion).</summary>
+        public void Shake()
+        {
+            if (!GameSettings.ReduceMotion) shakeAt = Time.unscaledTime;
+        }
+
         /// <summary>Puts the camera where Focus, distance and zoom say. Cinematics call this every frame.</summary>
         public void Place()
         {
@@ -86,7 +93,16 @@ namespace BookBuddies.World
             float p = Pitch * Mathf.Deg2Rad, t = petBelowCentre * 2 * Mathf.Tan(Cam.fieldOfView * .5f * Mathf.Deg2Rad);
             float ahead = t * distance / (Mathf.Sin(p) + t * Mathf.Cos(p));
             Vector3 aim = TownMap.ToWorld(Focus.x, Focus.y - ahead);
-            transform.position = aim - transform.forward * distance;
+            transform.position = aim - transform.forward * distance + ShakeOffset();
+        }
+
+        Vector3 ShakeOffset()
+        {
+            float t = (Time.unscaledTime - shakeAt) / .3f;
+            if (t < 0 || t >= 2) return Vector3.zero;
+            var px = ShakeSteps[Mathf.Min(2, (int)(t % 1 * 3))];
+            float perPixel = 2 * distance * Mathf.Tan(Cam.fieldOfView * .5f * Mathf.Deg2Rad) / Mathf.Max(1, Screen.height);
+            return (-transform.right * px.x + transform.up * px.y) * perPixel;
         }
 
         /// <summary>The map point under a screen position, or null if it points at the sky.</summary>

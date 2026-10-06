@@ -3,11 +3,12 @@
 // The routes and messages match the website's, so the Unity game can talk to either server.
 
 import { textProblem, cleanText } from './safety.js';
-import { ensureSchema, blockedWords, countToday, bumpToday } from './db.js';
+import { ensureSchema, blockedWords, countToday, bumpToday, TOWNS, ROOMS, Problem, json, readJson } from './db.js';
+import { adminRoute, breakMessage } from './admin.js';
+import { cleanPet, petsRoute, petList, activeLook } from './pets.js';
 export { TownRoom } from './town.js';
 
-const VERSION = '0.2';
-const ROOMS = 6;                 // a town opens a second copy only when the first is full
+const VERSION = '0.3';
 const PASS_MINUTES = 15;         // a pass lets you rejoin quickly without asking for a new ticket
 const SIGNUPS_PER_IP_PER_DAY = 10;
 const WRONG_CODES_PER_IP_PER_DAY = 15;
@@ -37,11 +38,13 @@ async function route(request, env, url) {
   if (path === '/link/claim' && method === 'POST') return signIn(request, env);
 
   const me = await signedIn(request, env);
-  if (path === '/me' && method === 'GET') return json(account(me));
+  if (path === '/me' && method === 'GET') return json({ ...account(me), ...(await petList(env, me)) });
   if (path === '/me' && method === 'PATCH') return updateMe(request, env, me);
   if (path === '/me/recovery' && method === 'GET') return json({ code: formatCode(me.recovery_code) });
   if (path === '/me/delete' && method === 'POST') return deleteMe(env, me);
+  if (path === '/me/pets' || path.startsWith('/me/pets/')) return petsRoute(request, env, path, me);
   if (path === '/plaza/world/ticket' && method === 'GET') return townTicket(env, me, url);
+  if (path.startsWith('/admin/')) return adminRoute(request, env, path, url, me);
   throw new Problem('Not found', 404);
 }
 
@@ -65,10 +68,10 @@ async function register(request, env) {
   await env.DB.prepare('INSERT INTO players (id, name, pet, recovery_code, created_at, last_seen) VALUES (?1, ?2, ?3, ?4, ?5, ?5)')
     .bind(id, name, pet, code, Date.now()).run();
   const token = await newToken(env, id);
-  return json({ token, recovery: formatCode(code), name, pet });
+  return json({ token, recovery: formatCode(code), id, name, pet, is_admin: false });
 }
 
-/** Sign in with a recovery code (BB-XXXXX-XXXXX). Wrong guesses are limited per day. */
+/** Sign in with a recovery code (BB-XXXXX-XXXXX). Wrong guesses are limited per day; players on a break wait it out. */
 async function signIn(request, env) {
   const ip = request.headers.get('cf-connecting-ip') || 'local';
   if (await countToday(env, 'wrong_codes', ip) >= WRONG_CODES_PER_IP_PER_DAY) throw new Problem('Too many wrong codes today. Try again tomorrow.', 429);
@@ -78,6 +81,7 @@ async function signIn(request, env) {
     await bumpToday(env, 'wrong_codes', ip);
     throw new Problem('That code didn’t match an account. Check it and try again.', 404);
   }
+  if (player.ban_until > Date.now()) throw new Problem(breakMessage(player.ban_until), 403);
   const token = await newToken(env, player.id);
   return json({ token, ...account(player) });
 }
@@ -95,7 +99,10 @@ async function updateMe(request, env, me) {
     if (!pet) throw new Problem('That pet look couldn’t be read.');
     me.pet = pet;
   }
-  await env.DB.prepare('UPDATE players SET name = ?2, pet = ?3 WHERE id = ?1').bind(me.id, me.name, me.pet).run();
+  await env.DB.batch([
+    env.DB.prepare('UPDATE players SET name = ?2, pet = ?3 WHERE id = ?1').bind(me.id, me.name, me.pet),
+    ...(body.pet !== undefined ? [activeLook(env, me, me.pet)] : []),
+  ]);
   return json(account(me));
 }
 
@@ -103,6 +110,7 @@ async function deleteMe(env, me) {
   await env.DB.batch([
     env.DB.prepare('DELETE FROM tokens WHERE player_id = ?1').bind(me.id),
     env.DB.prepare('DELETE FROM finds WHERE player_id = ?1').bind(me.id),
+    env.DB.prepare('DELETE FROM pets WHERE player_id = ?1').bind(me.id),
     env.DB.prepare('DELETE FROM players WHERE id = ?1').bind(me.id),
   ]);
   return json({ ok: true });
@@ -133,20 +141,14 @@ function newRecoveryCode() {
 const cleanCode = (c) => { const s = String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); return s.length === 12 && s.startsWith('BB') ? s : null; };
 const formatCode = (c) => (c ? `${c.slice(0, 2)}-${c.slice(2, 7)}-${c.slice(7)}` : '');
 
-/** A pet look is a small JSON object (the same format the website uses). */
-function cleanPet(pet) {
-  const text = typeof pet === 'string' ? pet : JSON.stringify(pet || null);
-  if (!text || text.length > 1500) return null;
-  try { const o = JSON.parse(text); return o && typeof o === 'object' && !Array.isArray(o) ? text : null; } catch { return null; }
-}
-
 // ---------- the live town ----------
 
-/** A short-lived signed ticket for room 1-6 of a town, plus a 15-minute pass for quick rejoins. */
+/** A short-lived signed ticket for room 1-6 of a town (?town=pawtopia, road1 or caves), plus a 15-minute pass for quick rejoins. */
 async function townTicket(env, me, url) {
-  if (me.ban_until > Date.now()) return json({ live: false, reason: 'break' });
+  if (me.ban_until > Date.now()) return json({ live: false, reason: 'break', msg: breakMessage(me.ban_until) });
   const shard = Math.max(1, Math.min(ROOMS, parseInt(url.searchParams.get('s'), 10) || 1));
-  const town = 'pawtopia';
+  const asked = url.searchParams.get('town');
+  const town = TOWNS.includes(asked) ? asked : 'pawtopia';
   const name = encodeURIComponent(me.name);
   const ticket = await sign(env, `${me.id}|${Date.now() + 60e3}|${name}|${town}:${shard}`);
   const passExp = Date.now() + PASS_MINUTES * 60e3;
@@ -201,16 +203,6 @@ async function ticketKey(env) {
 }
 
 // ---------- small helpers ----------
-
-class Problem extends Error {
-  constructor(message, status = 400) { super(message); this.status = status; }
-}
-
-async function readJson(request) {
-  try { const o = await request.json(); return o && typeof o === 'object' ? o : {}; } catch { return {}; }
-}
-
-const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'content-type': 'application/json' } });
 
 function cors(res, env) {
   const h = new Headers(res.headers);

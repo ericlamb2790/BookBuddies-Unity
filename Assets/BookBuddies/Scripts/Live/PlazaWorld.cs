@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using BookBuddies.Pets;
+using BookBuddies.Road;
+using BookBuddies.UI;
 using BookBuddies.World;
 using UnityEngine;
 
@@ -9,6 +11,9 @@ namespace BookBuddies.Live
     /// The live town: your pet, everyone else's, and what happens between you.
     /// Walking, sitting, chat, emotes, tricks, cute interactions and finding coins all go through the
     /// same messages the website sends, so Unity players and website players share one town.
+    /// Walking: tap to walk (with a dotted trail), hold to keep walking toward the pointer, or step tile by tile
+    /// with keys or a stick. Whatever the pointer is on glows, and whatever your pet stands next to gets a prompt.
+    /// On the road and in the caves, RoadFoes adds the villains.
     /// </summary>
     public sealed class PlazaWorld : MonoBehaviour
     {
@@ -17,6 +22,9 @@ namespace BookBuddies.Live
         public static readonly string[] Interactions = { "hug", "boop", "play", "snack", "highpaw", "dance", "wave" };
         const float HeartbeatEvery = 1.4f;
         const int KeyboardStride = 2; // tiles ahead to aim for when walking with keys or a stick
+        const float HoldDelay = .3f;      // seconds a press must last before it becomes hold-to-walk
+        const float HoldRepath = .2f;     // seconds between re-aims while holding
+        const float HoldSendEvery = .5f;  // the room allows 40 messages per 10 s, so held walks send "go" at most twice a second
 
         public TownMap Map { get; private set; }
         public PlazaNetwork Net { get; private set; }
@@ -24,6 +32,13 @@ namespace BookBuddies.Live
         public IEnumerable<PetActor> Actors => actors.Values;
         public string Area { get; private set; }
         public TownMap.Spot Hint { get; private set; }
+        /// <summary>The villains, on the road and in the caves (null in town).</summary>
+        public RoadFoes Road { get; private set; }
+        /// <summary>What the mouse is on (a pet, seat, place or foe), or null.</summary>
+        public Usable Hover { get; private set; }
+        /// <summary>What E or A would use right now (the thing your pet stands next to), or null.</summary>
+        public Usable Prompt { get; private set; }
+        public TownView View => view;
         bool Live => Net != null && Net.IsLive;
         public readonly HashSet<string> Muted = new HashSet<string>();
 
@@ -40,28 +55,48 @@ namespace BookBuddies.Live
         readonly Dictionary<string, PetActor> actors = new Dictionary<string, PetActor>();
         readonly Dictionary<string, Vector2Int> items = new Dictionary<string, Vector2Int>();
         readonly HashSet<string> claimed = new HashSet<string>();
+        readonly List<string> unseenNotes = new List<string>(); // messages that came while no HUD was up
         float heartbeatAt, villagerWanderAt;
-        Vector2Int keyTarget = new Vector2Int(-1, -1);
+        // walking with keys or a stick: a tap moves exactly one tile, holding keeps going, letting go stops on the next tile
+        Vector2Int keyDir, keyStop;
+        bool keyHeld, keyOwnsPath;
+        // holding the pointer down on the world keeps walking toward it
+        float pressAt = -1, holdRepathAt, goSentAt = -99;
+        Vector2 pressFrom;
+        Vector2Int holdTarget;
+        bool holdWalking, goOwed;
+        // hover and prompt
+        Highlight ring;
+        PathPreview trail;
+        readonly Usable hoverSlot = new Usable(), promptSlot = new Usable();
+        PetActor hoveredPet;
+        RoadFoe hoveredFoe;
 
-        public void Begin(TownMap map, TownView townView, TownCamera townCamera, string myName, string myLook)
+        /// <summary>Opens the town: your pet appears at "arrive" (or where you were, or the start) and the live room connects.</summary>
+        public void Begin(TownMap map, TownView townView, TownCamera townCamera, string myName, string myLook, Vector2Int? arrive = null)
         {
             Map = map; view = townView; cam = townCamera;
             actorRoot = new GameObject("Pets").transform;
             actorRoot.SetParent(transform, false);
-            Me = PetActor.Spawn(actorRoot, map, "me", myName, myLook, StartPosition(), false, true);
+            Me = PetActor.Spawn(actorRoot, map, "me", myName, myLook, arrive.HasValue ? Arrival(arrive.Value) : StartPosition(), false, true);
             actors[Me.Id] = Me;
             cam.Setup(map, Me.Pos);
+            ring = Highlight.Create(transform);
+            trail = PathPreview.Create(transform);
+            if (map.Wild != null) Road = RoadFoes.Attach(this, view, cam);
 
             Net = new PlazaNetwork(map.Key);
             Net.Welcome += OnWelcome;
             Net.Message += OnMessage;
             Net.StateChanged += OnStateChanged;
+            MyPets.ActiveChanged += OnPetChanged;
             if (Settings.SignedIn) Net.Start();
             else LocalVillagers();
         }
 
         public void End()
         {
+            MyPets.ActiveChanged -= OnPetChanged;
             if (Net == null) return;
             SavePosition();
             Net.Stop();
@@ -75,12 +110,16 @@ namespace BookBuddies.Live
             if (Me == null || Net == null) return;
             Net.Update();
             HandlePointer();
+            HandleHold();
             HandleKeys();
+            if (goOwed && Time.time - goSentAt >= HoldSendEvery) SendGo();
             if (Live && Me.Walking && Time.time > heartbeatAt) { heartbeatAt = Time.time + HeartbeatEvery; SendGo(); }
             if (!Live && Time.time > villagerWanderAt) { villagerWanderAt = Time.time + 6; WanderVillagers(); }
             cam.Follow(Me.Pos, Time.deltaTime);
             CheckArea();
             PickUpItems();
+            if (view.Life) view.Life.PetAt(Me.Pos);
+            UpdateTargets();
         }
 
         // ---- input ----
@@ -88,111 +127,295 @@ namespace BookBuddies.Live
         void HandlePointer()
         {
             if (!PlazaInput.Tapped(out var screen)) return;
-            Vector2? hit = cam.ScreenToMap(screen);
+            if (holdWalking || UiStack.Any) return; // the press turned into a held walk, or a card is up
+            if (Road != null && Road.Tap(screen)) return; // foes first, like the site's wildTap
 
-            // pets first, by how close they look on screen
-            PetActor best = null;
-            float bestD = 60f * Screen.dpi / 160f + 30f;
-            foreach (var a in actors.Values)
-            {
-                if (a.Gone || a.Hidden) continue;
-                Vector2 p = cam.Cam.WorldToScreenPoint(a.transform.position + a.transform.up * .55f);
-                float d = (p - screen).magnitude;
-                if (d < bestD) { bestD = d; best = a; }
-            }
+            var best = PetAt(screen, true);
             if (best == Me) { Trick(new[] { "hop", "twirl", "wiggle" }[Random.Range(0, 3)]); return; }
-            if (best != null) { GoTo(best); return; }
+            if (best != null) { GoTo(best); ShowTrail(); return; }
+            Vector2? hit = cam.ScreenToMap(screen);
             if (!hit.HasValue) return;
 
             int x = Mathf.FloorToInt(hit.Value.x), y = Mathf.FloorToInt(hit.Value.y);
             if (!Map.Inside(x, y)) return;
             foreach (var kv in items)
-                if (Mathf.Abs(kv.Value.x - x) <= 1 && Mathf.Abs(kv.Value.y - y) <= 1) { view.TapRing(kv.Value.x, kv.Value.y); WalkTo(kv.Value.x, kv.Value.y); return; }
+                if (Mathf.Abs(kv.Value.x - x) <= 1 && Mathf.Abs(kv.Value.y - y) <= 1) { view.TapRing(kv.Value.x, kv.Value.y); WalkTo(kv.Value.x, kv.Value.y); ShowTrail(); return; }
             var seat = Map.SeatAt(x, y);
-            if (seat != null) { SitAt(seat); return; }
+            if (seat != null) { SitAt(seat); ShowTrail(); return; }
             var spot = Map.SpotAt(x, y);
-            if (spot != null) { UseSpot(spot); return; }
+            if (spot != null) { UseSpot(spot); ShowTrail(); return; }
             var to = PathFinder.NearestWalkable(Map, x, y);
             if (!to.HasValue) return;
             view.TapRing(to.Value.x, to.Value.y);
-            WalkTo(to.Value.x, to.Value.y);
+            if (WalkTo(to.Value.x, to.Value.y)) ShowTrail();
+        }
+
+        /// <summary>The pet nearest a screen point (within about a finger's width of its middle), or null.</summary>
+        PetActor PetAt(Vector2 screen, bool includeMe)
+        {
+            PetActor best = null;
+            float bestD = 60f * Screen.dpi / 160f + 30f;
+            foreach (var a in actors.Values)
+            {
+                if (a.Gone || a.Hidden || (!includeMe && a == Me)) continue;
+                Vector2 p = cam.Cam.WorldToScreenPoint(a.transform.position + a.transform.up * .55f);
+                float d = (p - screen).magnitude;
+                if (d < bestD) { bestD = d; best = a; }
+            }
+            return best;
+        }
+
+        void ShowTrail()
+        {
+            if (Me.Walking) trail.Show(Me.Shown, Me.Path);
+        }
+
+        /// <summary>
+        /// Click-and-hold (or touch-and-hold) on the world: after a moment your pet keeps walking toward the
+        /// pointer, re-aiming as it moves, and carries on to the last spot when you let go.
+        /// </summary>
+        void HandleHold()
+        {
+            bool held = WorldPointer.HeldOnWorld && !PlazaInput.Locked && !PlazaInput.MenuOpen && !UiStack.Any && (Road == null || !Road.Fighting);
+            if (!held)
+            {
+                if (holdWalking) EndHold();
+                pressAt = -1;
+                return;
+            }
+            var at = WorldPointer.Position;
+            if (pressAt < 0) { pressAt = Time.unscaledTime; pressFrom = at; return; }
+            if (!holdWalking && Time.unscaledTime - pressAt < HoldDelay && (at - pressFrom).magnitude < 14) return;
+            if (!holdWalking) { holdWalking = true; trail.Clear(); }
+            if (Time.unscaledTime < holdRepathAt) return;
+            var hit = cam.ScreenToMap(at);
+            if (!hit.HasValue) return;
+            var to = PathFinder.NearestWalkable(Map, Mathf.FloorToInt(hit.Value.x), Mathf.FloorToInt(hit.Value.y));
+            if (!to.HasValue || (to.Value == holdTarget && Me.Walking)) return;
+            holdRepathAt = Time.unscaledTime + HoldRepath;
+            holdTarget = to.Value;
+            WalkTo(to.Value.x, to.Value.y, null, true);
+        }
+
+        void EndHold()
+        {
+            holdWalking = false;
+            if (goOwed) SendGo();
+            if (Me.Walking) view.TapRing(holdTarget.x, holdTarget.y);
         }
 
         void HandleKeys()
         {
             var move = PlazaInput.Move();
             if (move != Vector2.zero) StepToward(move);
-            else if (keyTarget.x >= 0)
-            {
-                // key released: stop on the tile we're stepping into, not the lookahead target
-                keyTarget = new Vector2Int(-1, -1);
-                if (Me.Path.Count > 1) { Me.Path.RemoveRange(1, Me.Path.Count - 1); SendGo(); }
-            }
+            else if (keyHeld) StopKeyWalk();
 
+            if (PlazaInput.MenuOpen || UiStack.Any) return; // the shortcuts belong to the menu while it's up
             if (PlazaInput.Down(PlazaAction.Hop)) Trick("hop");
             for (int i = 0; i < Emotes.Length; i++)
                 if (PlazaInput.Down(PlazaAction.Emote1 + i)) Emote(Emotes[i]);
         }
 
-        /// <summary>Walk with keys or a stick: aim a few tiles ahead and re-aim as the direction changes.</summary>
+        /// <summary>
+        /// Walk with keys or a stick. Each press promises exactly one more tile (so two quick taps move two tiles);
+        /// holding keeps aiming a couple of tiles ahead, and only re-aims when the direction changes or the path runs short.
+        /// </summary>
         void StepToward(Vector2 dir)
         {
-            int dx = Mathf.Abs(dir.x) > .38f ? (int)Mathf.Sign(dir.x) : 0;
-            int dy = Mathf.Abs(dir.y) > .38f ? (int)Mathf.Sign(dir.y) : 0;
-            if (dx == 0 && dy == 0) return;
-            var here = Me.Tile;
-            var target = here;
+            var d = new Vector2Int(Mathf.Abs(dir.x) > .38f ? (dir.x > 0 ? 1 : -1) : 0, Mathf.Abs(dir.y) > .38f ? (dir.y > 0 ? 1 : -1) : 0);
+            if (d == Vector2Int.zero) return;
+            bool fresh = !keyHeld || d != keyDir;
+            if (!fresh && keyOwnsPath && Me.Path.Count > 1) return; // still on course
+            var from = !fresh || (d == keyDir && keyOwnsPath && Me.Walking) ? (Me.Walking ? Me.Path[0] : Me.Tile) : NearestTile();
+            var target = from;
             for (int i = 0; i < KeyboardStride; i++)
             {
-                var next = new Vector2Int(target.x + dx, target.y + dy);
-                bool cornerOk = dx == 0 || dy == 0 || (Map.Walkable(target.x + dx, target.y) && Map.Walkable(target.x, target.y + dy));
-                if (!Map.Walkable(next.x, next.y) || !cornerOk) break;
-                target = next;
+                if (!CanStep(target, d)) break;
+                target += d;
             }
-            if (target == here) { Me.Dir = dx != 0 ? dx : Me.Dir; return; }
-            bool sameDirection = keyTarget.x >= 0 && (keyTarget - here).x * dx >= 0 && (keyTarget - here).y * dy >= 0 && Mathf.Sign((keyTarget - here).x) == dx && Mathf.Sign((keyTarget - here).y) == dy;
-            if (sameDirection && Me.Path.Count > 1) return;
-            keyTarget = target;
+            if (fresh) keyStop = CanStep(from, d) ? from + d : from;
+            keyHeld = true;
+            keyDir = d;
+            if (target == from && !Me.Walking) { if (d.x != 0) Me.Dir = d.x; return; }
+            if (target == from) return;
             WalkTo(target.x, target.y, null, true);
+            keyOwnsPath = true;
         }
 
-        /// <summary>E key or gamepad A: do the obvious thing nearby.</summary>
+        /// <summary>Letting go: finish the promised tile, or the tile already being stepped into, and stop there.</summary>
+        void StopKeyWalk()
+        {
+            keyHeld = false;
+            if (!keyOwnsPath) return;
+            int keep = Mathf.Max(Me.Path.IndexOf(keyStop), 0) + 1;
+            if (Me.Path.Count > keep) { Me.Path.RemoveRange(keep, Me.Path.Count - keep); SendGo(); }
+        }
+
+        bool CanStep(Vector2Int at, Vector2Int d) =>
+            Map.Walkable(at.x + d.x, at.y + d.y) && (d.x == 0 || d.y == 0 || (Map.Walkable(at.x + d.x, at.y) && Map.Walkable(at.x, at.y + d.y)));
+
+        Vector2Int NearestTile() => new Vector2Int(Mathf.RoundToInt(Me.Pos.x - .5f), Mathf.RoundToInt(Me.Pos.y - .5f));
+
+        /// <summary>E key or gamepad A: do the obvious thing nearby (what the prompt shows), or hop.</summary>
         public void UseNearby()
+        {
+            var near = Nearby(promptSlot);
+            if (near == null) { Trick("hop"); return; }
+            switch (near.Thing)
+            {
+                case PetActor pet: PetTapped?.Invoke(pet); break;
+                case TownMap.Seat seat: SitAt(seat); break;
+                case TownMap.Spot spot: if (!SpotActions.Use(spot)) SetHint(spot); break;
+            }
+        }
+
+        // ---- what you could use: under the pointer, and next to your pet ----
+
+        void UpdateTargets()
+        {
+            bool calm = !PlazaInput.Locked && !PlazaInput.MenuOpen && !PlazaInput.Typing && !UiStack.Any && (Road == null || !Road.Fighting);
+            Hover = calm && PlazaInput.UsingPointer && !WorldPointer.IsTouch && !holdWalking ? Hovered(WorldPointer.Position) : null;
+            var near = calm && !Me.Walking && !Me.Sitting ? Nearby(promptSlot) : null;
+            Prompt = near != null && !(near.Thing is TownMap.Spot s && s == Hint) ? near : null; // the place card already says it
+
+            var newPet = Hover?.Thing as PetActor;
+            var newFoe = Hover?.Thing as RoadFoe;
+            if (hoveredPet != newPet) { if (hoveredPet) hoveredPet.Hovered = false; hoveredPet = newPet; if (newPet) newPet.Hovered = true; }
+            if (hoveredFoe != newFoe) { if (hoveredFoe) hoveredFoe.Hovered = false; hoveredFoe = newFoe; if (newFoe) newFoe.Hovered = true; }
+
+            var glow = Hover ?? Prompt;
+            if (glow != null) ring.Show(glow.At, glow.Ring, glow.Danger ? Palette.Ember : Palette.Amber);
+            else ring.Hide();
+        }
+
+        Usable Hovered(Vector2 screen)
+        {
+            if (WorldPointer.OverUi(screen)) return null;
+            var foe = Road != null ? Road.FoeAt(screen) : null;
+            if (foe != null) return Describe(hoverSlot, foe);
+            var pet = PetAt(screen, false);
+            if (pet != null) return Describe(hoverSlot, pet);
+            var hit = cam.ScreenToMap(screen);
+            if (!hit.HasValue) return null;
+            int x = Mathf.FloorToInt(hit.Value.x), y = Mathf.FloorToInt(hit.Value.y);
+            var seat = Map.SeatAt(x, y);
+            if (seat != null) return Describe(hoverSlot, seat);
+            var spot = Map.SpotAt(x, y);
+            return spot != null ? Describe(hoverSlot, spot) : null;
+        }
+
+        // the site's E: a pet within 1.9 tiles, else a seat next to you, else a place whose door you're beside
+        Usable Nearby(Usable into)
         {
             PetActor near = null;
             float bestD = 1.9f;
             foreach (var a in actors.Values)
-                if (a != Me && !a.Gone && Vector2.Distance(a.Pos, Me.Pos) < bestD) { bestD = Vector2.Distance(a.Pos, Me.Pos); near = a; }
-            if (near != null) { PetTapped?.Invoke(near); return; }
+                if (a != Me && !a.Gone && !a.Hidden && Vector2.Distance(a.Pos, Me.Pos) < bestD) { bestD = Vector2.Distance(a.Pos, Me.Pos); near = a; }
+            if (near != null) return Describe(into, near);
             var t = Me.Tile;
             for (int j = -1; j <= 1; j++)
                 for (int i = -1; i <= 1; i++)
                 {
                     var seat = Map.SeatAt(t.x + i, t.y + j);
-                    if (seat != null) { SitAt(seat); return; }
+                    if (seat != null) return Describe(into, seat);
                 }
             var spot = Map.Spots.Find(s => Mathf.Abs(s.Use.x - t.x) <= 1 && Mathf.Abs(s.Use.y - t.y) <= 1);
-            if (spot != null) { SetHint(spot); return; }
-            Trick("hop");
+            return spot != null ? Describe(into, spot) : null;
+        }
+
+        static readonly Dictionary<string, string> SeatIcons = new Dictionary<string, string> { ["bench"] = "🪑", ["chair"] = "☕", ["beanbag"] = "📖", ["hammock"] = "💤", ["blanket"] = "🧺" };
+
+        static Usable Describe(Usable u, PetActor pet)
+        {
+            u.Kind = Usable.Kinds.Pet; u.Thing = pet;
+            u.At = pet.Shown + new Vector2(0, .3f); u.Ring = new Vector2(.6f, .45f); u.Top = pet.HeadPoint;
+            u.Icon = "👋"; u.Label = u.Verb = "Say hi";
+            return u;
+        }
+
+        static Usable Describe(Usable u, TownMap.Seat seat)
+        {
+            u.Kind = Usable.Kinds.Seat; u.Thing = seat;
+            u.At = new Vector2(seat.X + .5f, seat.Y + .5f); u.Ring = new Vector2(.62f, .5f);
+            u.Top = TownMap.ToWorld(seat.X + .5f, seat.Y + .5f) + TownCamera.Facing * Vector3.up * 1.1f;
+            u.Icon = SeatIcons.TryGetValue(seat.Kind, out var icon) ? icon : "🪑"; u.Label = u.Verb = "Sit";
+            return u;
+        }
+
+        Usable Describe(Usable u, TownMap.Spot spot)
+        {
+            var a = spot.Area;
+            u.Kind = Usable.Kinds.Spot; u.Thing = spot;
+            u.At = new Vector2(a.xMin + (a.width + 1) / 2f, a.yMin + (a.height + 1) / 2f);
+            u.Ring = new Vector2(Mathf.Min((a.width + 1) / 2f + .3f, 3), Mathf.Min((a.height + 1) / 2f + .3f, 2.2f));
+            u.Top = view.MarkerPoint(spot);
+            u.Icon = spot.Icon; u.Label = spot.Name;
+            u.Verb = SpotActions.CanUse(spot) && !string.IsNullOrEmpty(spot.Verb) ? spot.Verb : "Look";
+            return u;
+        }
+
+        static Usable Describe(Usable u, RoadFoe foe)
+        {
+            u.Kind = Usable.Kinds.Foe; u.Thing = foe;
+            u.At = foe.Pos + new Vector2(0, .3f); u.Ring = new Vector2(.55f, .4f) * foe.Size;
+            u.Top = foe.PointAt(-1.05f * foe.Size - .6f);
+            u.Icon = "⚔️"; u.Label = u.Verb = "Fight";
+            return u;
         }
 
         // ---- your pet ----
 
+        /// <summary>
+        /// Walks your pet to a tile (or the nearest walkable one). A step already under way is finished first,
+        /// so turns happen on tile centres like the site's. "then" runs on arrival; "quiet" skips the can't-get-there toast.
+        /// </summary>
         public bool WalkTo(int x, int y, System.Action then = null, bool quiet = false)
         {
+            keyOwnsPath = false;
             var to = Map.Walkable(x, y) ? new Vector2Int(x, y) : PathFinder.NearestWalkable(Map, x, y);
             if (!to.HasValue) return false;
-            var path = PathFinder.Find(Map, Me.Tile, to.Value);
-            if (path == null) { if (!quiet) Toast?.Invoke("Can’t get there from here"); return false; }
+            var from = Me.Walking ? Me.Path[0] : Me.Tile;
+            var path = PathFinder.Find(Map, from, to.Value);
+            if (path == null) { if (!quiet) Notify("Can’t get there from here"); return false; }
+            if (Me.Walking) path.Insert(0, from);
             if (Me.Sitting) Send("sit", "on", 0.0);
             Me.Walk(path);
             Me.OnArrived = then ?? Arrived;
             SetHint(null);
             if (path.Count == 0) { Me.OnArrived = null; (then ?? Arrived)(); return true; }
-            SendGo();
+            if (holdWalking && Time.time - goSentAt < HoldSendEvery) goOwed = true;
+            else SendGo();
             heartbeatAt = Time.time + HeartbeatEvery;
             return true;
         }
+
+        /// <summary>Stops your pet on the tile it's stepping into (a fight or an ambush) and tells the room.</summary>
+        public void Halt()
+        {
+            keyHeld = false;
+            holdWalking = false;
+            if (Me.Path.Count > 1) Me.Path.RemoveRange(1, Me.Path.Count - 1);
+            Me.OnArrived = null;
+            if (Me.Sitting) { Me.Sitting = false; Send("sit", "on", 0.0); }
+            trail.Clear();
+            SendGo();
+        }
+
+        /// <summary>Walks to a place and shows its card (the compass uses this to lead you to the road).</summary>
+        public void GoToSpot(TownMap.Spot spot) => UseSpot(spot);
+
+        /// <summary>A short message over the chat bar (kept until the HUD is up when it comes during loading).</summary>
+        public void Notify(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            if (Toast != null) Toast(text);
+            else if (!unseenNotes.Contains(text)) unseenNotes.Add(text);
+        }
+
+        /// <summary>The big title at the top of the screen.</summary>
+        public void Announce(string title, string subtitle) => Banner?.Invoke(title, subtitle);
+
+        public void ClearHint() => SetHint(null);
 
         void Arrived()
         {
@@ -215,10 +438,11 @@ namespace BookBuddies.Live
             else WalkTo(seat.X, seat.Y, Sit);
         }
 
+        // walk to a place and show its card; tapping it again while you're there uses it
         void UseSpot(TownMap.Spot spot)
         {
             void Show() { Me.Dir = spot.Area.center.x + .5f > Me.Pos.x ? 1 : -1; SetHint(spot); }
-            if (Me.Tile == spot.Use) Show();
+            if (Me.Tile == spot.Use && !Me.Walking) { if (Hint != spot || !SpotActions.Use(spot)) Show(); }
             else if (!WalkTo(spot.Use.x, spot.Use.y, Show)) SetHint(spot);
         }
 
@@ -321,12 +545,23 @@ namespace BookBuddies.Live
 
         // ---- network messages ----
 
+        /// <summary>The player switched pets in the Pets screen: show the new one here and to everyone in town.</summary>
+        void OnPetChanged(string look)
+        {
+            if (Me == null) return;
+            Me.SetLook(look);
+            var t = Me.Tile;
+            Send(new Dictionary<string, object> { ["t"] = "hi", ["look"] = look, ["x"] = (double)t.x, ["y"] = (double)t.y });
+        }
+
         void Send(string type, string key, object value) => Send(new Dictionary<string, object> { ["t"] = type, [key] = value });
         void Send(Dictionary<string, object> m) => Net?.Send(m);
 
         void SendGo()
         {
+            goOwed = false;
             if (Me.Path.Count == 0) return;
+            goSentAt = Time.time;
             var last = Me.Path[Me.Path.Count - 1];
             Send(new Dictionary<string, object>
             {
@@ -432,7 +667,7 @@ namespace BookBuddies.Live
                     Me.ShowEmote(m.Str("k") == "gift" ? "🎁" : "🪙");
                     Sound.Play(m.Str("k") == "gift" ? "rare" : "coin");
                     int coins = m.Int("coins");
-                    Toast?.Invoke(coins > 0 ? $"Found {(m.Str("k") == "bag" ? "a bag of coins" : m.Str("k") == "gift" ? "a gift box" : "a coin")}! +{coins} coins" : "Found it! You've hit today's coin limit.");
+                    Notify(coins > 0 ? $"Found {(m.Str("k") == "bag" ? "a bag of coins" : m.Str("k") == "gift" ? "a gift box" : "a coin")}! +{coins} coins" : "Found it! You've hit today's coin limit.");
                     break;
                 case "g":
                     var plot = m.Obj("p");
@@ -450,10 +685,7 @@ namespace BookBuddies.Live
                     break;
                 case "err":
                 case "muted":
-                    Toast?.Invoke(m.Str("msg"));
-                    break;
-                case "kicked":
-                    Toast?.Invoke(m.Str("msg", "An admin sent you home for a little while."));
+                    Notify(m.Str("msg"));
                     break;
             }
         }
@@ -506,7 +738,7 @@ namespace BookBuddies.Live
                 ["snack"] = "🍪 {0} shared a snack with you", ["highpaw"] = "🐾 {0} gave you a high paw", ["dance"] = "💃 {0} is dancing with you",
                 ["wave"] = "👋 {0} waved at you", ["hop"] = "❤️ {0} sent you love",
             };
-            Toast?.Invoke(string.Format(said.TryGetValue(kind, out var line) ? line : "💛 {0} said hi", e.Name));
+            Notify(string.Format(said.TryGetValue(kind, out var line) ? line : "💛 {0} said hi", e.Name));
             Me.Dir = e.Pos.x > Me.Pos.x ? 1 : -1;
             Me.Play(kind == "hug" || kind == "dance" ? kind : "happy", 1.3f, .25f);
         }
@@ -518,8 +750,8 @@ namespace BookBuddies.Live
                 view.ClearItems(); items.Clear();
                 if (state != LiveState.Reconnecting) LocalVillagers();
             }
-            if (state == LiveState.Elsewhere) Toast?.Invoke("You're in town on another device, so this one is exploring on its own.");
-            if (state == LiveState.SentHome) Toast?.Invoke("An admin asked you to take a short break from town.");
+            if (state == LiveState.Elsewhere) Notify("You're in town on another device, so this one is exploring on its own.");
+            if (state == LiveState.SentHome) Notify(string.IsNullOrEmpty(Net.Notice) ? "An admin asked you to take a short break from town." : Net.Notice);
             Changed?.Invoke();
         }
 
@@ -609,8 +841,14 @@ namespace BookBuddies.Live
             return n;
         }
 
-        /// <summary>Shows the banner for where you are again (after arriving, once the HUD is up).</summary>
-        public void AnnounceArea() => Area = null;
+        /// <summary>Once the HUD is up after arriving: shows where you are, and any messages that came while loading.</summary>
+        public void HudReady()
+        {
+            Area = null;
+            var notes = unseenNotes.ToArray();
+            unseenNotes.Clear();
+            foreach (var note in notes) Notify(note);
+        }
 
         void CheckArea()
         {
@@ -629,17 +867,25 @@ namespace BookBuddies.Live
             Changed?.Invoke();
         }
 
+        // where you were last time in town; the road and caves always start at their entrance, out of harm's way
         Vector2 StartPosition()
         {
+            if (Map.Wild != null) return Arrival(Map.Start);
             var saved = PlayerPrefs.GetString("bb.pos." + Map.Key, "");
             var xy = saved.Split(',');
             if (xy.Length == 2 && int.TryParse(xy[0], out int x) && int.TryParse(xy[1], out int y) && Map.Walkable(x, y)) return new Vector2(x + .5f, y + .5f);
             return new Vector2(Map.Start.x + .5f, Map.Start.y + .5f);
         }
 
+        Vector2 Arrival(Vector2Int at)
+        {
+            var t = PathFinder.NearestWalkable(Map, at.x, at.y) ?? Map.Start;
+            return new Vector2(t.x + .5f, t.y + .5f);
+        }
+
         void SavePosition()
         {
-            if (Me == null || Map == null) return;
+            if (Me == null || Map == null || Map.Wild != null) return;
             PlayerPrefs.SetString("bb.pos." + Map.Key, Me.Tile.x + "," + Me.Tile.y);
         }
     }

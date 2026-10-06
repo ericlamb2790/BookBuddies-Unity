@@ -3,10 +3,11 @@ using UnityEngine;
 
 namespace BookBuddies.World
 {
-    public enum Tile : byte { Grass, Path, Stone, Water, Sand, Soil, Wood, Prism, Carnival }
+    public enum Tile : byte { Grass, Path, Stone, Water, Sand, Soil, Wood, Prism, Carnival, Rock }
 
     /// <summary>
     /// A town's layout, loaded from Resources/BookBuddies/Data/town_&lt;key&gt;.json (exported from the website).
+    /// Bramble Road and the Inkwell Caves are maps too, with a Wild block on top.
     /// Map coordinates: x to the right, y down the map (toward the viewer), one unit per tile.
     /// </summary>
     public sealed class TownMap
@@ -19,6 +20,8 @@ namespace BookBuddies.World
         public string Key, Name;
         public int Width, Height;
         public Vector2Int Start;
+        public WildInfo Wild;     // null in towns
+        public Color Backdrop;    // what you see past the edge of the map: the sea, meadow or cave rock
         public Tile[] Tiles;
         public bool[] Blocked;
         public readonly List<Placed> Objects = new List<Placed>();
@@ -63,6 +66,8 @@ namespace BookBuddies.World
             foreach (Dictionary<string, object> p in j.Arr("plots"))
                 m.Plots.Add(new Vector2Int(p.Int("x"), p.Int("y")));
             foreach (var kv in j.Obj("seatLift")) m.SeatLift[kv.Key] = (float)(double)kv.Value;
+            if (j.Obj("wild") != null) m.Wild = WildInfo.From(j.Obj("wild"), m.Width);
+            m.Backdrop = m.Wild == null ? Palette.Sea : m.Wild.IsCave ? Palette.Hex("#17121f") : Palette.Hex(j.Obj("pal").Str("grass", "#8cc468"));
             return m;
         }
 
@@ -71,6 +76,9 @@ namespace BookBuddies.World
         public Tile TileAt(int x, int y) => Inside(x, y) ? Tiles[y * Width + x] : Tile.Water;
 
         public Seat SeatAt(int x, int y) => Seats.Find(s => s.X == x && s.Y == y);
+
+        /// <summary>Tall grass on the road, where foes hide (walkable).</summary>
+        public bool TallAt(int x, int y) => Wild != null && Inside(x, y) && Wild.Tall.ContainsKey(y * Width + x);
 
         /// <summary>How far a pet sinks into this seat (negative lifts it up the screen).</summary>
         public float LiftAt(int x, int y)

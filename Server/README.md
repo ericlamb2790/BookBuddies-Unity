@@ -5,6 +5,7 @@ This is a **new, separate Worker** for the Unity game. It has its own **D1 datab
 | What | Where |
 |---|---|
 | Accounts, sign-in, recovery codes | `src/index.js` |
+| Admin tools for accounts | `src/admin.js` |
 | Live town rooms (one Durable Object per copy of Pawtopia) | `src/town.js` |
 | Tables and daily limits (D1) | `src/db.js`, also as plain SQL in `schema.sql` |
 | Kind-chat filter (the website's word lists) | `src/safety.js` |
@@ -31,7 +32,7 @@ You need a free Cloudflare account and **Node.js 20 or newer** (from nodejs.org,
    npx wrangler deploy
    ```
    The first deploy also creates the `TownRoom` Durable Object class (the `[[migrations]]` block in `wrangler.toml`). It prints your address, such as `https://bookbuddies-unity.<you>.workers.dev`.
-5. Check it: open `https://bookbuddies-unity.elam2790.workers.dev/api/health` in a browser. You should see `"ok":true`.
+5. Check it: open `https://bookbuddies-unity.<you>.workers.dev/api/health` in a browser. You should see `"ok":true`.
 6. Point the game at it: in Unity, open `Assets/BookBuddies/Resources/BookBuddies/Data/config.json` and set `"server"` to that address. Players can also change it in **Settings → Account → Server**.
 
 The tables are created automatically the first time the Worker runs. You can also create them by hand with `npm run db:schema`, but you don't need to.
@@ -52,18 +53,41 @@ This runs the Worker, a local D1 database and the Durable Objects at `http://loc
 
 ## Looking after players
 
+### Make the first admin
+
+Admins get **Admin tools** in the game (Settings → Account, and a Moderation section on each player's card in town). Nobody is an admin at first. Hatch your own buddy in the game, then run this once with your buddy's name:
+
+```
+npx wrangler d1 execute bookbuddies-unity --remote --command "UPDATE players SET is_admin = 1 WHERE name = 'Your Buddy Name'"
+```
+
+Restart the game (or sign out and back in) so it picks up the change. After that you can make other admins from Admin tools in the game, and you won't need this command again.
+
+### Admin tools in the game
+
+Search players by name (or paste an id), then from their card:
+
+- **Chat:** pause their chat for 15 minutes, an hour or a day, or unpause it. It takes effect at once, even mid-visit.
+- **Town:** send them home now, give them a break from town (an hour, a day, a week, or for good), or end a break. A player on a break can't sign in or join town until it ends.
+- **Account:** rename them, set their coins, share or take away admin rights, or delete the account.
+
+You can't use these on yourself, and you can't mute, pause, send home or delete another admin until you take their admin rights away. Every change is written to the `admin_log` table, and the **Recent actions** tab shows the latest ones.
+
+### By hand
+
 Run these with `npx wrangler d1 execute bookbuddies-unity --remote --command "…"`. To change your local test database instead, leave out `--remote`.
 
 | To | Command |
 |---|---|
 | Find a player | `SELECT id, name, coins, created_at FROM players WHERE name LIKE '%Pip%'` |
 | Make someone an admin | `UPDATE players SET is_admin = 1 WHERE name = 'Their Name'` |
+| See recent admin actions | `SELECT datetime(at / 1000, 'unixepoch'), admin_name, action, target_name, detail FROM admin_log ORDER BY id DESC LIMIT 20` |
 | Pause someone's chat for an hour | `UPDATE players SET mute_until = (strftime('%s','now') + 3600) * 1000 WHERE name = 'Their Name'` |
 | Give someone a day's break from town | `UPDATE players SET ban_until = (strftime('%s','now') + 86400) * 1000 WHERE name = 'Their Name'` |
 | Block an extra word in chat and names | `INSERT INTO blocked_words (word) VALUES ('example')` |
 | Count players | `SELECT COUNT(*) FROM players` |
 
-A mute or a break starts the next time that player joins town.
+A mute or a break made by hand starts the next time that player joins town (the in-game tools apply at once).
 
 ## How the game talks to it
 
@@ -74,10 +98,20 @@ The routes and live messages match the website's, so the game works with this se
 | Hatch an egg (new account) | `POST /api/register {name, pet}` → `token` and a recovery code `BB-XXXXX-XXXXX` |
 | Sign in on another device | `POST /api/link/claim {code}` |
 | Your pet and name | `GET /api/me`, change them with `PATCH /api/me` |
+| Your pets (up to 6) | `GET /api/me/pets` → `pets` (`id`, `name`, `look`) and the `active` pet's id (`GET /api/me` includes them too) |
+| Hatch another pet | `POST /api/me/pets {name, look}`; the new pet becomes the active one |
+| Reroll or rename a pet | `PATCH /api/me/pets/<id> {look, name}` (either one) |
+| Switch the active pet | `POST /api/me/pets/<id>/active`; its look becomes your `pet` |
 | Show the recovery code again | `GET /api/me/recovery` |
 | Delete the account | `POST /api/me/delete` |
-| Live ticket | `GET /api/plaza/world/ticket?s=1-6` → a 60-second ticket and a 15-minute pass |
-| Live town | WebSocket `/api/world/live?ticket=…` into the Durable Object `pawtopia:<room>` |
+| Live ticket | `GET /api/plaza/world/ticket?s=1-6&town=pawtopia` (or `road1`, `caves`) → a 60-second ticket and a 15-minute pass |
+| Live town | WebSocket `/api/world/live?ticket=…` into the Durable Object `<town>:<room>` |
+| Admin: find players | `GET /api/admin/players?q=part of a name` (`&exact=1` for the whole name) |
+| Admin: one player and their history | `GET /api/admin/players/<id>` |
+| Admin: change a player | `POST /api/admin/players/<id>/<action>`: `mute {minutes}`, `unmute`, `ban {hours}` or `ban {permanent: true}`, `unban`, `kick`, `rename {name}`, `coins {coins}`, `admin {on}`, `delete` |
+| Admin: recent actions | `GET /api/admin/log` |
+
+Admin routes answer `403` unless the signed-in player is an admin.
 
 Each room holds up to 300 pets. Six villagers wander, chat and sit while anyone is there, and coins, coin bags and gift boxes turn up around town. Each player can collect up to 25 finds a day. A room stops ticking when the last pet leaves, so an empty town costs nothing.
 

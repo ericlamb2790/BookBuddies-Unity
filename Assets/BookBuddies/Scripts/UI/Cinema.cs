@@ -40,8 +40,7 @@ namespace BookBuddies.UI
         const float BarShare = .11f; // each black bar is this much of the screen's height
 
         TownCamera cam;
-        Canvas canvas;
-        RectTransform top, bottom, card;
+        RectTransform root, top, bottom, card;
         Text caption, cardTitle, cardSub;
         CanvasGroup captionFade, cardFade;
         Image black, vignette;
@@ -54,33 +53,33 @@ namespace BookBuddies.UI
             var canvas = UiKit.MakeCanvas("Cinema", 45);
             var c = canvas.gameObject.AddComponent<Cinema>();
             c.cam = cam;
-            c.canvas = canvas;
-            c.Build((RectTransform)canvas.transform, skippable);
+            c.root = (RectTransform)canvas.transform;
+            c.Build(skippable);
             return c;
         }
 
-        void Build(RectTransform root, bool skippable)
+        void Build(bool skippable)
         {
             vignette = UiKit.Cover(root, "vignette", new Color(.16f, .1f, .05f, 0), UiKit.Vignette);
             top = Bar(root, 1);
             bottom = Bar(root, 0);
 
-            caption = UiKit.Label(bottom, "", 26, Palette.Cream, UiKit.Title, TextAnchor.MiddleCenter);
+            caption = UiKit.Label(bottom, "", UiKit.TitleSize + 2, Palette.Cream, UiKit.Title, TextAnchor.MiddleCenter);
             ((RectTransform)caption.transform).Fill(8);
             captionFade = caption.gameObject.AddComponent<CanvasGroup>();
             captionFade.alpha = 0;
 
             // the title card at the end of the intro
             var glow = UiKit.Cover(root, "title glow", Palette.Amber.WithAlpha(.28f), UiKit.Glow);
-            card = glow.rectTransform.Pin(new Vector2(.5f, .5f), new Vector2(0, 10), new Vector2(760, 360));
-            cardTitle = UiKit.Label(card, "BookBuddies", 88, Palette.Cream, UiKit.Title, TextAnchor.MiddleCenter);
-            ((RectTransform)cardTitle.transform).Pin(new Vector2(.5f, .5f), new Vector2(0, 22), new Vector2(760, 110));
+            card = glow.rectTransform.Pin(new Vector2(.5f, .5f), new Vector2(0, 10), new Vector2(900, 420));
+            cardTitle = UiKit.Label(card, "BookBuddies", 104, Palette.Cream, UiKit.Title, TextAnchor.MiddleCenter);
+            ((RectTransform)cardTitle.transform).Pin(new Vector2(.5f, .5f), new Vector2(0, 26), new Vector2(900, 128));
             cardTitle.horizontalOverflow = HorizontalWrapMode.Overflow;
             var lift = cardTitle.gameObject.AddComponent<UnityEngine.UI.Shadow>();
             lift.effectColor = new Color(.16f, .09f, .03f, .55f);
             lift.effectDistance = new Vector2(0, -4);
-            cardSub = UiKit.Label(card, "Welcome to Pawtopia", 24, Palette.Amber, UiKit.Bold, TextAnchor.MiddleCenter);
-            ((RectTransform)cardSub.transform).Pin(new Vector2(.5f, .5f), new Vector2(0, -52), new Vector2(760, 40));
+            cardSub = UiKit.Label(card, "Welcome to Pawtopia", UiKit.HeadingSize + 6, Palette.Amber, UiKit.Bold, TextAnchor.MiddleCenter);
+            ((RectTransform)cardSub.transform).Pin(new Vector2(.5f, .5f), new Vector2(0, -62), new Vector2(900, 44));
             cardSub.gameObject.AddComponent<UnityEngine.UI.Shadow>().effectColor = new Color(.16f, .09f, .03f, .5f);
             cardFade = card.gameObject.AddComponent<CanvasGroup>();
             cardFade.alpha = 0;
@@ -88,13 +87,21 @@ namespace BookBuddies.UI
             black = UiKit.Cover(root, "fade", Color.black);
             black.color = Color.clear;
 
-            if (skippable)
-            {
-                var skip = UiKit.Button(top, "Skip", Color.clear, () => Skipped = true, 8);
-                ((RectTransform)skip.transform).Pin(new Vector2(1, .5f), new Vector2(-18, 0), new Vector2(96, 34));
-                var label = UiKit.Label(skip.transform, "Skip  ›", 16, Palette.Cream.WithAlpha(.8f), UiKit.Bold, TextAnchor.MiddleRight);
-                ((RectTransform)label.transform).Fill();
-            }
+            if (skippable) SkipButton();
+        }
+
+        // a quiet pill in the top bar; on a gamepad, A (or B, or Start) skips too
+        void SkipButton()
+        {
+            var skip = UiKit.Button(top, "Skip", Palette.Cream.WithAlpha(.1f), () => Skipped = true, 22);
+            UiKit.Outline(skip, Palette.Cream.WithAlpha(.35f), 22, 2);
+            var r = ((RectTransform)skip.transform).Pin(new Vector2(1, .5f), new Vector2(-24, 0), new Vector2(120, 44));
+            r.pivot = new Vector2(1, .5f);
+            var label = UiKit.Label(r, "Skip  ›", UiKit.BodySize, Palette.Cream, UiKit.Bold, TextAnchor.MiddleCenter);
+            ((RectTransform)label.transform).Fill();
+            var glyph = UiKit.PadGlyph(top, "A", 28);
+            ((RectTransform)glyph.transform).Pin(new Vector2(1, .5f), new Vector2(-24 - 120 - 10, 0), new Vector2(28, 28)).pivot = new Vector2(1, .5f);
+            glyph.gameObject.AddComponent<GamepadOnly>();
         }
 
         static RectTransform Bar(RectTransform root, float edge)
@@ -107,12 +114,11 @@ namespace BookBuddies.UI
 
         void Update()
         {
-            canvas.GetComponent<CanvasScaler>().scaleFactor = UiKit.ScreenScale();
             if (PlazaInput.SkipPressed()) Skipped = true;
-            float h = ((RectTransform)canvas.transform).rect.height * BarShare * bars;
+            float h = root.rect.height * BarShare * bars;
             top.sizeDelta = bottom.sizeDelta = new Vector2(0, h);
             vignette.color = vignette.color.WithAlpha(.5f * bars);
-            cardTitle.fontSize = (int)Mathf.Min(88, ((RectTransform)canvas.transform).rect.width / 8.5f);
+            cardTitle.fontSize = (int)Mathf.Min(104, root.rect.width / 8.5f);
         }
 
         // ---- building blocks ----

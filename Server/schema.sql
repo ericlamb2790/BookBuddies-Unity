@@ -16,3 +16,13 @@ CREATE TABLE IF NOT EXISTS limits (kind TEXT NOT NULL, ip TEXT NOT NULL, day TEX
 CREATE TABLE IF NOT EXISTS blocked_words (word TEXT PRIMARY KEY);
 
 CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT NOT NULL);
+
+-- Every change made with the admin tools (who, what, to whom), newest last. The Worker keeps the latest 5000.
+CREATE TABLE IF NOT EXISTS admin_log (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, admin_id TEXT NOT NULL,
+  admin_name TEXT NOT NULL, action TEXT NOT NULL, target_id TEXT, target_name TEXT, detail TEXT);
+
+CREATE INDEX IF NOT EXISTS admin_log_target ON admin_log (target_id);
+
+-- Each player's pets (up to six). The active one's look is also players.pet. See src/pets.js.
+CREATE TABLE IF NOT EXISTS pets (player_id TEXT NOT NULL, id TEXT NOT NULL, name TEXT NOT NULL, look TEXT NOT NULL,
+  active INTEGER NOT NULL DEFAULT 0, born INTEGER NOT NULL, PRIMARY KEY (player_id, id));

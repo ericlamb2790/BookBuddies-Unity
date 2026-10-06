@@ -35,9 +35,16 @@ namespace BookBuddies
         public static readonly Dictionary<string, ArtEntry> Plants = new Dictionary<string, ArtEntry>();
         public static readonly Dictionary<string, ArtEntry> Items = new Dictionary<string, ArtEntry>();
         public static readonly Dictionary<string, string> Emotes = new Dictionary<string, string>();
-        public static readonly Dictionary<Vector2Int, string> Ground = new Dictionary<Vector2Int, string>();
         public static readonly HashSet<string> Sways = new HashSet<string>();
-        public static int GroundChunk = 16;
+
+        /// <summary>One map's painted ground: square chunks of Chunk tiles, by chunk position.</summary>
+        public sealed class GroundSet
+        {
+            public int Chunk = 16;
+            public readonly Dictionary<Vector2Int, string> Files = new Dictionary<Vector2Int, string>();
+        }
+
+        static readonly Dictionary<string, GroundSet> grounds = new Dictionary<string, GroundSet>();
 
         static readonly Dictionary<string, Sprite> cache = new Dictionary<string, Sprite>();
         static bool loaded;
@@ -46,20 +53,48 @@ namespace BookBuddies
         {
             if (loaded) return;
             loaded = true;
-            var j = Json.ParseObject(Text("Data/art_index"));
+            Merge(Json.ParseObject(Text("Data/art_index")));
+            // features add their own indexes (Tales emoji, Bramble Road props), so each export writes only its own file
+            foreach (var extra in new[] { "Data/art_tales", "Data/art_road" })
+            {
+                var more = TryText(extra);
+                if (more != null) Merge(Json.ParseObject(more));
+            }
+        }
+
+        static void Merge(Dictionary<string, object> j)
+        {
+            if (j == null) return;
             ReadEntries(j.Obj("objects"), Objects);
             ReadEntries(j.Obj("anim"), Anims);
             ReadEntries(j.Obj("plants"), Plants);
             ReadEntries(j.Obj("items"), Items);
-            foreach (var kv in j.Obj("emotes")) Emotes[kv.Key] = (string)kv.Value;
+            var emotes = j.Obj("emotes");
+            if (emotes != null) foreach (var kv in emotes) Emotes[kv.Key] = (string)kv.Value;
             foreach (var s in j.Arr("sway")) Sways.Add((string)s);
             var ground = j.Obj("ground");
-            GroundChunk = ground.Int("chunk", 16);
-            foreach (var kv in ground.Obj("files"))
+            if (ground == null) return;
+            // art_index.json holds Pawtopia's ground as {chunk, files}; later indexes key theirs by town: {town: {chunk, files}}
+            if (ground.Has("files")) ReadGround("pawtopia", ground);
+            else foreach (var kv in ground) ReadGround(kv.Key, (Dictionary<string, object>)kv.Value);
+        }
+
+        static void ReadGround(string town, Dictionary<string, object> j)
+        {
+            var set = new GroundSet { Chunk = j.Int("chunk", 16) };
+            foreach (var kv in j.Obj("files"))
             {
                 var xy = kv.Key.Split(',');
-                Ground[new Vector2Int(int.Parse(xy[0]), int.Parse(xy[1]))] = (string)kv.Value;
+                set.Files[new Vector2Int(int.Parse(xy[0]), int.Parse(xy[1]))] = (string)kv.Value;
             }
+            grounds[town] = set;
+        }
+
+        /// <summary>A text file from Resources/BookBuddies, or null when it isn't there.</summary>
+        public static string TryText(string path)
+        {
+            var asset = Resources.Load<TextAsset>(Root + path);
+            return asset != null ? asset.text : null;
         }
 
         public static string Text(string path)
@@ -76,8 +111,27 @@ namespace BookBuddies
             return Cached(file, e.Size, e.Pivot);
         }
 
-        public static Sprite GroundSprite(Vector2Int chunk) =>
-            Ground.TryGetValue(chunk, out var file) ? Cached(file, new Vector2(GroundChunk, GroundChunk), new Vector2(0, 1)) : null;
+        /// <summary>Tiles per ground chunk for a map (16 when it has no painted ground).</summary>
+        public static int GroundChunk(string town) => grounds.TryGetValue(town, out var set) ? set.Chunk : 16;
+
+        /// <summary>One chunk of a map's painted ground, pinned at its top-left corner, or null.</summary>
+        public static Sprite GroundSprite(string town, Vector2Int chunk) =>
+            grounds.TryGetValue(town, out var set) && set.Files.TryGetValue(chunk, out var file) ? Cached(file, new Vector2(set.Chunk, set.Chunk), new Vector2(0, 1)) : null;
+
+        /// <summary>Frees a map's ground pictures after leaving it (they are the biggest images in the game).</summary>
+        public static void ReleaseGround(string town)
+        {
+            if (!grounds.TryGetValue(town, out var set)) return;
+            foreach (var file in set.Files.Values)
+            {
+                if (!cache.TryGetValue(file, out var s)) continue;
+                cache.Remove(file);
+                if (s == null) continue;
+                var tex = s.texture;
+                Object.Destroy(s);
+                Resources.UnloadAsset(tex);
+            }
+        }
 
         /// <summary>Emoji drawn as images, so they show on every device. Null when there is no art for it.</summary>
         public static Sprite Emote(string emoji) =>
@@ -125,7 +179,7 @@ namespace BookBuddies
 
         // ---- shapes made in code (soft shadow, glow, dashed ring, plain white) ----
 
-        static Sprite softDot, ring, white;
+        static Sprite softDot, ring, white, disc, glowRing;
 
         /// <summary>A round blob that fades to nothing at the edge. Tint it for shadows and glows.</summary>
         public static Sprite SoftDot => softDot ? softDot : softDot = MakeSprite(64, (x, y) =>
@@ -145,6 +199,17 @@ namespace BookBuddies
         });
 
         public static Sprite White => white ? white : white = MakeSprite(4, (x, y) => 1);
+
+        /// <summary>A crisp round dot (path trails, markers).</summary>
+        public static Sprite Disc => disc ? disc : disc = MakeSprite(64, (x, y) => (1 - new Vector2(x, y).magnitude) * 24);
+
+        /// <summary>A soft glowing band, brightest just inside the edge: the hover ring under things you can use.</summary>
+        public static Sprite GlowRing => glowRing ? glowRing : glowRing = MakeSprite(128, (x, y) =>
+        {
+            float d = new Vector2(x, y).magnitude;
+            float band = Mathf.Exp(-Mathf.Pow((d - .78f) / .1f, 2)), fill = d < 1 ? (1 - d) * .2f : 0;
+            return band + fill;
+        });
 
         static Sprite MakeSprite(int size, System.Func<float, float, float> alpha)
         {

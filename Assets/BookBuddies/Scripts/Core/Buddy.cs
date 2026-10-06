@@ -1,10 +1,12 @@
+using BookBuddies.Pets;
 using UnityEngine;
 
 namespace BookBuddies
 {
     /// <summary>
     /// Your buddy as saved on this device: its name tag, its look, and the colour of your egg before it hatches.
-    /// The egg's colour carries into the pet that hatches from it.
+    /// The egg's colour carries into the pet that hatches from it. With more than one pet (Pets/MyPets.cs), Look is the
+    /// active one, so the town, Tales and the title screen all show it.
     /// </summary>
     public static class Buddy
     {
@@ -13,11 +15,7 @@ namespace BookBuddies
         /// <summary>The pet used when you explore without one.</summary>
         public const string GuestLook = "{\"h\":200,\"s\":3,\"o\":{},\"sh\":\"round\",\"z\":1,\"f\":\"cute\",\"e\":\"cat\",\"pt\":\"belly\"}";
 
-        // what a new pet can hatch as: the cutest shapes, ears, patterns and faces from the site's parts
-        static readonly string[] Shapes = { "bean", "round", "mochi", "pear", "heart", "cloud", "drop", "gumdrop", "tall" };
-        static readonly string[] Ears = { "cat", "bunny", "bear", "mouse", "fox", "floppy", "none" };
-        static readonly string[] Patterns = { "none", "spots", "belly", "stripes", "hearts", "freckles" };
-        static readonly string[] Faces = { "cute", "cute", "goofy", "shy", "starry", "dreamy" };
+        static readonly System.Random dice = new System.Random(); // NextDouble stays below 1, like Math.random
 
         public static string Name => PlayerPrefs.GetString(NameKey, "");
         public static string Look => PlayerPrefs.GetString(LookKey, "");
@@ -45,20 +43,20 @@ namespace BookBuddies
             PlayerPrefs.Save();
         }
 
-        /// <summary>Signing out forgets the pet on this device (the server keeps it), so the title shows a fresh egg.</summary>
+        /// <summary>Signing out forgets the pets on this device (the server keeps them), so the title shows a fresh egg.</summary>
         public static void Forget()
         {
             PlayerPrefs.DeleteKey(NameKey);
             PlayerPrefs.DeleteKey(LookKey);
             PlayerPrefs.DeleteKey(EggKey);
+            MyPets.Forget();
             PlayerPrefs.Save();
         }
 
-        /// <summary>A new little pet in the egg's colour, as look JSON.</summary>
-        public static string NewLook(int hue)
-        {
-            string P(string[] list) => list[Random.Range(0, list.Length)];
-            return "{\"h\":" + hue + ",\"s\":2,\"o\":{},\"sh\":\"" + P(Shapes) + "\",\"z\":1,\"f\":\"" + P(Faces) + "\",\"e\":\"" + P(Ears) + "\",\"pt\":\"" + P(Patterns) + "\"}";
-        }
+        /// <summary>A new little pet in the egg's colour, as look JSON: random DNA like a hatch on the site (any body, and only parts that suit it).</summary>
+        public static string NewLook(int hue) => PetSprites.Parts.Dna.NewLook(Roll, hue);
+
+        /// <summary>A random number from 0 up to (not including) 1, for pet rolls.</summary>
+        public static double Roll() => dice.NextDouble();
     }
 }

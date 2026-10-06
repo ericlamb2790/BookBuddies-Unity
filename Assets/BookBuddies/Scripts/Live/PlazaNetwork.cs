@@ -9,9 +9,9 @@ namespace BookBuddies.Live
 
     /// <summary>
     /// Keeps you connected to the live town, the same way the website does:
-    /// get a ticket, open the room's WebSocket, try the next room (shard 1-6) when one is full,
-    /// rejoin quickly with a 15-minute pass, back off between retries, and ping every 5 seconds
-    /// to measure lag and line up with the server clock.
+    /// get a ticket for this place (Pawtopia, the road or the caves), open the room's WebSocket, try the next
+    /// room (shard 1-6) when one is full, rejoin quickly with a 15-minute pass, back off between retries, and
+    /// ping every 5 seconds to measure lag and line up with the server clock.
     /// </summary>
     public sealed class PlazaNetwork
     {
@@ -22,6 +22,8 @@ namespace BookBuddies.Live
         public float RoundTripMs { get; private set; }
         public string MyId { get; private set; }
         public bool IsAdmin { get; private set; }
+        /// <summary>Why you were sent home (the admin's message, or how long the break lasts), or null.</summary>
+        public string Notice { get; private set; }
         public bool IsLive => State == LiveState.Live && live != null && live.Open;
 
         public event Action<Dictionary<string, object>> Welcome;
@@ -90,7 +92,14 @@ namespace BookBuddies.Live
                 Dictionary<string, object> t;
                 try { t = await BBApi.WorldTicket(shard, town); }
                 catch (Exception) { SetState(LiveState.Offline); RetryLater(); return; }
-                if (!t.Truthy("live")) { SetState(LiveState.Offline); return; }
+                if (!t.Truthy("live"))
+                {
+                    // on a break: the server says for how long, and there's no point retrying
+                    bool onBreak = t.Str("reason") == "break";
+                    if (onBreak) Notice = t.Str("msg", null);
+                    SetState(onBreak ? LiveState.SentHome : LiveState.Offline);
+                    return;
+                }
                 ticket = t.Str("ticket");
                 if (t.Has("pass")) { pass = t.Str("pass"); passExpires = t.Num("passExp", LocalNow + 9e5); }
             }
@@ -105,6 +114,7 @@ namespace BookBuddies.Live
                 try { m = Json.ParseObject(text); } catch (FormatException) { return; }
                 if (m == null) return;
                 if (m.Str("t") == "w") { welcomed = true; OnWelcome(socket, m); }
+                else if (m.Str("t") == "kicked") Notice = m.Str("msg", null); // the socket closes with 4003 next
                 else if (socket == live) OnMessage(m);
             };
             socket.OnClosed += code => OnClosed(socket, code, welcomed, viaPass);

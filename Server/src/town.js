@@ -1,11 +1,15 @@
-// One live copy of Pawtopia: a Durable Object that holds everyone's WebSocket and passes walking, chat,
-// emotes and tricks between them. Villagers wander between the same spots the website uses, and coins,
-// coin bags and gift boxes turn up around town for whoever reaches them first.
+// One live room of a place (Pawtopia, Bramble Road or the Inkwell Caves): a Durable Object that holds everyone's
+// WebSocket and passes walking, chat, emotes and tricks between them. In Pawtopia, villagers wander between the
+// same spots the website uses, and coins, coin bags and gift boxes turn up for whoever reaches them first.
+// The road and the caves are quieter: just the readers (their foes live on each player's own device).
+// The admin tools reach a room through POST https://room/admin (kick, mute, unmute).
 
 import { textProblem, cleanText, personalDetails } from './safety.js';
 import { ensureSchema, blockedWords, today } from './db.js';
 
-const TOWN_W = 80, TOWN_H = 64, CAP = 300;
+const CAP = 300;
+// each place's size in tiles (the site's road rooms were stuck at 64×46 and pinned anyone past x 63 to the edge)
+const PLACES = { pawtopia: { w: 80, h: 64, life: true }, road1: { w: 112, h: 52 }, caves: { w: 56, h: 40 } };
 const TICK_MS = 3000;
 const FINDS_PER_DAY = 25;
 const ITEM_COINS = { coin: 5, bag: 15, gift: 30 };
@@ -30,8 +34,23 @@ const VILLAGER_LINES = ['Anyone reading something good? 📖', 'The café has fr
   'The Wheel of Wonder is spinning! 🎡', 'Hello neighbor! 👋', 'The beach is perfect for reading ⛱️'];
 
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
-const clampX = (v) => Math.max(0, Math.min(TOWN_W - 1, v | 0));
-const clampY = (v) => Math.max(0, Math.min(TOWN_H - 1, v | 0));
+
+/**
+ * Which place a connection is for. index.js names the room "<town>:<shard>" on the signed ticket (already checked
+ * there), so it's read back from x-bb-room when set, else from the ticket's last field; Pawtopia otherwise.
+ */
+function placeOf(request) {
+  let room = request.headers.get('x-bb-room') || '';
+  if (!room) {
+    try {
+      const ticket = new URL(request.url).searchParams.get('ticket') || '';
+      const body = atob(ticket.split('.')[0].replace(/-/g, '+').replace(/_/g, '/'));
+      room = body.split('|').pop();
+    } catch { room = ''; }
+  }
+  const town = room.split(':')[0];
+  return PLACES[town] ? town : 'pawtopia';
+}
 
 export class TownRoom {
   constructor(state, env) {
@@ -43,11 +62,17 @@ export class TownRoom {
     this.items = new Map();
     this.seq = 0;
     this.timer = null;
+    this.town = 'pawtopia';
   }
+
+  get place() { return PLACES[this.town]; }
+  clampX(v) { return Math.max(0, Math.min(this.place.w - 1, v | 0)); }
+  clampY(v) { return Math.max(0, Math.min(this.place.h - 1, v | 0)); }
 
   // ---- joining ----
 
   async fetch(request) {
+    if (new URL(request.url).pathname === '/admin' && request.method === 'POST') return this.admin(request);
     await ensureSchema(this.env);
     const pid = request.headers.get('x-bb-pid') || '';
     const me = pid && await this.env.DB.prepare('SELECT name, is_admin, mute_until, ban_until FROM players WHERE id = ?1').bind(pid).first();
@@ -64,6 +89,7 @@ export class TownRoom {
       return new Response(null, { status: 101, webSocket: client });
     }
 
+    if (!this.players.size) this.town = placeOf(request);
     if (!this.timer) this.wakeUp();
     const id = (++this.seq).toString(36);
     const last = this.lastSpot.get(pid) || { x: -1, y: -1 };
@@ -76,8 +102,8 @@ export class TownRoom {
     ws.addEventListener('error', bye);
 
     ws.send(JSON.stringify({
-      t: 'w', id, now: Date.now(), cap: CAP, town: 'pawtopia', adm: pl.admin, theme: '', th: '',
-      roster: [...this.players.values()].filter((o) => o !== pl && o.look).map(info)
+      t: 'w', id, now: Date.now(), cap: CAP, town: this.town, adm: pl.admin, theme: '', th: '',
+      roster: [...this.players.values()].filter((o) => o !== pl && o.look).map((o) => info(o, pl.admin))
         .concat([...this.villagers.values()].map((v) => ({ ...info(v), b: 1 }))),
       items: [...this.items.values()], garden: [], notes: [], me: { x: pl.x, y: pl.y },
     }));
@@ -98,9 +124,30 @@ export class TownRoom {
     if (!this.players.size) this.sleep();
   }
 
-  // The room only ticks while someone is in it.
+  // ---- the admin tools (index.js / admin.js call this for every room, so it reaches the player wherever they are) ----
+
+  /** {action: 'kick' | 'mute' | 'unmute', pid, msg?, until?}: kick sends {t:'kicked', msg} and closes the player's sockets. */
+  async admin(request) {
+    let m;
+    try { m = await request.json(); } catch { return new Response('Bad request', { status: 400 }); }
+    const mine = [...this.players.values()].filter((p) => p.pid === String(m.pid || ''));
+    if (m.action === 'kick') {
+      const msg = String(m.msg || 'An admin sent you home from town for now. 💛').slice(0, 300);
+      for (const p of mine) {
+        this.send(p, { t: 'kicked', msg });
+        try { p.ws.close(4003, 'break'); } catch {}
+        this.leave(p);
+      }
+    } else if (m.action === 'mute') for (const p of mine) p.mute = +m.until || 0;
+    else if (m.action === 'unmute') for (const p of mine) p.mute = 0;
+    else return new Response('Unknown action', { status: 400 });
+    return new Response(JSON.stringify({ ok: true, found: mine.length }), { headers: { 'content-type': 'application/json' } });
+  }
+
+  // The room only ticks while someone is in it. Only Pawtopia has villagers and finds.
   wakeUp() {
     this.villagers = new Map();
+    if (!this.place.life) return;
     VILLAGERS.forEach((v, i) => {
       const [x, y] = SPOTS[(i * 7 + Math.floor(Math.random() * SPOTS.length)) % SPOTS.length];
       this.villagers.set('b' + i, { id: 'b' + i, name: v.n, look: JSON.stringify(v.look), x, y, tx: x, ty: y, sit: 0, next: Date.now() + 2000 + Math.random() * 8000 });
@@ -110,7 +157,7 @@ export class TownRoom {
   }
 
   sleep() {
-    clearInterval(this.timer);
+    if (this.timer) clearInterval(this.timer);
     this.timer = null;
     this.villagers = new Map();
   }
@@ -144,7 +191,8 @@ export class TownRoom {
   dropItem(now) {
     const r = Math.random();
     const k = r < .7 ? 'coin' : r < .93 ? 'bag' : 'gift';
-    const it = { id: 'i' + (++this.seq).toString(36), k, x: 3 + Math.floor(Math.random() * (TOWN_W - 6)), y: 4 + Math.floor(Math.random() * (TOWN_H - 10)), exp: now + (8 + Math.random() * 6) * 60e3 };
+    const { w, h } = this.place;
+    const it = { id: 'i' + (++this.seq).toString(36), k, x: 3 + Math.floor(Math.random() * (w - 6)), y: 4 + Math.floor(Math.random() * (h - 10)), exp: now + (8 + Math.random() * 6) * 60e3 };
     this.items.set(it.id, it);
     this.broadcast({ t: 'item', it });
   }
@@ -179,15 +227,16 @@ export class TownRoom {
   hello(pl, m) {
     const first = !pl.look;
     pl.look = String(m.look || '').slice(0, 1500);
-    pl.x = pl.tx = clampX(m.x);
-    pl.y = pl.ty = clampY(m.y);
-    this.broadcast(first ? { t: 'join', p: info(pl) } : { t: 'look', id: pl.id, look: pl.look }, pl);
+    pl.x = pl.tx = this.clampX(m.x);
+    pl.y = pl.ty = this.clampY(m.y);
+    if (!first) return this.broadcast({ t: 'look', id: pl.id, look: pl.look }, pl);
+    for (const p of this.players.values()) if (p !== pl) this.send(p, { t: 'join', p: info(pl, p.admin) });
   }
 
   walk(pl, m, now) {
     const tenth = (v, max) => Math.max(0, Math.min(max - 1, Math.round((+v || 0) * 10) / 10));
-    pl.x = tenth(m.x, TOWN_W); pl.y = tenth(m.y, TOWN_H);
-    pl.tx = clampX(m.tx); pl.ty = clampY(m.ty); pl.sit = 0;
+    pl.x = tenth(m.x, this.place.w); pl.y = tenth(m.y, this.place.h);
+    pl.tx = this.clampX(m.tx); pl.ty = this.clampY(m.ty); pl.sit = 0;
     this.broadcast({ t: 'go', id: pl.id, x: pl.x, y: pl.y, tx: pl.tx, ty: pl.ty, at: now }, pl);
   }
 
@@ -249,4 +298,5 @@ export class TownRoom {
   }
 }
 
-const info = (o) => ({ id: o.id, n: o.name, u: '', c: '', look: o.look, x: o.x, y: o.y, tx: o.tx, ty: o.ty, sit: o.sit || 0 });
+// What others see of a pet. Only admins get the account id (u), so the town card's admin tools reach the right account.
+const info = (o, forAdmin) => ({ id: o.id, n: o.name, u: forAdmin && o.pid ? o.pid : '', c: '', look: o.look, x: o.x, y: o.y, tx: o.tx, ty: o.ty, sit: o.sit || 0 });

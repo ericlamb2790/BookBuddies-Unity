@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using BookBuddies.Live;
 using BookBuddies.Pets;
+using BookBuddies.Road;
 using BookBuddies.World;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,12 +11,13 @@ namespace BookBuddies.UI
     /// <summary>
     /// The little round map in the corner, and the big town map (M, the gamepad's right stick, or a tap).
     /// It's an illustrated map made from the town's own art: the painted ground, then the trees and buildings
-    /// in miniature. Dots show every pet: you in amber, other readers in orange, villagers in blue.
+    /// in miniature. Dots show every pet: you in amber, other readers in orange, villagers in blue; on the road
+    /// and in the caves, smaller dots in the villains' label colours (red when one is chasing you).
     /// </summary>
     public sealed class Minimap : MonoBehaviour
     {
-        const float SmallSize = 168;
-        const float SmallScale = 3.6f;   // screen units per tile in the corner map
+        const float SmallSize = 200;
+        const float SmallScale = 4.3f;   // UI units per tile in the corner map
         const float MinArt = 1.6f;       // skip props smaller than this many square tiles (fences, lamps...)
 
         PlazaWorld world;
@@ -24,6 +26,8 @@ namespace BookBuddies.UI
         Image window, border, scrim;
         readonly Dictionary<PetActor, Image> dots = new Dictionary<PetActor, Image>();
         readonly List<PetActor> gone = new List<PetActor>();
+        readonly Dictionary<RoadFoe, Image> foeDots = new Dictionary<RoadFoe, Image>();
+        readonly List<RoadFoe> goneFoes = new List<RoadFoe>();
         bool big;
         float scale;
         Vector2 laidOutFor;
@@ -50,7 +54,7 @@ namespace BookBuddies.UI
             border = UiKit.Panel(root, "border", Palette.Cream, (int)(SmallSize / 2) + 5);
             frame = UiKit.Node("frame", border.transform);
             window = frame.gameObject.AddComponent<Image>();
-            window.color = Palette.Sea;
+            window.color = map.Backdrop;
             frame.gameObject.AddComponent<Mask>();
             frame.gameObject.AddComponent<Canvas>(); // the map redraws on its own, apart from the HUD
             frame.gameObject.AddComponent<GraphicRaycaster>();
@@ -73,11 +77,11 @@ namespace BookBuddies.UI
 
         void PaintGround()
         {
-            int n = Art.GroundChunk;
+            int n = Art.GroundChunk(map.Key);
             for (int cy = 0; cy * n < map.Height; cy++)
                 for (int cx = 0; cx * n < map.Width; cx++)
                 {
-                    var sprite = Art.GroundSprite(new Vector2Int(cx, cy));
+                    var sprite = Art.GroundSprite(map.Key, new Vector2Int(cx, cy));
                     if (!sprite) continue;
                     var r = UiKit.Node("ground", art);
                     r.anchorMin = r.anchorMax = r.pivot = new Vector2(0, 1);
@@ -116,14 +120,14 @@ namespace BookBuddies.UI
 
         void AreaLabel(TownMap.Region a)
         {
-            var t = UiKit.Label(labels, a.Name, 13, Palette.Ink, UiKit.Bold, TextAnchor.MiddleCenter);
+            var t = UiKit.Label(labels, a.Name, 16, Palette.Ink, UiKit.Bold, TextAnchor.MiddleCenter);
             t.horizontalOverflow = HorizontalWrapMode.Overflow;
             var outline = t.gameObject.AddComponent<Outline>();
             outline.effectColor = Palette.Cream;
             outline.effectDistance = new Vector2(1.5f, -1.5f);
             var r = (RectTransform)t.transform;
             r.anchorMin = r.anchorMax = new Vector2(.5f, .5f);
-            r.sizeDelta = new Vector2(160, 20);
+            r.sizeDelta = new Vector2(190, 24);
             r.name = a.Name;
         }
 
@@ -151,7 +155,7 @@ namespace BookBuddies.UI
             else
             {
                 scale = SmallScale;
-                b.Pin(new Vector2(1, 1), new Vector2(-12, -62), Vector2.one * (SmallSize + 10));
+                b.Pin(new Vector2(1, 1), new Vector2(-16, -76), Vector2.one * (SmallSize + 10)); // under the corner buttons
                 border.sprite = UiKit.Rounded((int)(SmallSize / 2) + 5);
                 window.sprite = UiKit.Rounded((int)(SmallSize / 2));
             }
@@ -182,6 +186,7 @@ namespace BookBuddies.UI
             gone.Clear();
             foreach (var a in dots.Keys) if (a == null) gone.Add(a);
             foreach (var a in gone) { Destroy(dots[a].gameObject); dots.Remove(a); }
+            PlaceFoes();
 
             if (dots.TryGetValue(world.Me, out var mine))
             {
@@ -203,9 +208,36 @@ namespace BookBuddies.UI
             return new Vector2(mapPoint.x - focus.x, focus.y - mapPoint.y) * scale;
         }
 
+        void PlaceFoes()
+        {
+            if (world.Road == null) return;
+            foreach (var f in world.Road.All)
+            {
+                if (!foeDots.TryGetValue(f, out var dot)) foeDots[f] = dot = FoeDot(f);
+                ((RectTransform)dot.transform).anchoredPosition = Point(f.Pos);
+                dot.color = f.LabelColour;
+            }
+            goneFoes.Clear();
+            foreach (var f in foeDots.Keys) if (f == null) goneFoes.Add(f);
+            foreach (var f in goneFoes) { Destroy(foeDots[f].gameObject); foeDots.Remove(f); }
+        }
+
+        // under the pets' dots, a little bigger for the guardian
+        Image FoeDot(RoadFoe f)
+        {
+            float size = f.Guardian ? 12 : 8;
+            var dot = UiKit.Panel(dotLayer, f.name, f.LabelColour, (int)(size / 2));
+            dot.raycastTarget = false;
+            var r = dot.rectTransform;
+            r.anchorMin = r.anchorMax = new Vector2(.5f, .5f);
+            r.sizeDelta = Vector2.one * size;
+            r.SetAsFirstSibling();
+            return dot;
+        }
+
         Image Dot(PetActor a)
         {
-            float size = a.IsMe ? 12 : 8;
+            float size = a.IsMe ? 14 : 10;
             var dot = UiKit.Panel(dotLayer, a.name, a.IsMe ? Palette.Amber : a.IsBot ? Palette.Sky : Palette.Ember, (int)(size / 2));
             dot.raycastTarget = false;
             var r = dot.rectTransform;

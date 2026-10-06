@@ -7,10 +7,17 @@ namespace BookBuddies.Pets
     /// <summary>
     /// One pet walking around town: yours, another reader's, or a villager.
     /// Movement and every little animation (idle breathing, hops, naps, hugs...) follow the website's numbers.
+    /// Walking is smoothed on top: a soft start and stop, corners drawn as gentle curves, a springy stride
+    /// with a puff of dust on each step.
     /// </summary>
     public sealed class PetActor : MonoBehaviour
     {
-        public const float Speed = 3.4f; // tiles per second
+        public const float Speed = 3.4f;     // tiles per second
+        const float StartUp = .12f;          // seconds to get up to speed from standing
+        const float SlowDown = .4f;          // tiles before the end of a walk where the pet starts to slow
+        const float SoftestPace = .62f;      // the slowest the soft start and stop go (they add about 50 ms to a walk)
+        const float Smoothing = .07f;        // seconds the drawn pet trails its path by, which rounds the corners
+        const float Stride = .9f;            // tiles per bounce of the walk cycle
 
         // who
         public string Id, Name, User;
@@ -23,6 +30,7 @@ namespace BookBuddies.Pets
         public int Dir = 1;
         public float Pace;          // >0 speeds other players up or down so they arrive in sync
         public bool Sitting, Sleeping, WantSit, Hidden;
+        public bool Hovered;        // the pointer is on it: lifts a little
         public System.Action OnArrived;
 
         // what it's showing
@@ -35,18 +43,24 @@ namespace BookBuddies.Pets
         public bool Walking => Path.Count > 0;
         public Vector2Int Tile => new Vector2Int(Mathf.FloorToInt(Pos.x), Mathf.FloorToInt(Pos.y));
 
+        /// <summary>Where the pet is drawn: its path position, smoothed so turns curve.</summary>
+        public Vector2 Shown => shown;
+
         TownMap map;
         Transform body;
         SpriteRenderer bodySprite, shadow, ring;
         string anim;
-        float animStart, animLength, idleAt, stillAt, bornAt, goneAt = -1, dustTimer;
+        float animStart, animLength, idleAt, stillAt, bornAt, goneAt = -1;
+        Vector2 shown, shownVelocity;
+        float walkingSince, stride, hoverLift;
+        int footfalls;
 
         public static PetActor Spawn(Transform parent, TownMap map, string id, string name, string look, Vector2 pos, bool bot, bool me)
         {
             var go = new GameObject((me ? "Me " : bot ? "Villager " : "Reader ") + name);
             go.transform.SetParent(parent, false);
             var a = go.AddComponent<PetActor>();
-            a.map = map; a.Id = id; a.Name = name; a.IsBot = bot; a.IsMe = me; a.Pos = pos;
+            a.map = map; a.Id = id; a.Name = name; a.IsBot = bot; a.IsMe = me; a.Pos = a.shown = pos;
             a.Dir = Random.value < .5f ? 1 : -1;
             a.bornAt = Time.time;
             a.stillAt = Time.time;
@@ -102,6 +116,7 @@ namespace BookBuddies.Pets
 
         public void Walk(List<Vector2Int> path)
         {
+            if (!Walking) walkingSince = Time.time; // a fresh start eases in; a change of course doesn't
             Path.Clear();
             if (path != null) Path.AddRange(path);
             Sitting = false;
@@ -138,6 +153,7 @@ namespace BookBuddies.Pets
             float t = Time.time, dt = Time.deltaTime;
             if (Gone && t - goneAt > .7f) { Destroy(gameObject); return; }
             if (!Gone) Step(t, dt);
+            if (!bodySprite.sprite) bodySprite.sprite = PetSprites.For(Look); // the sprite cache may have dropped it
             Render(t);
         }
 
@@ -154,7 +170,7 @@ namespace BookBuddies.Pets
                 var next = Path[0];
                 var target = new Vector2(next.x + .5f, next.y + .5f);
                 var delta = target - Pos;
-                float move = Speed * dt * (IsMe ? 1 : Pace > 0 ? Pace : 1.05f);
+                float move = Speed * dt * (IsMe ? 1 : Pace > 0 ? Pace : 1.05f) * Easing(t, delta.magnitude);
                 if (Mathf.Abs(delta.x) > .05f) Dir = delta.x > 0 ? 1 : -1;
                 if (delta.magnitude <= move)
                 {
@@ -164,8 +180,7 @@ namespace BookBuddies.Pets
                 }
                 else Pos += delta.normalized * move;
 
-                dustTimer += dt;
-                if (dustTimer > .22f) { dustTimer = 0; Fx.Dust(Pos + new Vector2(0, .32f)); }
+                Footsteps(move);
                 anim = null;
                 Sleeping = false;
             }
@@ -191,9 +206,29 @@ namespace BookBuddies.Pets
             if (Emote != null && t - EmoteAt > 1.8f) Emote = null;
         }
 
+        // A soft start from standing and a soft stop at the end of the path, gentle enough that arrival times
+        // stay within a few hundredths of a second of the site's.
+        float Easing(float t, float toNext)
+        {
+            float k = Mathf.Lerp(SoftestPace, 1, Mathf.Clamp01((t - walkingSince) / StartUp));
+            if (Path.Count == 1 && toNext < SlowDown) k *= Mathf.Lerp(SoftestPace, 1, toNext / SlowDown);
+            return k;
+        }
+
+        // The stride follows the ground covered, so feet and dust keep time with the speed.
+        void Footsteps(float moved)
+        {
+            stride += moved / Stride;
+            if ((int)stride == footfalls) return;
+            footfalls = (int)stride;
+            var side = new Vector2(Dir * (footfalls % 2 == 0 ? .1f : -.06f), .32f);
+            Fx.Dust(Pos + side, footfalls % 4 == 0 ? 1.3f : 1);
+        }
+
         void Arrive(float t)
         {
             Pace = 0;
+            if (t - walkingSince > .3f) Fx.Dust(Pos + new Vector2(0, .32f), 1.5f); // a little skid at the stop
             stillAt = t;
             idleAt = t + 1.5f + Random.value * 2.5f;
             if (IsMe) { var then = OnArrived; OnArrived = null; then?.Invoke(); }
@@ -214,8 +249,12 @@ namespace BookBuddies.Pets
             }
             else if (Walking)
             {
-                float b = Mathf.Abs(Mathf.Sin(t * 11));
-                oy = -b * .14f; rot = Mathf.Sin(t * 11) * .08f; sy = 1 - b * .04f + .02f;
+                // up on the stride, squashed a touch at each footfall, leaning into the walk
+                float calm = GameSettings.ReduceMotion ? .4f : 1;
+                float phase = stride * Mathf.PI, b = Mathf.Abs(Mathf.Sin(phase));
+                oy = -b * .14f * calm;
+                sy = 1 + (b - .55f) * .09f * calm; sx = 1 - (b - .55f) * .06f * calm;
+                rot = (Mathf.Sin(phase) * .07f - Dir * .035f) * calm;
             }
             else
             {
@@ -225,8 +264,15 @@ namespace BookBuddies.Pets
                 if (anim != null && t >= animStart) Animate((t - animStart) / animLength, ref ox, ref oy, ref rot, ref sx, ref sy);
             }
 
+            // the drawn pet trails its path by a few hundredths of a second, which turns corners into curves
+            if ((Pos - shown).sqrMagnitude > 2.25f) { shown = Pos; shownVelocity = Vector2.zero; }
+            else shown = Vector2.SmoothDamp(shown, Pos, ref shownVelocity, Smoothing, Mathf.Infinity, Time.deltaTime);
+            hoverLift = Mathf.MoveTowards(hoverLift, Hovered && !Gone ? .07f : 0, Time.deltaTime * .6f);
+            oy -= hoverLift;
+            if (Hovered) { sx *= 1.03f; sy *= 1.03f; }
+
             // place everything (body moves in the camera-facing plane, like the site's flat overlay)
-            transform.position = TownMap.ToWorld(Pos.x, Pos.y);
+            transform.position = TownMap.ToWorld(shown.x, shown.y);
             body.localPosition = new Vector3(ox, -(.32f + oy + lift), 0);
             body.localRotation = Quaternion.Euler(0, 0, -rot * Mathf.Rad2Deg);
             body.localScale = new Vector3(sx * (Dir < 0 ? -1 : 1), sy, 1);
@@ -234,15 +280,15 @@ namespace BookBuddies.Pets
             float fadeIn = IsMe ? 1 : Mathf.Clamp01((t - bornAt) / .48f);
             float fadeOut = Gone ? Mathf.Max(0, 1 - (t - goneAt) / .7f) : 1;
             bodySprite.color = new Color(1, 1, 1, fadeIn * fadeOut);
-            bodySprite.sortingOrder = Draw.Order(Mathf.Floor(Pos.y) + 1.005f + (Sitting ? .3f : 0));
+            bodySprite.sortingOrder = Draw.ActorOrder(shown.y) + (Sitting ? 30 : 0);
             bodySprite.enabled = !Hidden;
 
-            shadow.transform.position = TownMap.ToWorld(Pos.x, Pos.y + .3f + lift * .2f, .01f);
+            shadow.transform.position = TownMap.ToWorld(shown.x, shown.y + .3f + lift * .2f, .01f);
             shadow.color = Palette.ShadowTint.WithAlpha(.38f * fadeOut);
             shadow.enabled = !Hidden;
             if (ring)
             {
-                ring.transform.position = TownMap.ToWorld(Pos.x, Pos.y + .3f, .012f);
+                ring.transform.position = TownMap.ToWorld(shown.x, shown.y + .3f, .012f);
                 ring.enabled = !Hidden && !Gone;
             }
         }

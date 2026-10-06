@@ -8,7 +8,9 @@ using Unity.VectorGraphics;
 namespace BookBuddies.Pets
 {
     /// <summary>
-    /// Turns a pet's look into a crisp, anti-aliased sprite, once per look, using Unity's Vector Graphics package.
+    /// Turns a pet's look into a crisp, anti-aliased sprite, once per look and mood, using Unity's Vector Graphics package.
+    /// Sprites are cached (the most recent 96, by look and mood), so menus, the town and battles never tessellate the same
+    /// pet twice; screens with many pets can ask Has() and draw the missing ones a frame apart.
     /// Without that package installed, pets show as simple coloured blobs (see SETUP.md).
     /// </summary>
     public static class PetSprites
@@ -18,30 +20,53 @@ namespace BookBuddies.Pets
         const float BaseInset = .04f;              // the site lifts the art .04 tiles off its base point
         const int CacheLimit = 96;
 
-        static PetParts parts;
-        static readonly Dictionary<string, Sprite> cache = new Dictionary<string, Sprite>();
-        static readonly LinkedList<string> recent = new LinkedList<string>();
+        static readonly Dictionary<string, LinkedListNode<(string key, Sprite sprite)>> cache = new Dictionary<string, LinkedListNode<(string, Sprite)>>();
+        static readonly LinkedList<(string key, Sprite sprite)> recent = new LinkedList<(string, Sprite)>(); // most recently used first
 
-        public static PetParts Parts => parts ?? (parts = PetParts.FromJson(Art.Text("Data/pet_parts")));
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void Init() => PetParts.TextLoader = Art.Text;
+
+        public static PetParts Parts
+        {
+            get
+            {
+                if (PetParts.TextLoader == null) PetParts.TextLoader = Art.Text;
+                return PetParts.Current;
+            }
+        }
+
+        /// <summary>What a pet of this look says now and then: its body's lines for its evolution form (BODY_LINES), or none.</summary>
+        public static string[] LinesFor(string lookJson)
+        {
+            var look = PetLook.Parse(lookJson, Parts);
+            return look == null || look.Stage == 0 ? new string[0] : Parts.LinesOf(look.Shape, look.Evo);
+        }
+
+        /// <summary>Whether this look and mood is already drawn (For returns it at once).</summary>
+        public static bool Has(string lookJson, string mood = "joyful") => cache.ContainsKey(mood + "|" + lookJson);
 
         /// <summary>A pet's sprite. For an egg, mood "crack1" to "crack3" draws it cracking.</summary>
         public static Sprite For(string lookJson, string mood = "joyful")
         {
             string key = mood + "|" + lookJson;
-            if (cache.TryGetValue(key, out var hit)) { recent.Remove(key); recent.AddFirst(key); return hit; }
+            if (cache.TryGetValue(key, out var hit))
+            {
+                recent.Remove(hit);
+                recent.AddFirst(hit);
+                return hit.Value.sprite;
+            }
 
             var look = PetLook.Parse(lookJson, Parts) ?? PetLook.Parse("{\"h\":32,\"s\":3}", Parts);
             string svg = PetSvg.Build(look, Parts, mood);
             if (look.Stage == 0) svg = PetSvg.EggCracks(svg, mood.StartsWith("crack") ? mood[mood.Length - 1] - '0' : 0);
             var sprite = Render(PetSvg.ForUnity(svg), (float)look.Hue);
-            cache[key] = sprite;
-            recent.AddFirst(key);
+            cache[key] = recent.AddFirst((key, sprite));
             while (recent.Count > CacheLimit)
             {
-                string old = recent.Last.Value;
+                var (old, s) = recent.Last.Value;
                 recent.RemoveLast();
-                if (cache.TryGetValue(old, out var s) && s) { Object.Destroy(s.texture); Object.Destroy(s); }
                 cache.Remove(old);
+                if (s) { Object.Destroy(s.texture); Object.Destroy(s); }
             }
             return sprite;
         }
@@ -53,7 +78,7 @@ namespace BookBuddies.Pets
             {
                 var scene = SVGParser.ImportSVG(new StringReader(svg));
                 var options = new VectorUtils.TessellationOptions { StepDistance = 1f, MaxCordDeviation = .25f, MaxTanAngleDeviation = .05f, SamplingStepSize = .01f };
-                var geometry = VectorUtils.TessellateScene(scene.Scene, options);
+                var geometry = VectorUtils.TessellateScene(scene.Scene, options, scene.NodeOpacity); // keeps opacity="…" (shading, shine, auras)
                 var vector = VectorUtils.BuildSprite(geometry, scene.SceneViewport, 100f, VectorUtils.Alignment.BottomCenter, Vector2.zero, 64, true);
                 var shader = Shader.Find(svg.Contains("Gradient") ? "Unlit/VectorGradient" : "Unlit/Vector") ?? Shader.Find("Sprites/Default");
                 var material = new Material(shader);

@@ -41,6 +41,35 @@ namespace BookBuddies.World
         }
     }
 
+    /// <summary>
+    /// Tall grass: barely stirs in the breeze, and shakes when something pushes through it (a poke),
+    /// settling back over about a second.
+    /// </summary>
+    public sealed class Rustle : MonoBehaviour
+    {
+        const float Breeze = .8f;   // degrees of idle sway
+        const float Shake = 9f;     // degrees when poked
+        Quaternion rest;
+        float phase, pokedAt = -9;
+
+        void Start()
+        {
+            rest = transform.rotation;
+            var p = transform.position;
+            phase = Draw.Hash((int)p.x, (int)p.z) * 6.28f;
+        }
+
+        public void Poke() => pokedAt = Time.time;
+
+        void Update()
+        {
+            float t = Time.time, age = t - pokedAt;
+            float a = GameSettings.ReduceMotion ? 0 : Mathf.Sin(t * 1.3f + phase) * Breeze;
+            if (age < 1.1f) a += Mathf.Sin(age * 22) * Shake * (1 - age / 1.1f) * (1 - age / 1.1f);
+            transform.rotation = rest * Quaternion.Euler(0, 0, a);
+        }
+    }
+
     /// <summary>Bobs up and down on the screen (coins and gifts waiting to be found).</summary>
     public sealed class Bob : MonoBehaviour
     {

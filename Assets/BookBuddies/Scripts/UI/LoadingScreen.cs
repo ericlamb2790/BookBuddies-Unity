@@ -8,6 +8,7 @@ namespace BookBuddies.UI
     /// <summary>
     /// The loading screen: your pet (or your egg) bouncing on a stack of books, sparkles popping around it,
     /// a row of paw prints that fill in as things load, and a tip that changes every few seconds.
+    /// The middle grows a little on big screens and shrinks on short ones.
     /// </summary>
     public sealed class LoadingScreen : MonoBehaviour
     {
@@ -26,10 +27,10 @@ namespace BookBuddies.UI
         };
         const int PawCount = 10;
         const float BounceSeconds = .9f;
+        const float MiddleHeight = 480; // the buddy, its books, the words and the paws, top to bottom
 
-        Canvas canvas;
+        RectTransform root, centre, hopper, shadow;
         CanvasGroup group, tipFade;
-        RectTransform hopper, shadow;
         Image[] paws, sparkles, bokeh;
         Text stage, tip;
         bool egg;
@@ -40,9 +41,9 @@ namespace BookBuddies.UI
         {
             var canvas = UiKit.MakeCanvas("Loading", 50);
             var l = canvas.gameObject.AddComponent<LoadingScreen>();
-            l.canvas = canvas;
+            l.root = (RectTransform)canvas.transform;
             l.egg = look != null && look.Contains("\"s\":0");
-            l.Build((RectTransform)canvas.transform, look);
+            l.Build(look);
             l.Stage(stageText);
             l.tipIndex = Random.Range(0, Tips.Length);
             l.tip.text = Tips[l.tipIndex];
@@ -50,7 +51,7 @@ namespace BookBuddies.UI
             return l;
         }
 
-        void Build(RectTransform root, string look)
+        void Build(string look)
         {
             group = root.gameObject.AddComponent<CanvasGroup>();
             UiKit.Cover(root, "paper", Palette.Cream, null, true);
@@ -64,7 +65,8 @@ namespace BookBuddies.UI
             }
             UiKit.Cover(root, "edges", new Color(.6f, .42f, .2f, .22f), UiKit.Vignette);
 
-            var middle = UiKit.Node("middle", root).Pin(new Vector2(.5f, .5f), new Vector2(0, 40), new Vector2(300, 300));
+            centre = UiKit.Node("centre", root).Fill();
+            var middle = UiKit.Node("middle", centre).Pin(new Vector2(.5f, .5f), new Vector2(0, 40), new Vector2(300, 300));
             var books = UiKit.Icon(middle, "📚", 120);
             ((RectTransform)books.transform).Pin(new Vector2(.5f, 0), new Vector2(0, 0), new Vector2(120, 120));
             shadow = UiKit.Cover(middle, "shadow", Palette.Ink.WithAlpha(.28f), UiKit.Glow).rectTransform.Pin(new Vector2(.5f, 0), new Vector2(0, 92), new Vector2(110, 26));
@@ -83,16 +85,17 @@ namespace BookBuddies.UI
                 ((RectTransform)sparkles[i].transform).anchorMin = ((RectTransform)sparkles[i].transform).anchorMax = new Vector2(.5f, .5f);
             }
 
-            stage = UiKit.Label(root, "", 28, Palette.Ink, UiKit.Title, TextAnchor.MiddleCenter);
+            stage = UiKit.Label(centre, "", UiKit.TitleSize, Palette.Ink, UiKit.Title, TextAnchor.MiddleCenter);
+            stage.horizontalOverflow = HorizontalWrapMode.Overflow;
             ((RectTransform)stage.transform).Pin(new Vector2(.5f, .5f), new Vector2(0, -150), new Vector2(640, 44));
 
-            var row = UiKit.Node("paws", root).Pin(new Vector2(.5f, .5f), new Vector2(0, -200), new Vector2(PawCount * 34, 30));
+            var row = UiKit.Node("paws", centre).Pin(new Vector2(.5f, .5f), new Vector2(0, -200), new Vector2(PawCount * 34, 30));
             UiKit.Row(row, 8, null, TextAnchor.MiddleCenter);
             paws = new Image[PawCount];
             for (int i = 0; i < PawCount; i++) paws[i] = UiKit.Icon(row, "🐾", 26);
 
-            tip = UiKit.Label(root, "", 17, Palette.InkSoft, UiKit.Body, TextAnchor.UpperCenter);
-            ((RectTransform)tip.transform).Pin(new Vector2(.5f, 0), new Vector2(0, 24), new Vector2(560, 60));
+            tip = UiKit.Label(root, "", UiKit.BodySize, Palette.InkSoft, UiKit.Body, TextAnchor.UpperCenter);
+            ((RectTransform)tip.transform).Pin(new Vector2(.5f, 0), new Vector2(0, 28), new Vector2(680, 60));
             tipFade = tip.gameObject.AddComponent<CanvasGroup>();
         }
 
@@ -112,7 +115,7 @@ namespace BookBuddies.UI
 
         void Update()
         {
-            canvas.GetComponent<CanvasScaler>().scaleFactor = UiKit.ScreenScale();
+            Fit();
             float now = Time.unscaledTime;
             shownProgress = Mathf.MoveTowards(shownProgress, progress, Time.unscaledDeltaTime * 1.6f);
             Bounce(now);
@@ -120,6 +123,15 @@ namespace BookBuddies.UI
             Sparkle(now);
             Lights(now);
             Tip(now);
+        }
+
+        void Fit()
+        {
+            var size = root.rect.size;
+            float k = Mathf.Min(1.15f, (size.y - 140) / MiddleHeight);
+            centre.localScale = new Vector3(k, k, 1);
+            var tipRect = (RectTransform)tip.transform;
+            tipRect.sizeDelta = new Vector2(Mathf.Min(680, size.x - 48), tipRect.sizeDelta.y);
         }
 
         // a hop with squash on landing and a stretch at the top; eggs wobble as they go

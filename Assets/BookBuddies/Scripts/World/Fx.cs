@@ -2,27 +2,38 @@ using UnityEngine;
 
 namespace BookBuddies.World
 {
-    /// <summary>Little one-off effects: dust from footsteps, poofs, and emoji that float up (hearts, sparkles...).</summary>
+    /// <summary>Little one-off effects: dust from footsteps, poofs, sparkles, and emoji that float up (hearts, sparkles...).</summary>
     public static class Fx
     {
         static Transform root;
 
         static Transform Root => root ? root : root = new GameObject("Effects").transform;
 
-        public static void Dust(Vector2 at)
+        /// <summary>A little puff of dust kicked up by a footstep (size 1), or a skid when stopping (bigger).</summary>
+        public static void Dust(Vector2 at, float size = 1)
         {
-            var r = Draw.Blob("dust", Root, at.x, at.y, .09f, .07f, new Color32(240, 225, 190, 150), Draw.GroundFxOrder);
+            var r = Draw.Blob("dust", Root, at.x, at.y, .09f * size, .07f * size, new Color32(240, 225, 190, 150), Draw.GroundFxOrder);
             var p = r.gameObject.AddComponent<Puff>();
-            p.life = .5f; p.grow = 2.4f; p.startAlpha = .6f;
+            p.life = .45f + .1f * size; p.grow = 2.4f; p.startAlpha = .55f;
         }
 
-        public static void Poof(Vector2 at)
+        public static void Poof(Vector2 at, float seconds = .7f)
         {
             var r = Draw.Standing("poof", Root, Art.SoftDot, at.x, at.y - .4f, Draw.Order(at.y + .5f));
             r.color = new Color(1, 1, 1, .9f);
             r.transform.localScale = Vector3.one * .35f;
             var p = r.gameObject.AddComponent<Puff>();
-            p.grow = 3f;
+            p.grow = 3f; p.life = seconds;
+        }
+
+        /// <summary>The site's sparkle: ten gold, white and sky dots spreading in a ring a tile above a map point.</summary>
+        public static void Sparkle(Vector2 at, float delay = 0, float seconds = 1.6f)
+        {
+            var go = new GameObject("sparkle");
+            go.transform.SetParent(Root, false);
+            go.transform.SetPositionAndRotation(TownMap.ToWorld(at.x, at.y), TownCamera.Facing);
+            var s = go.AddComponent<SparkleRing>();
+            s.delay = delay; s.life = seconds; s.order = Draw.Order(at.y + 1.5f);
         }
 
         /// <summary>An emoji that rises from a map point and fades (hearts for hugs, sparkles for boops...).</summary>
@@ -63,6 +74,37 @@ namespace BookBuddies.World
                 r.enabled = true;
                 transform.position = start + transform.up * (1.2f + q * .8f);
                 r.color = new Color(1, 1, 1, q > .7f ? (1 - q) / .3f : 1);
+            }
+        }
+
+        sealed class SparkleRing : MonoBehaviour
+        {
+            static readonly Color[] Colours = { Palette.Hex("#ffd34d"), Color.white, Palette.Hex("#7fd0ff") };
+            public float delay, life = 1.6f;
+            public int order;
+            readonly SpriteRenderer[] dots = new SpriteRenderer[10];
+            float age;
+
+            void Start()
+            {
+                for (int i = 0; i < dots.Length; i++) { dots[i] = Draw.Sprite("dot", transform, Art.Disc, order, Colours[i % 3]); dots[i].enabled = false; }
+            }
+
+            void Update()
+            {
+                age += Time.deltaTime;
+                float q = (age - delay) / life;
+                if (q < 0) return;
+                if (q >= 1) { Destroy(gameObject); return; }
+                float r = .2f + q * .75f, size = .05f * (1 - q) + .02f;
+                for (int i = 0; i < dots.Length; i++)
+                {
+                    float a = i / 10f * Mathf.PI * 2;
+                    dots[i].enabled = true;
+                    dots[i].transform.localPosition = new Vector3(Mathf.Cos(a) * r, 1 - Mathf.Sin(a) * r * .7f, 0);
+                    dots[i].transform.localScale = Vector3.one * size;
+                    dots[i].color = Colours[i % 3].WithAlpha(1 - q);
+                }
             }
         }
 

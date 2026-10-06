@@ -1,4 +1,4 @@
-# BookBuddies for Unity (v0.2)
+# BookBuddies for Unity (v0.3)
 
 Your pet, Pawtopia and the live Plaza, ported from website build 530 to Unity, with an intro, a title screen with your egg or pet, egg hatching, loading screens, Settings, a town menu, a minimap and photo mode. It comes with its own Cloudflare Worker (D1 and Durable Objects).
 

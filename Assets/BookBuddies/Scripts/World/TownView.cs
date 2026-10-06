@@ -5,15 +5,19 @@ namespace BookBuddies.World
 {
     /// <summary>
     /// Builds the town you see from a TownMap: painted ground, buildings and props with soft shadows,
-    /// the garden, and coins or gifts lying around. Everything comes from named art, so it can be reskinned.
+    /// tall grass on the road, the garden, and coins or gifts lying around. Everything comes from named art,
+    /// so it can be reskinned.
     /// </summary>
     public sealed class TownView : MonoBehaviour
     {
-        const float MapEdgeSea = 40f; // tiles of open water drawn past the map edge
+        const float MapEdge = 40f; // tiles of sea, meadow or rock drawn past the map edge
 
         public TownMap Map { get; private set; }
+        /// <summary>The road's and caves' little animals (null in towns, which have their own ambience).</summary>
+        public Critters Life { get; private set; }
         readonly Dictionary<int, SpriteRenderer> plants = new Dictionary<int, SpriteRenderer>();
         readonly Dictionary<string, GameObject> items = new Dictionary<string, GameObject>();
+        readonly Dictionary<int, Rustle> tufts = new Dictionary<int, Rustle>();
         Transform ground, props, garden, pickups;
 
         public void Build(TownMap map)
@@ -33,32 +37,47 @@ namespace BookBuddies.World
             BuildGround();
             progress?.Invoke(.3f);
             yield return null;
-            for (int i = 0; i < map.Objects.Count; i++)
+            int steps = map.Objects.Count + (map.Wild?.Tall.Count ?? 0), done = 0;
+            foreach (var o in map.Objects)
             {
-                PlaceObject(map.Objects[i]);
-                if (i % 24 != 23) continue;
-                progress?.Invoke(.3f + .6f * i / map.Objects.Count);
+                PlaceObject(o);
+                if (++done % 24 != 0) continue;
+                progress?.Invoke(.3f + .6f * done / steps);
                 yield return null;
             }
-            gameObject.AddComponent<Ambience>().Build(map);
+            if (map.Wild != null)
+                foreach (var kv in map.Wild.Tall)
+                {
+                    PlaceTuft(kv.Key % map.Width, kv.Key / map.Width, kv.Value);
+                    if (++done % 48 != 0) continue;
+                    progress?.Invoke(.3f + .6f * done / steps);
+                    yield return null;
+                }
+            if (map.Wild == null) gameObject.AddComponent<Ambience>().Build(map);
+            else (Life = gameObject.AddComponent<Critters>()).Build(map);
             progress?.Invoke(1);
         }
 
         void BuildGround()
         {
-            var sea = Draw.Sprite("Sea", ground, Art.White, Draw.GroundOrder - 1, Palette.Sea);
-            sea.transform.SetPositionAndRotation(TownMap.ToWorld(Map.Width / 2f, Map.Height / 2f, -.02f), Quaternion.Euler(90, 0, 0));
-            sea.transform.localScale = new Vector3(Map.Width / 2f + MapEdgeSea, Map.Height / 2f + MapEdgeSea, 1);
+            var edge = Draw.Sprite("Backdrop", ground, Art.White, Draw.GroundOrder - 1, Map.Backdrop);
+            edge.transform.SetPositionAndRotation(TownMap.ToWorld(Map.Width / 2f, Map.Height / 2f, -.02f), Quaternion.Euler(90, 0, 0));
+            edge.transform.localScale = new Vector3(Map.Width / 2f + MapEdge, Map.Height / 2f + MapEdge, 1);
 
-            int n = Art.GroundChunk;
+            int n = Art.GroundChunk(Map.Key);
             for (int cy = 0; cy * n < Map.Height; cy++)
                 for (int cx = 0; cx * n < Map.Width; cx++)
                 {
-                    var sprite = Art.GroundSprite(new Vector2Int(cx, cy));
+                    var sprite = Art.GroundSprite(Map.Key, new Vector2Int(cx, cy));
                     if (!sprite) continue;
                     var r = Draw.Sprite($"Ground {cx},{cy}", ground, sprite, Draw.GroundOrder);
                     r.transform.SetPositionAndRotation(TownMap.ToWorld(cx * n, cy * n), Quaternion.Euler(90, 0, 0));
                 }
+        }
+
+        void OnDestroy()
+        {
+            if (Map != null) Art.ReleaseGround(Map.Key);
         }
 
         void PlaceObject(TownMap.Placed o)
@@ -76,6 +95,40 @@ namespace BookBuddies.World
                 book.seconds = art.Seconds;
             }
             if (Art.Sways.Contains(o.Kind)) r.gameObject.AddComponent<Sway>();
+        }
+
+        /// <summary>
+        /// The world point just above whatever stands at a place (the top of the café, the fountain, a sign),
+        /// for its floating marker. Places with nothing drawn get a marker at about pet height.
+        /// </summary>
+        public Vector3 MarkerPoint(TownMap.Spot spot)
+        {
+            var a = spot.Area;
+            float x = a.xMin + (a.width + 1) / 2f, baseY = a.yMax + 1, height = 1.2f;
+            foreach (var o in Map.Objects)
+            {
+                if (o.X + o.W <= a.xMin || o.X > a.xMax || o.Y + o.H <= a.yMin || o.Y > a.yMax) continue;
+                if (!Art.Objects.TryGetValue(o.Sprite, out var art) && !Art.Anims.TryGetValue(o.Sprite, out art)) continue;
+                float top = art.Size.y * (1 - art.Pivot.y);
+                if (top > height) { height = top; baseY = o.Y + o.H; }
+            }
+            return TownMap.ToWorld(x, baseY) + TownCamera.Facing * Vector3.up * (height + .2f);
+        }
+
+        // ---- tall grass ----
+
+        // A tuft draws just under anyone standing in its row, like the site's z = y + .99.
+        void PlaceTuft(int x, int y, int variant)
+        {
+            if (!Art.Objects.TryGetValue(Map.Wild.GrassArt + variant, out var art)) return;
+            var r = Draw.Standing("grass", props, Art.Sprite(art), x + .5f, y + 1, Draw.Order(y + .99f));
+            tufts[y * Map.Width + x] = r.gameObject.AddComponent<Rustle>();
+        }
+
+        /// <summary>Shakes the tall grass at a tile (someone pushed through it).</summary>
+        public void RustleAt(int x, int y)
+        {
+            if (Map.Inside(x, y) && tufts.TryGetValue(y * Map.Width + x, out var tuft)) tuft.Poke();
         }
 
         // ---- garden ----
@@ -123,9 +176,9 @@ namespace BookBuddies.World
         {
             var r = Draw.Sprite("tap", transform, Art.DashedRing, Draw.GroundFxOrder, Color.white);
             r.transform.SetPositionAndRotation(TownMap.ToWorld(x + .5f, y + .5f, .02f), Quaternion.Euler(90, 0, 0));
-            r.transform.localScale = Vector3.one * .25f;
+            r.transform.localScale = Vector3.one * .23f; // the ring sits at .86 of the sprite: radius .2 → .65 tiles over .7 s
             var puff = r.gameObject.AddComponent<Puff>();
-            puff.grow = 2.8f;
+            puff.grow = 3.25f;
         }
 
         Transform Group(string name)

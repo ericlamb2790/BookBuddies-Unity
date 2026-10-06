@@ -1,4 +1,5 @@
-// The D1 database: tables (made automatically on first use), daily limits and the blocked-words list.
+// Shared by the routes: the D1 database (tables made automatically on first use), daily limits, the
+// blocked-words list, the towns and rooms, and the small reply helpers.
 
 /** Creates the tables on first use, so a fresh D1 database works without a separate step. */
 let schemaReady = false;
@@ -18,6 +19,11 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS limits (kind TEXT NOT NULL, ip TEXT NOT NULL, day TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (kind, ip, day))`,
   `CREATE TABLE IF NOT EXISTS blocked_words (word TEXT PRIMARY KEY)`,
   `CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS admin_log (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, admin_id TEXT NOT NULL,
+     admin_name TEXT NOT NULL, action TEXT NOT NULL, target_id TEXT, target_name TEXT, detail TEXT)`,
+  `CREATE INDEX IF NOT EXISTS admin_log_target ON admin_log (target_id)`,
+  `CREATE TABLE IF NOT EXISTS pets (player_id TEXT NOT NULL, id TEXT NOT NULL, name TEXT NOT NULL, look TEXT NOT NULL,
+     active INTEGER NOT NULL DEFAULT 0, born INTEGER NOT NULL, PRIMARY KEY (player_id, id))`,
 ];
 
 export const today = () => new Date().toISOString().slice(0, 10);
@@ -38,3 +44,22 @@ export async function blockedWords(env) {
   blocked = { at: Date.now(), words: (results || []).map((r) => r.word) };
   return blocked.words;
 }
+
+// ---- towns and rooms ----
+
+/** The live towns. Each has rooms 1 to ROOMS, and each room is one Durable Object named "<town>:<room>". */
+export const TOWNS = ['pawtopia', 'road1', 'caves'];
+export const ROOMS = 6;
+
+// ---- replies ----
+
+/** An error the player should see, with its HTTP status. */
+export class Problem extends Error {
+  constructor(message, status = 400) { super(message); this.status = status; }
+}
+
+export async function readJson(request) {
+  try { const o = await request.json(); return o && typeof o === 'object' ? o : {}; } catch { return {}; }
+}
+
+export const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'content-type': 'application/json' } });

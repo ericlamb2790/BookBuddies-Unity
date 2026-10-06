@@ -3,7 +3,6 @@ using BookBuddies.Net;
 using BookBuddies.Pets;
 using BookBuddies.World;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace BookBuddies.UI
@@ -11,24 +10,27 @@ namespace BookBuddies.UI
     /// <summary>
     /// The title screen over a slowly drifting Pawtopia: the BookBuddies name, the main menu, and your egg
     /// (or the buddy that hatched from it) sitting on a stack of books. Tap the egg and it wobbles; tap your
-    /// buddy and it hops. New players hatch their egg from here.
+    /// buddy and it hops. New players hatch their egg from here. The menu works with the mouse, touch, keys and the
+    /// gamepad cursor; short windows get a more compact name and menu so nothing is cut off.
     /// </summary>
     public sealed class TitleScreen : MonoBehaviour
     {
         static readonly Vector2 DriftCentre = new Vector2(40, 33);
+        const float CompactHeight = 760;      // shorter screens get the compact name and menu
+        const float MenuWidth = 380, MenuGap = 28;
+        const float StageHeight = 460;        // your buddy, its books and the nameplate, top to bottom
 
         TownCamera cam;
         System.Action enterTown, watchIntro;
-        Canvas canvas;
         RectTransform root, logo, menu, stage, footer;
         CanvasGroup group;
         Image pet, glow, serverDot, wash;
-        Text logoName, plateName, plateSub, serverText, playLabel;
+        Text tagline, logoName, townName, plateName, plateSub, serverText, playLabel;
         Button play, signIn;
         Sheet start, naming;
         InputField nameField;
         Text nameError, nameNote, hatchLabel;
-        bool canHatch, busy, portrait;
+        bool canHatch, busy;
         float shownAt, lastW, lastH, idleAt, animAt;
         string anim;
         Vector2 camFrom;
@@ -42,12 +44,12 @@ namespace BookBuddies.UI
             t.cam = cam;
             t.enterTown = enterTown;
             t.watchIntro = watchIntro;
-            t.canvas = canvas;
             t.root = (RectTransform)canvas.transform;
             t.Build();
             t.Refresh();
             t.CheckServer();
             if (notice != null) t.ShowSignIn(notice);
+            else VirtualCursor.FocusFirst(t.play);
             return t;
         }
 
@@ -60,23 +62,24 @@ namespace BookBuddies.UI
             // the name
             logo = UiKit.Node("logo", root);
             UiKit.Column(logo, 0, null, TextAnchor.MiddleLeft);
-            UiKit.Label(logo, "A cozy town for readers and their pets", 18, Palette.Ember, UiKit.Bold);
-            logoName = UiKit.Label(logo, "BookBuddies", 92, Palette.Ink, UiKit.Title);
+            UiKit.Hug(logo, false, true);
+            tagline = UiKit.Label(logo, "A cozy town for readers and their pets", UiKit.BodySize + 2, UiKit.EmberInk, UiKit.Bold);
+            logoName = UiKit.Label(logo, "BookBuddies", 112, Palette.Ink, UiKit.Title);
             logoName.horizontalOverflow = HorizontalWrapMode.Overflow;
             logoName.gameObject.AddComponent<UnityEngine.UI.Shadow>().effectColor = Palette.Cream.WithAlpha(.7f);
-            UiKit.Size(logoName, -1, 104);
-            UiKit.Label(logo, "Pawtopia", 40, Palette.Ember, UiKit.Title);
+            townName = UiKit.Label(logo, "Pawtopia", 44, UiKit.EmberInk, UiKit.Title);
 
-            // the main menu
+            // the main menu: one amber Play, quiet cream for the rest
             menu = UiKit.Node("menu", root);
-            UiKit.Column(menu, 10);
-            play = MenuButton("Play", Palette.Amber, OnPlay);
-            playLabel = play.GetComponentInChildren<Text>();
-            signIn = MenuButton("I have a recovery code", Palette.Cream, () => ShowSignIn(null));
-            MenuButton("Settings", Palette.Cream, () => SettingsPanel.Open(() => { Refresh(); CheckServer(); }));
-            MenuButton("Watch the intro", Palette.Cream, () => Leave(watchIntro));
-            if (!Application.isMobilePlatform && Application.platform != RuntimePlatform.WebGLPlayer) MenuButton("Quit", Palette.Cream, Application.Quit);
+            UiKit.Column(menu, 12);
             UiKit.Hug(menu, false, true);
+            play = MenuButton(UiKit.Primary(menu, "Play", OnPlay, null, 56));
+            playLabel = play.GetComponentInChildren<Text>();
+            signIn = MenuButton(UiKit.Secondary(menu, "I have a recovery code", () => ShowSignIn(null), null, 56));
+            MenuButton(UiKit.Secondary(menu, "Settings", () => SettingsPanel.Open(() => { Refresh(); CheckServer(); }), "⚙️", 56));
+            MenuButton(UiKit.Secondary(menu, "Watch the intro", () => Leave(watchIntro), null, 56));
+            if (!Application.isMobilePlatform && Application.platform != RuntimePlatform.WebGLPlayer)
+                MenuButton(UiKit.Secondary(menu, "Quit", Application.Quit, null, 56));
 
             // your egg or buddy on a stack of books
             stage = UiKit.Node("stage", root);
@@ -97,25 +100,25 @@ namespace BookBuddies.UI
             pet.raycastTarget = false;
             ((RectTransform)pet.transform).pivot = new Vector2(.5f, 0);
 
-            var plate = UiKit.Panel(stage, "nameplate", Palette.Cream, 18).rectTransform;
+            var plate = UiKit.Panel(stage, "nameplate", Palette.Cream).rectTransform;
             plate.Pin(new Vector2(.5f, .5f), new Vector2(0, -196), new Vector2(10, 10));
-            UiKit.Column(plate, 0, new RectOffset(20, 20, 8, 10), TextAnchor.MiddleCenter);
+            UiKit.Column(plate, 0, new RectOffset(22, 22, 8, 10), TextAnchor.MiddleCenter);
             UiKit.Hug(plate);
-            UiKit.Shadow(plate, 18, 12, 4, .25f);
-            plateName = UiKit.Label(plate, "", 20, Palette.Ink, UiKit.Bold, TextAnchor.MiddleCenter);
+            UiKit.Shadow(plate, UiKit.CardRadius, 12, 4, .25f);
+            plateName = UiKit.Label(plate, "", UiKit.HeadingSize, Palette.Ink, UiKit.Bold, TextAnchor.MiddleCenter);
             plateName.horizontalOverflow = HorizontalWrapMode.Overflow;
-            plateSub = UiKit.Label(plate, "", 14, Palette.InkSoft, UiKit.Body, TextAnchor.MiddleCenter);
+            plateSub = UiKit.Label(plate, "", UiKit.SmallSize + 1, Palette.InkSoft, UiKit.Body, TextAnchor.MiddleCenter);
             plateSub.horizontalOverflow = HorizontalWrapMode.Overflow;
 
             // version and server
             footer = UiKit.Node("footer", root);
             UiKit.Row(footer, 8);
             UiKit.Hug(footer);
-            var version = UiKit.Label(footer, "v" + Settings.Version, 14, Palette.InkSoft, UiKit.Bold);
+            var version = UiKit.Label(footer, "v" + Settings.Version, UiKit.SmallSize, Palette.InkSoft, UiKit.Bold);
             version.horizontalOverflow = HorizontalWrapMode.Overflow;
-            serverDot = UiKit.Panel(footer, "status", Palette.Amber, 4);
-            UiKit.Size(serverDot, 8, 8);
-            serverText = UiKit.Label(footer, "", 14, Palette.InkSoft);
+            serverDot = UiKit.Panel(footer, "status", Palette.Amber, 5);
+            UiKit.Size(serverDot, 10, 10);
+            serverText = UiKit.Label(footer, "", UiKit.SmallSize, Palette.InkSoft);
             serverText.horizontalOverflow = HorizontalWrapMode.Overflow;
 
             BuildStartCards();
@@ -125,11 +128,11 @@ namespace BookBuddies.UI
             Sound.Music("home");
         }
 
-        Button MenuButton(string label, Color colour, System.Action onClick)
+        // a main menu button floats over the town, so it gets a soft shadow and slightly bigger words
+        static Button MenuButton(Button b)
         {
-            var b = UiKit.TextButton(menu, label, null, colour, Palette.Ink, onClick, 50);
-            b.GetComponentInChildren<Text>().fontSize = 20;
-            UiKit.Shadow((RectTransform)b.transform, 25, 12, 4, .22f);
+            b.GetComponentInChildren<Text>().fontSize = UiKit.BodySize + 3;
+            UiKit.Shadow((RectTransform)b.transform, 28, 12, 4, .22f);
             return b;
         }
 
@@ -137,42 +140,39 @@ namespace BookBuddies.UI
 
         void BuildStartCards()
         {
-            start = Card("Hatch your egg", "Your egg is ready! Give it a name tag and it will hatch into a buddy that's all yours.");
-            var hatch = UiKit.TextButton(start.Card, "Hatch my egg", null, Palette.Amber, Palette.Ink, () => { start.Close(); naming.Open(!PlazaInput.UsingPointer); FocusName(); }, 48);
-            start.First = hatch;
-            UiKit.TextButton(start.Card, "I already have a buddy", null, Palette.Paper, Palette.Ink, () => { start.Close(); ShowSignIn(null); }, 44);
-            UiKit.TextButton(start.Card, "Just look around", null, Palette.Cream, Palette.InkSoft, () => { start.Close(); Leave(enterTown); }, 40);
+            start = Card("Hatch your egg", "Your egg is ready. Give it a name tag and it will hatch into a buddy that’s all yours.");
+            start.First = UiKit.Primary(start.Card, "Hatch my egg", () => { start.Close(); naming.Open(); FocusName(); }, null, 52);
+            UiKit.Secondary(start.Card, "I already have a buddy", () => { start.Close(); ShowSignIn(null); });
+            UiKit.TextButton(start.Card, "Just look around", null, Palette.Cream, Palette.InkSoft, () => { start.Close(); Leave(enterTown); });
 
             naming = Card("What should we call you?", "This name shows above your buddy in town. Pick a nickname, not your real name.");
             nameField = UiKit.Input(naming.Card, "Your nickname");
             nameField.characterLimit = 20;
             nameField.onEndEdit.AddListener(_ => { if (PlazaInput.EnterPressed()) Hatch(); });
-            UiKit.Size(nameField, -1, 48);
-            nameError = UiKit.Label(naming.Card, "", 14, Palette.Rose, UiKit.Bold);
+            UiKit.Size(nameField, -1, 52);
+            nameError = UiKit.Label(naming.Card, "", UiKit.SmallSize + 1, UiKit.RoseInk, UiKit.Bold);
             UiKit.Show(nameError, false);
-            nameNote = UiKit.Label(naming.Card, "Your buddy will live on this device for now. Sign in with a recovery code any time to meet readers in town.", 13, Palette.InkSoft);
-            var go = UiKit.TextButton(naming.Card, "Hatch!", null, Palette.Amber, Palette.Ink, Hatch, 48);
+            nameNote = UiKit.Label(naming.Card, "Your buddy will live on this device for now. Sign in with a recovery code any time to meet readers in town.", UiKit.SmallSize, Palette.InkSoft);
+            var go = UiKit.Primary(naming.Card, "Hatch!", Hatch, null, 52);
             hatchLabel = go.GetComponentInChildren<Text>();
-            UiKit.TextButton(naming.Card, "Back", null, Palette.Paper, Palette.Ink, () => { naming.Close(); start.Open(!PlazaInput.UsingPointer); }, 40);
+            UiKit.Secondary(naming.Card, "Back", () => { naming.Close(); start.Open(); });
             naming.First = nameField;
         }
 
         Sheet Card(string title, string body)
         {
-            var s = Sheet.Create(root, title, new Vector2(.5f, .5f), Vector2.zero, 400);
-            s.Card.pivot = new Vector2(.5f, .5f);
-            var column = s.Card.GetComponent<VerticalLayoutGroup>();
-            column.spacing = 12;
-            column.padding = new RectOffset(26, 26, 24, 24);
-            UiKit.Label(s.Card, title, 28, Palette.Ink, UiKit.Title);
-            UiKit.Label(s.Card, body, 15, Palette.InkSoft);
+            var s = Sheet.Create(root, title, new Vector2(.5f, .5f), Vector2.zero, 480, title);
+            s.Dim(.35f);
+            UiKit.Label(s.Card, body, UiKit.BodySize, Palette.InkSoft);
+            UiKit.Spacer(s.Card, 4, 0);
             return s;
         }
 
+        // with a keyboard the name field is ready to type in; on a gamepad the cursor goes to it instead
         void FocusName()
         {
             UiKit.Show(nameNote, !canHatch);
-            if (Application.isMobilePlatform) return;
+            if (Application.isMobilePlatform || PlazaInput.UsingGamepad) return;
             nameField.Select();
             nameField.ActivateInputField();
         }
@@ -239,6 +239,7 @@ namespace BookBuddies.UI
                 gameObject.SetActive(true);
                 Refresh();
                 if (signedIn) Leave(enterTown);
+                else VirtualCursor.FocusFirst(play);
             });
         }
 
@@ -246,7 +247,7 @@ namespace BookBuddies.UI
 
         void OnPlay()
         {
-            if (!Buddy.Hatched && !Settings.SignedIn) { start.Open(!PlazaInput.UsingPointer); return; }
+            if (!Buddy.Hatched && !Settings.SignedIn) { start.Open(); return; }
             Leave(enterTown);
         }
 
@@ -276,6 +277,7 @@ namespace BookBuddies.UI
             plateSub.text = hatched ? (Settings.SignedIn ? "Ready for Pawtopia" : "Exploring on this device") : "It’s warm. Give it a tap!";
             playLabel.text = hatched || Settings.SignedIn ? "Play" : "Hatch your egg";
             UiKit.Show(signIn, !Settings.SignedIn);
+            lastW = 0; // the menu may have changed length
         }
 
         async void CheckServer()
@@ -294,27 +296,10 @@ namespace BookBuddies.UI
 
         void Update()
         {
-            canvas.GetComponent<CanvasScaler>().scaleFactor = UiKit.ScreenScale();
+            PlazaInput.MenuOpen = true; // the gamepad drives the menu with the cursor
             if (!Mathf.Approximately(root.rect.width, lastW) || !Mathf.Approximately(root.rect.height, lastH)) Fit();
             Drift();
             AnimatePet();
-            Keys();
-        }
-
-        void Keys()
-        {
-            PlazaInput.Typing = nameField.isFocused;
-            if (PlazaInput.Down(PlazaAction.Back))
-            {
-                if (naming.IsOpen) naming.Close();
-                else if (start.IsOpen) start.Close();
-                return;
-            }
-            // a stick or arrow press with nothing highlighted picks the first menu button
-            var es = EventSystem.current;
-            bool sheetOpen = start.IsOpen || naming.IsOpen;
-            if (es != null && es.currentSelectedGameObject == null && !sheetOpen && PlazaInput.Move() != Vector2.zero)
-                es.SetSelectedGameObject(play.gameObject);
         }
 
         // the camera floats slowly around the town square
@@ -388,32 +373,62 @@ namespace BookBuddies.UI
         void Fit()
         {
             lastW = root.rect.width; lastH = root.rect.height;
-            portrait = lastW / Mathf.Max(1, lastH) < 1.1f;
+            bool portrait = lastW / Mathf.Max(1, lastH) < 1.1f;
+            bool compact = lastH < CompactHeight;
             wash.enabled = !portrait;
-            logoName.fontSize = (int)Mathf.Min(92, (lastW - 32) / 5.6f);
-            if (portrait)
-            {
-                logo.Pin(new Vector2(.5f, 1), new Vector2(0, -40), new Vector2(lastW - 32, 190));
-                logo.GetComponent<VerticalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
-                foreach (var t in logo.GetComponentsInChildren<Text>()) t.alignment = TextAnchor.MiddleCenter;
-                stage.Pin(new Vector2(.5f, .55f), Vector2.zero, new Vector2(300, 300));
-                stage.localScale = Vector3.one * .8f;
-                menu.Pin(new Vector2(.5f, 0), new Vector2(0, 56), new Vector2(Mathf.Min(320, lastW - 40), 10));
-                menu.pivot = new Vector2(.5f, 0);
-                footer.Pin(new Vector2(.5f, 0), new Vector2(0, 16), new Vector2(10, 22));
-            }
-            else
-            {
-                float left = Mathf.Max(48, lastW * .07f);
-                logo.Pin(new Vector2(0, .5f), new Vector2(left, 150), new Vector2(620, 190));
-                logo.GetComponent<VerticalLayoutGroup>().childAlignment = TextAnchor.MiddleLeft;
-                foreach (var t in logo.GetComponentsInChildren<Text>()) t.alignment = TextAnchor.MiddleLeft;
-                stage.Pin(new Vector2(.7f, .5f), new Vector2(0, 10), new Vector2(300, 300));
-                stage.localScale = Vector3.one;
-                menu.Pin(new Vector2(0, .5f), new Vector2(left, 30), new Vector2(320, 10));
-                menu.pivot = new Vector2(0, 1);
-                footer.Pin(Vector2.zero, new Vector2(left, 18), new Vector2(10, 22));
-            }
+
+            // the name and the menu, a little smaller on short screens
+            float nameWidth = portrait ? lastW - 32 : Mathf.Min(760, lastW * .5f);
+            logoName.fontSize = (int)Mathf.Min(compact ? 80 : 112, nameWidth / 5.6f);
+            UiKit.Size(logoName, -1, logoName.fontSize * 1.14f);
+            townName.fontSize = compact ? 34 : 44;
+            UiKit.Show(tagline, !compact);
+            float buttonHeight = compact ? 48 : 56;
+            int buttons = 0;
+            foreach (Transform b in menu)
+                if (b.gameObject.activeSelf && b.TryGetComponent<Button>(out _)) { UiKit.Size(b.GetComponent<Button>(), -1, buttonHeight); buttons++; }
+            menu.GetComponent<VerticalLayoutGroup>().spacing = compact ? 8 : 12;
+            float menuHeight = buttons * buttonHeight + (buttons - 1) * (compact ? 8 : 12);
+            float logoHeight = (compact ? 0 : 30) + logoName.fontSize * 1.14f + townName.fontSize * 1.2f;
+
+            foreach (var t in logo.GetComponentsInChildren<Text>()) t.alignment = portrait ? TextAnchor.MiddleCenter : TextAnchor.MiddleLeft;
+            logo.GetComponent<VerticalLayoutGroup>().childAlignment = portrait ? TextAnchor.MiddleCenter : TextAnchor.MiddleLeft;
+            stage.Pin(new Vector2(.5f, .5f), Vector2.zero, new Vector2(300, 300));
+            if (portrait) FitTall(logoHeight, menuHeight);
+            else FitWide(logoHeight, menuHeight);
+        }
+
+        // name at the top, buddy in the middle, menu at the bottom
+        void FitTall(float logoHeight, float menuHeight)
+        {
+            logo.Pin(new Vector2(.5f, 1), new Vector2(0, -40), new Vector2(lastW - 32, 10));
+            logo.localScale = Vector3.one;
+            menu.Pin(new Vector2(.5f, 0), new Vector2(0, 56), new Vector2(Mathf.Min(MenuWidth, lastW - 40), 10));
+            menu.localScale = Vector3.one;
+            footer.Pin(new Vector2(.5f, 0), new Vector2(0, 16), new Vector2(10, 22));
+            float top = lastH - 40 - logoHeight, bottom = 56 + menuHeight;
+            stage.anchorMin = stage.anchorMax = new Vector2(.5f, 0);
+            stage.anchoredPosition = new Vector2(0, (top + bottom) / 2);
+            stage.localScale = Vector3.one * Mathf.Clamp((top - bottom) / StageHeight, .5f, 1);
+        }
+
+        // name and menu down the left (scaled down together if the window is very short), buddy on the right
+        void FitWide(float logoHeight, float menuHeight)
+        {
+            float left = Mathf.Max(64, lastW * .07f);
+            float total = logoHeight + MenuGap + menuHeight;
+            float k = Mathf.Min(1, (lastH - 112) / total);
+            float top = total * k / 2 + 16;
+            logo.Pin(new Vector2(0, .5f), new Vector2(left, top), new Vector2(Mathf.Min(760, lastW * .5f), 10));
+            logo.pivot = new Vector2(0, 1);
+            logo.localScale = Vector3.one * k;
+            menu.Pin(new Vector2(0, .5f), new Vector2(left, top - (logoHeight + MenuGap) * k), new Vector2(MenuWidth, 10));
+            menu.pivot = new Vector2(0, 1);
+            menu.localScale = Vector3.one * k;
+            footer.Pin(Vector2.zero, new Vector2(left, 18), new Vector2(10, 22));
+            stage.anchorMin = stage.anchorMax = new Vector2(.7f, .5f);
+            stage.anchoredPosition = new Vector2(0, 10);
+            stage.localScale = Vector3.one * Mathf.Min(1.25f, (lastH - 140) / StageHeight);
         }
 
         /// <summary>Cream on the left fading to clear, so the name stays easy to read over the town.</summary>
@@ -425,6 +440,6 @@ namespace BookBuddies.UI
             return Sprite.Create(tex, new Rect(0, 0, 64, 1), new Vector2(.5f, .5f), 1);
         }
 
-        void OnDestroy() => PlazaInput.Typing = false;
+        void OnDisable() => PlazaInput.MenuOpen = false;
     }
 }

@@ -9,37 +9,45 @@ namespace BookBuddies.UI
     /// <summary>
     /// The egg hatches: the room dims, the egg wobbles and cracks three times, bursts open in a flash of
     /// sparkles and shell, and your new buddy pops out and hops. Then a card shows your recovery code
-    /// (when the server made you an account) so you can keep it safe. Esc, Space, Enter or A skips ahead.
+    /// (when the server made you an account) so you can keep it safe, or says hello to a pet from the pets screen. Esc, Space, Enter or A skips ahead; once the
+    /// card is up, B (or Esc) is the same as "Let's go". Short screens get a smaller stage and card.
     /// </summary>
     public sealed class HatchScene : MonoBehaviour
     {
         static readonly string[] Confetti = { "✨", "💛", "🎉", "❤️", "✨", "📚" };
-        const float EggSize = 280;
+        const float EggSize = 320;
+        const float TallEnough = 900; // shorter screens shrink the stage
+        const float CardWidth = 520;
 
         sealed class Bit { public RectTransform r; public Image img; public Vector2 v; public float spin, age, life; }
 
-        Canvas canvas;
-        RectTransform root, stage, egg, rays, cardRect, shellTop, shellBottom;
+        RectTransform root, stage, words, egg, rays, cardRect, shellTop, shellBottom;
         Image veil, glow, eggImage, petImage, flash;
         CanvasGroup raysFade, captionFade, cardFade;
         Text caption, sub;
         readonly List<Bit> bits = new List<Bit>();
-        string eggLook, petLook, reader, recovery;
+        string eggLook, petLook, reader, recovery, newPet;
         System.Action done;
         Selectable first;
         bool skipped, finished;
+        float cardRise = 1; // 0 while the card slides up, 1 once it's in place
 
         /// <summary>Runs the hatching over everything else; "done" runs after the player taps Let's go.</summary>
-        public static void Play(int hue, string look, string name, string recovery, System.Action done)
+        public static void Play(int hue, string look, string name, string recovery, System.Action done) => Show(hue, look, name, recovery, null, done);
+
+        /// <summary>Another egg hatches (from the pets screen): the same show, then "Meet {petName}!".</summary>
+        public static void Meet(int hue, string look, string petName, System.Action done) => Show(hue, look, null, null, petName, done);
+
+        static void Show(int hue, string look, string name, string recovery, string newPet, System.Action done)
         {
             var canvas = UiKit.MakeCanvas("Hatching", 60);
             var h = canvas.gameObject.AddComponent<HatchScene>();
-            h.canvas = canvas;
             h.root = (RectTransform)canvas.transform;
             h.eggLook = "{\"h\":" + hue + ",\"s\":0}";
             h.petLook = look;
             h.reader = name;
             h.recovery = recovery;
+            h.newPet = newPet;
             h.done = done;
             h.Build();
             h.StartCoroutine(h.Run());
@@ -51,7 +59,7 @@ namespace BookBuddies.UI
             UiKit.Cover(root, "edges", new Color(0, 0, 0, .5f), UiKit.Vignette);
             stage = UiKit.Node("stage", root).Pin(new Vector2(.5f, .5f), new Vector2(0, 40), new Vector2(EggSize, EggSize));
 
-            rays = UiKit.Node("rays", stage).Pin(new Vector2(.5f, .5f), new Vector2(0, 10), new Vector2(760, 760));
+            rays = UiKit.Node("rays", stage).Pin(new Vector2(.5f, .5f), new Vector2(0, 10), new Vector2(900, 900));
             var raysImage = rays.gameObject.AddComponent<Image>();
             raysImage.sprite = Rays();
             raysImage.color = Palette.Amber.WithAlpha(.35f);
@@ -59,7 +67,7 @@ namespace BookBuddies.UI
             raysFade = rays.gameObject.AddComponent<CanvasGroup>();
             raysFade.alpha = 0;
             glow = UiKit.Cover(stage, "glow", Palette.Amber.WithAlpha(0), UiKit.Glow);
-            glow.rectTransform.Pin(new Vector2(.5f, .5f), new Vector2(0, 10), new Vector2(480, 480));
+            glow.rectTransform.Pin(new Vector2(.5f, .5f), new Vector2(0, 10), new Vector2(560, 560));
 
             egg = Picture("egg", eggLook, out eggImage);
             shellTop = Shell("shell top", Image.OriginVertical.Top);
@@ -67,14 +75,14 @@ namespace BookBuddies.UI
             var petRect = Picture("buddy", petLook, out petImage);
             petRect.localScale = Vector3.zero;
 
-            var words = UiKit.Node("caption", root).Fill();
+            words = UiKit.Node("caption", root).Fill();
             captionFade = words.gameObject.AddComponent<CanvasGroup>();
             captionFade.alpha = 0;
-            caption = UiKit.Label(words, "Your buddy hatched!", 44, Palette.Cream, UiKit.Title, TextAnchor.MiddleCenter);
-            ((RectTransform)caption.transform).Pin(new Vector2(.5f, .5f), new Vector2(0, -150), new Vector2(900, 60));
+            caption = UiKit.Label(words, newPet != null ? $"{newPet} hatched!" : "Your buddy hatched!", 52, Palette.Cream, UiKit.Title, TextAnchor.MiddleCenter);
+            ((RectTransform)caption.transform).Pin(new Vector2(.5f, .5f), new Vector2(0, -172), new Vector2(1000, 68));
             caption.gameObject.AddComponent<UnityEngine.UI.Shadow>().effectColor = new Color(0, 0, 0, .5f);
-            sub = UiKit.Label(words, $"Say hello, {reader}!", 20, Palette.Amber, UiKit.Bold, TextAnchor.MiddleCenter);
-            ((RectTransform)sub.transform).Pin(new Vector2(.5f, .5f), new Vector2(0, -196), new Vector2(900, 30));
+            sub = UiKit.Label(words, newPet != null ? "Every hatch is a surprise!" : $"Say hello, {reader}!", UiKit.HeadingSize + 2, Palette.Amber, UiKit.Bold, TextAnchor.MiddleCenter);
+            ((RectTransform)sub.transform).Pin(new Vector2(.5f, .5f), new Vector2(0, -224), new Vector2(1000, 34));
 
             BuildCard();
             flash = UiKit.Cover(root, "flash", new Color(1, 1, 1, 0));
@@ -107,11 +115,12 @@ namespace BookBuddies.UI
 
         void BuildCard()
         {
-            var card = UiKit.Panel(root, "card", Palette.Cream, 18);
-            cardRect = card.rectTransform.Pin(new Vector2(.5f, 0), new Vector2(0, 28), new Vector2(440, 10));
-            UiKit.Column(cardRect, 10, new RectOffset(26, 26, 22, 22));
+            var card = UiKit.Panel(root, "card", Palette.Cream);
+            cardRect = card.rectTransform.Pin(new Vector2(.5f, 0), new Vector2(0, 28), new Vector2(CardWidth, 10));
+            UiKit.Column(cardRect, 12, new RectOffset(28, 28, 24, 28));
             UiKit.Hug(cardRect, false, true);
-            UiKit.Shadow(cardRect, 18, 24, 8, .35f);
+            UiKit.Outline(card, Palette.Ink.WithAlpha(.08f), UiKit.CardRadius, 1);
+            UiKit.Shadow(cardRect, UiKit.CardRadius, 24, 8, .35f);
             cardFade = card.gameObject.AddComponent<CanvasGroup>();
             cardFade.alpha = 0;
             cardFade.interactable = cardFade.blocksRaycasts = false;
@@ -119,25 +128,33 @@ namespace BookBuddies.UI
             Button go;
             if (!string.IsNullOrEmpty(recovery))
             {
-                UiKit.Label(cardRect, "Keep your recovery code safe", 24, Palette.Ink, UiKit.Title);
-                var box = UiKit.Panel(cardRect, "code", Palette.Paper, 12).rectTransform;
-                UiKit.Size(box, -1, 58);
-                var code = UiKit.Label(box, recovery, 30, Palette.Ink, UiKit.Bold, TextAnchor.MiddleCenter);
+                UiKit.Label(cardRect, "Keep your recovery code safe", UiKit.TitleSize, Palette.Ink, UiKit.Title);
+                var box = UiKit.Panel(cardRect, "code", Palette.Paper, 12);
+                UiKit.Outline(box, Palette.Ink.WithAlpha(.12f), 12, 1);
+                UiKit.Size(box, -1, 68);
+                var code = UiKit.Label(box.transform, recovery, 34, Palette.Ink, UiKit.Bold, TextAnchor.MiddleCenter);
                 ((RectTransform)code.transform).Fill();
-                UiKit.Label(cardRect, "It’s the only way to bring your buddy back on a new device. Write it down or take a photo, and don’t share it with anyone.", 14, Palette.InkSoft);
+                UiKit.Label(cardRect, "It’s the only way to bring your buddy back on a new device. Write it down or take a photo, and don’t share it with anyone.", UiKit.BodySize, Palette.InkSoft);
                 var row = UiKit.Node("buttons", cardRect);
                 UiKit.Row(row, 8, null, TextAnchor.MiddleRight);
                 Text copyLabel = null;
-                var copy = UiKit.TextButton(row, "Copy", null, Palette.Paper, Palette.Ink, () => { GUIUtility.systemCopyBuffer = recovery; copyLabel.text = "Copied"; }, 44);
+                var copy = UiKit.Secondary(row, "Copy", () => { GUIUtility.systemCopyBuffer = recovery; copyLabel.text = "Copied"; });
                 copyLabel = copy.GetComponentInChildren<Text>();
-                go = UiKit.TextButton(row, "I saved it, let’s go!", null, Palette.Amber, Palette.Ink, Finish, 44);
+                go = UiKit.Primary(row, "I saved it, let’s go!", Finish);
+            }
+            else if (newPet != null)
+            {
+                UiKit.Label(cardRect, $"Meet {newPet}!", UiKit.TitleSize, Palette.Ink, UiKit.Title);
+                UiKit.Label(cardRect, "Every egg hatches with its own random DNA. No two pets are alike!", UiKit.BodySize, Palette.InkSoft);
+                go = UiKit.Primary(cardRect, "Let’s go!", Finish, null, 52);
             }
             else
             {
-                UiKit.Label(cardRect, "Ready to explore?", 24, Palette.Ink, UiKit.Title);
-                UiKit.Label(cardRect, "Your buddy lives on this device. Sign in with a recovery code any time to meet other readers in town.", 14, Palette.InkSoft);
-                go = UiKit.TextButton(cardRect, "Let’s go!", null, Palette.Amber, Palette.Ink, Finish, 46);
+                UiKit.Label(cardRect, "Ready to explore?", UiKit.TitleSize, Palette.Ink, UiKit.Title);
+                UiKit.Label(cardRect, "Your buddy lives on this device. Sign in with a recovery code any time to meet other readers in town.", UiKit.BodySize, Palette.InkSoft);
+                go = UiKit.Primary(cardRect, "Let’s go!", Finish, null, 52);
             }
+            UiKit.PadHints(cardRect, ("A", "Select"));
             first = go;
         }
 
@@ -145,7 +162,7 @@ namespace BookBuddies.UI
 
         IEnumerator Run()
         {
-            Sound.Music(null);
+            if (newPet == null) Sound.Music(null); // a hatch in town keeps the town's music
             yield return Over(.7f, k => { veil.color = veil.color.WithAlpha(.84f * k); glow.color = Palette.Amber.WithAlpha(.25f * k); }, true);
             for (int crack = 1; crack <= 3 && !skipped; crack++)
             {
@@ -203,15 +220,15 @@ namespace BookBuddies.UI
         IEnumerator ShowCard()
         {
             cardFade.interactable = cardFade.blocksRaycasts = true;
-            if (!PlazaInput.UsingPointer && UnityEngine.EventSystems.EventSystem.current != null)
-                UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(first.gameObject);
+            UiStack.Push(this, Finish);
+            VirtualCursor.FocusFirst(first);
             Sound.Play("open");
-            Sound.Music("home");
+            if (newPet == null) Sound.Music("home");
             // the buddy steps up and the caption makes way for the card
             yield return Over(.5f, k =>
             {
                 cardFade.alpha = k;
-                cardRect.anchoredPosition = new Vector2(0, 28 - 30 * (1 - UiKit.EaseOut(k)));
+                cardRise = UiKit.EaseOut(k);
                 captionFade.alpha = 1 - k;
                 stage.anchoredPosition = new Vector2(0, 40 + 80 * UiKit.Ease(k));
             });
@@ -221,8 +238,11 @@ namespace BookBuddies.UI
         {
             if (finished) return;
             finished = true;
+            UiStack.Remove(this);
             StartCoroutine(FadeAway());
         }
+
+        void OnDestroy() => UiStack.Remove(this);
 
         IEnumerator FadeAway()
         {
@@ -236,8 +256,7 @@ namespace BookBuddies.UI
 
         void Update()
         {
-            canvas.GetComponent<CanvasScaler>().scaleFactor = UiKit.ScreenScale();
-            stage.localScale = Vector3.one * Mathf.Min(1, root.rect.height / 820f); // short windows
+            Fit();
             if (!skipped && PlazaInput.SkipPressed()) skipped = true;
             rays.localRotation = Quaternion.Euler(0, 0, Time.unscaledTime * 8);
             float dt = Time.unscaledDeltaTime;
@@ -255,6 +274,17 @@ namespace BookBuddies.UI
                 Destroy(b.r.gameObject);
                 bits.RemoveAt(i);
             }
+        }
+
+        // short windows: the stage, the caption and the card shrink together so nothing overlaps
+        void Fit()
+        {
+            float k = Mathf.Min(1, root.rect.height / TallEnough);
+            stage.localScale = words.localScale = new Vector3(k, k, 1);
+            cardRect.sizeDelta = new Vector2(Mathf.Min(CardWidth, root.rect.width - 32), cardRect.sizeDelta.y);
+            float card = Mathf.Min(1, root.rect.height * .45f / Mathf.Max(1, cardRect.rect.height));
+            cardRect.localScale = new Vector3(card, card, 1);
+            cardRect.anchoredPosition = new Vector2(0, 28 - (GameSettings.ReduceMotion ? 0 : 30 * (1 - cardRise)));
         }
 
         // the shell halves tumble away and fade

@@ -1,0 +1,112 @@
+{
+ "arenas": {
+  "meadow_night": {
+   "file": "Battle/Arenas/meadow_night",
+   "name": "Night meadow",
+   "site": "sc0"
+  },
+  "dusk_ruins": {
+   "file": "Battle/Arenas/dusk_ruins",
+   "name": "Dusk ruins",
+   "site": "sc1"
+  },
+  "rose": {
+   "file": "Battle/Arenas/rose",
+   "name": "Rose dusk",
+   "site": "sc2"
+  },
+  "starry": {
+   "file": "Battle/Arenas/starry",
+   "name": "Starry night",
+   "site": "sc3"
+  },
+  "moonlit": {
+   "file": "Battle/Arenas/moonlit",
+   "name": "Moonlit",
+   "site": "sc4"
+  },
+  "meadow_day": {
+   "file": "Battle/Arenas/meadow_day",
+   "name": "Day meadow",
+   "site": "sc5"
+  },
+  "inkwell_cave": {
+   "file": "Battle/Arenas/inkwell_cave",
+   "name": "Inkwell Caves"
+  }
+ },
+ "pools": {
+  "tier1": [
+   "meadow_day",
+   "meadow_night"
+  ],
+  "tier2": [
+   "dusk_ruins",
+   "meadow_day"
+  ],
+  "tier3": [
+   "meadow_night",
+   "starry"
+  ],
+  "tier4": [
+   "moonlit",
+   "starry"
+  ],
+  "tier5": [
+   "rose",
+   "dusk_ruins"
+  ],
+  "cave": [
+   "inkwell_cave"
+  ]
+ },
+ "focus": [
+  0.5,
+  0.3
+ ],
+ "shapes": [
+  "Battle/Shapes/sg0",
+  "Battle/Shapes/sg1",
+  "Battle/Shapes/sg2",
+  "Battle/Shapes/sg3",
+  "Battle/Shapes/sg4",
+  "Battle/Shapes/sg5",
+  "Battle/Shapes/sg6",
+  "Battle/Shapes/sg7",
+  "Battle/Shapes/sg8",
+  "Battle/Shapes/sg9"
+ ],
+ "particles": {
+  "coin": "Battle/Particles/coin",
+  "leaf": "Battle/Particles/leaf",
+  "feather": "Battle/Particles/feather",
+  "petal": "Battle/Particles/petal",
+  "star": "Battle/Particles/star",
+  "drop": "Battle/Particles/drop",
+  "shard": "Battle/Particles/shard",
+  "note": "Battle/Particles/note",
+  "page": "Battle/Particles/page",
+  "puff": "Battle/Particles/puff",
+  "flame": "Battle/Particles/flame",
+  "bolt": "Battle/Particles/bolt",
+  "gear": "Battle/Particles/gear",
+  "bubble": "Battle/Particles/bubble",
+  "fan": "Battle/Particles/fan",
+  "moon": "Battle/Particles/moon",
+  "rune": "Battle/Particles/rune",
+  "key": "Battle/Particles/key",
+  "wind": "Battle/Particles/wind",
+  "plus": "Battle/Particles/plus",
+  "hex": "Battle/Particles/hex",
+  "chev": "Battle/Particles/chev",
+  "eye": "Battle/Particles/eye"
+ },
+ "die": {
+  "plain": "Battle/d20",
+  "ok": "Battle/d20_ok",
+  "no": "Battle/d20_no",
+  "meh": "Battle/d20_meh"
+ },
+ "burst": "Battle/wipe_burst",
+ "dieSize": 92
+}

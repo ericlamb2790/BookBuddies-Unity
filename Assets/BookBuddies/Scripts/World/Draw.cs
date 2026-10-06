@@ -15,6 +15,15 @@ namespace BookBuddies.World
         /// <summary>Draw order for something standing at map row y (bigger y = closer = on top).</summary>
         public static int Order(float mapY) => Mathf.Clamp(Mathf.RoundToInt(mapY * 100), -15000, 30000);
 
+        /// <summary>
+        /// Pets in the tile row of y: over that row's props and tall grass, and one step over foes in the
+        /// same row (the site's z = floor(y) + 1.005 against the foes' 1.004).
+        /// </summary>
+        public static int ActorOrder(float mapY) => Order(Mathf.Floor(mapY) + 1) + 1;
+
+        /// <summary>Foes in the tile row of y: just behind pets in the same row.</summary>
+        public static int FoeOrder(float mapY) => Order(Mathf.Floor(mapY) + 1);
+
         public static SpriteRenderer Sprite(string name, Transform parent, Sprite sprite, int order, Color? tint = null)
         {
             var go = new GameObject(name);

@@ -9,7 +9,8 @@ namespace BookBuddies
     public static class GameSettings
     {
         public static readonly int[] FrameRates = { 30, 60, 120, -1 };       // -1 = as fast as the screen allows
-        public static readonly float[] UiSizes = { .85f, 1f, 1.15f, 1.3f };
+        public static readonly float[] UiSizes = { .85f, 1f, 1.15f, 1.3f, 1.5f };
+        public static readonly string[] UiSizeNames = { "Small", "Normal", "Large", "Extra large", "Couch" }; // Couch: for a TV across the room
 
         public static event System.Action Changed;
 
