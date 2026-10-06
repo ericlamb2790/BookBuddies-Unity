@@ -19,7 +19,7 @@ namespace BookBuddies.Tales
     /// <item>skip: Actor was stunned (Name "Too dizzy!", Icon 💫).</item>
     /// <item>talk: Speaker (a foe) says Line, Listener (the pet) answers Reply.</item>
     /// <item>fate: Actor rolled a d20: Name (who), Roll, Bonus, Result (fumble meh good great nat), Line, Helper (a TalesData.Npcs key, or null), Fx, Pops.</item>
-    /// <item>rise: Actor (a boss) rises with a new Name, Line (its boast), Sub (what it gained), Fx. Wild bosses rise once ("…, Second Edition").</item>
+    /// <item>rise: Actor (a boss) rises with a new Name, Line (its boast), Sub (what it gained), Fx. Wild bosses rise once ("…, Second Edition"), a Book Boss once per phase (it may summon its team).</item>
     /// <item>cheer: Actor got +1 ink (returned by Cheer, not Next).</item>
     /// <item>win, lose: the end; Over is true and Outcome is set.</item>
     /// </list>

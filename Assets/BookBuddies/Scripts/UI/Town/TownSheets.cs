@@ -9,15 +9,19 @@ using UnityEngine.UI;
 namespace BookBuddies.UI
 {
     /// <summary>
-    /// Bramble Road's sheets in town (the site's gateSheet, loreSheet and the map menu's travel rows): the way on or
-    /// back at a town gate; the lore stone with the town's story, your home stone and fast travel to towns you've
-    /// walked to; and Recall with every town on the route. Each opens on its own canvas and goes when closed.
+    /// Bramble Road's sheets in town (the site's gateSheet, loreSheet, stationSheet and the map menu's travel rows): the
+    /// way on or back at a town gate; the lore stone with the town's story, your home stone and fast travel to towns
+    /// you've walked to; the Paw Express to any town; and Recall with every town on the route. Each opens on its own
+    /// canvas and goes when closed.
     /// </summary>
-    public static class TownSheets
+    public static partial class TownSheets
     {
         const float Width = 540;
         const int RowIcon = 34, MiniHeight = 44;
         const float RecallDelay = .35f;
+
+        // where a list of route rows is shown, which decides each row's button
+        enum RouteFrom { Map, Stone, Station }
 
         static TalesData Data => TalesData.Current;
         static TownBook Book => TownBook.Current;
@@ -81,7 +85,17 @@ namespace BookBuddies.UI
             });
 
             Section(s.Card, "✨", "Fast travel", "Lore stones are linked. Ride to the stone in any town you’ve walked to.");
-            RouteRows(s, w, true);
+            RouteRows(s, w, RouteFrom.Stone);
+            s.Open();
+        }
+
+        /// <summary>The Paw Express (stationSheet, build 539): a free ride to any town on Bramble Road, visited or not.</summary>
+        public static void Station(PlazaWorld w)
+        {
+            if (w == null) return;
+            var s = Open("🚂", "Paw Express");
+            Note(s.Card, "Trains run to every town on Bramble Road. Pick a stop and hop on.");
+            RouteRows(s, w, RouteFrom.Station);
             s.Open();
         }
 
@@ -92,7 +106,7 @@ namespace BookBuddies.UI
             var s = Open("🗺️", w.Map.Name);
             RecallRows(s, w);
             Section(s.Card, "🛤️", "Towns on Bramble Road", "Walk the road to reach a new town. After that, the Paw Express can take you back.");
-            RouteRows(s, w, false);
+            RouteRows(s, w, RouteFrom.Map);
             s.Open();
         }
 
@@ -123,6 +137,13 @@ namespace BookBuddies.UI
             else Boot.Travel(key, at, null, true);
         }
 
+        // a Paw Express ride (travelTo): off at the town's platform, or back where you were in Pawtopia
+        static void Ride(string key)
+        {
+            var at = TownBook.ArrivalByTrain(key);
+            Boot.Travel(key, at != null ? new Vector2Int(at[0], at[1]) : (Vector2Int?)null, null, true);
+        }
+
         static IEnumerator Later(float seconds, System.Action then)
         {
             yield return new WaitForSecondsRealtime(seconds);
@@ -131,19 +152,22 @@ namespace BookBuddies.UI
 
         // ---- rows ----
 
-        // routeRow: here, Travel (only at a stone; elsewhere a "🪨 Stone" chip), Walk toward a town not yet visited, or "On foot"
-        static void RouteRows(Sheet s, PlazaWorld w, bool atStone)
+        // routeRow: here, Travel (only at a stone; elsewhere a "🪨 Stone" chip), Walk toward a town not yet visited, or "On foot";
+        // at the station every other town has Ride, and a town you haven't seen says it's a first visit
+        static void RouteRows(Sheet s, PlazaWorld w, RouteFrom from)
         {
             foreach (var k in Data.Route)
             {
                 var t = Book.Get(k);
                 if (t == null) continue;
-                bool here = k == w.Map.Key, seen = TownProgress.Seen(k);
-                var row = Row(s.Card, t.Icon, t.Name, here ? "You are here" : seen ? t.Genre + " · " + t.Sub : "Not visited yet");
+                bool here = k == w.Map.Key, seen = TownProgress.Seen(k), train = from == RouteFrom.Station;
+                string about = t.Genre + " · " + t.Sub;
+                var row = Row(s.Card, t.Icon, t.Name, here ? "You are here" : train ? about + (seen ? "" : " · First visit") : seen ? about : "Not visited yet");
                 LevelBadge(row, t.Level);
-                var walk = here || seen ? null : WalkToward(w, k);
+                var walk = here || seen || train ? null : WalkToward(w, k);
                 if (here) Chip(row, "Here");
-                else if (seen && atStone) Mini(s, row, "Travel", true, () => StoneGo(w, k));
+                else if (train) Mini(s, row, "Ride", true, () => Ride(k));
+                else if (seen && from == RouteFrom.Stone) Mini(s, row, "Travel", true, () => StoneGo(w, k));
                 else if (seen) Chip(row, "Stone", "🪨");
                 else if (walk != null) Mini(s, row, "Walk", false, () => w.GoToSpot(walk));
                 else Chip(row, "On foot");

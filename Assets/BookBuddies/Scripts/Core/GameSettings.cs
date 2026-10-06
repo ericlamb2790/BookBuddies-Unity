@@ -49,6 +49,7 @@ namespace BookBuddies
         {
             foreach (var key in new[] { "music", "sound", "names", "bubbles", "minimap", "ambient", "cinematics", "calm", "vsync", "fps", "ui", "quality" })
                 PlayerPrefs.DeleteKey(Prefix + key);
+            known.Clear();
             Saved();
             Save();
         }
@@ -57,13 +58,22 @@ namespace BookBuddies
 
         const string Prefix = "bb.set.";
 
-        static float F(string k, float d) => PlayerPrefs.GetFloat(Prefix + k, d);
-        static bool B(string k, bool d) => PlayerPrefs.GetInt(Prefix + k, d ? 1 : 0) == 1;
-        static int I(string k, int d) => PlayerPrefs.GetInt(Prefix + k, d);
+        // read from PlayerPrefs once, then from memory: grass, name tags and the HUD ask every frame
+        static readonly System.Collections.Generic.Dictionary<string, float> known = new System.Collections.Generic.Dictionary<string, float>();
 
-        static void Set(string k, float v) { PlayerPrefs.SetFloat(Prefix + k, Mathf.Clamp01(v)); Saved(); }
-        static void Set(string k, bool v) { PlayerPrefs.SetInt(Prefix + k, v ? 1 : 0); Saved(); }
-        static void Set(string k, int v) { PlayerPrefs.SetInt(Prefix + k, v); Saved(); }
+        static float Read(string k, float d, bool whole)
+        {
+            if (known.TryGetValue(k, out var v)) return v;
+            return known[k] = whole ? PlayerPrefs.GetInt(Prefix + k, (int)d) : PlayerPrefs.GetFloat(Prefix + k, d);
+        }
+
+        static float F(string k, float d) => Read(k, d, false);
+        static bool B(string k, bool d) => Read(k, d ? 1 : 0, true) == 1;
+        static int I(string k, int d) => (int)Read(k, d, true);
+
+        static void Set(string k, float v) { PlayerPrefs.SetFloat(Prefix + k, known[k] = Mathf.Clamp01(v)); Saved(); }
+        static void Set(string k, bool v) { PlayerPrefs.SetInt(Prefix + k, v ? 1 : 0); known[k] = v ? 1 : 0; Saved(); }
+        static void Set(string k, int v) { PlayerPrefs.SetInt(Prefix + k, v); known[k] = v; Saved(); }
 
         /// <summary>Writes the settings to disk (Settings does this when it closes; Unity also does on quit).</summary>
         public static void Save() => PlayerPrefs.Save();

@@ -24,8 +24,9 @@ namespace BookBuddies.Tales
 
     /// <summary>
     /// Everything Tales keeps on this device: the pet profile, the gear bag, dust, the codex, HP and ink between fights,
-    /// Bramble Road's daily finds, the towns you've walked to, your lore stones, and what the shops sold you (library
-    /// upgrades, unlocked classes, keepsakes; the server's ledger keeps those too, see Economy/Shop.TakeOwned).
+    /// Bramble Road's daily finds, the towns you've walked to, your lore stones, the Book Bosses you've beaten, and what
+    /// the shops sold you (library upgrades, unlocked classes, keepsakes; the server's ledger keeps those too, see
+    /// Economy/Shop.TakeOwned).
     /// Saved as JSON next to the game's other data (TalesSave.FilePath).
     /// Pure C#: Unity sets FilePath at startup.
     /// </summary>
@@ -48,12 +49,13 @@ namespace BookBuddies.Tales
         public int Link = 1;                                     // last Bramble Road link
         public double LairAt;                                    // when the cave guardian was last beaten (ms)
         public bool ChestReady;                                  // the Guardian's Chest is waiting
-        public readonly Dictionary<string, string> RoadDays = new Dictionary<string, string>(); // daily road finds: "g"/"s" + link -> yyyy-MM-dd (pw_rd)
+        public readonly Dictionary<string, string> RoadDays = new Dictionary<string, string>(); // daily finds: "g"/"s" + link (pw_rd), "b" + town (a Book Boss's gift) -> yyyy-MM-dd
         public string FindDay = "";                              // gear found in towns and at shrines: the day and how many (5 a day)
         public int FindCount;
         public readonly List<string> TownsSeen = new List<string>(); // towns walked into (pw_seen)
         public string HomeStone = "", LastStone = "";            // lore stones (pg().stone home and last)
         public double RecallAt;                                  // when Recall was last used (ms)
+        public readonly Dictionary<string, double> Gyms = new Dictionary<string, double>(); // Book Bosses beaten: town -> last win (ms) (pg().gyms)
         public readonly Dictionary<string, int> Meta = new Dictionary<string, int>(); // library upgrade levels (quest.meta)
         public readonly List<string> ClassesUnlocked = new List<string>();  // classes opened past the base seven (quest.clsU)
         public readonly List<string> Keepsakes = new List<string>();        // town keepsakes bought (decor ids)
@@ -69,7 +71,7 @@ namespace BookBuddies.Tales
                 ["v"] = (double)Version, ["pers"] = Personality, ["bag"] = Strs(Bag), ["fresh"] = Strs(Fresh), ["dust"] = (double)Dust,
                 ["seen"] = Strs(Seen), ["met"] = Strs(Met), ["hp"] = HpFrac, ["ink"] = InkSaved, ["vt"] = VitalsAt, ["link"] = (double)Link,
                 ["lair"] = LairAt, ["chest"] = ChestReady, ["rd"] = Texts(RoadDays), ["fd"] = FindDay, ["fn"] = (double)FindCount,
-                ["towns"] = Strs(TownsSeen), ["stone"] = new Dictionary<string, object> { ["home"] = HomeStone, ["last"] = LastStone, ["rt"] = RecallAt },
+                ["towns"] = Strs(TownsSeen), ["gyms"] = Nums(Gyms), ["stone"] = new Dictionary<string, object> { ["home"] = HomeStone, ["last"] = LastStone, ["rt"] = RecallAt },
                 ["meta"] = Ints(Meta), ["clsU"] = Strs(ClassesUnlocked), ["keep"] = Strs(Keepsakes), ["new"] = Strs(Unseen),
                 ["me"] = new Dictionary<string, object>
                 {
@@ -107,6 +109,7 @@ namespace BookBuddies.Tales
             else foreach (var kv in rd) if (kv.Value is string day) s.RoadDays[kv.Key] = day;
             s.FindDay = o.Str("fd"); s.FindCount = o.Int("fn");
             foreach (var x in o.Arr("towns")) if (x is string t) s.TownsSeen.Add(t);
+            var gyms = o.Obj("gyms"); if (gyms != null) foreach (var kv in gyms) if (kv.Value is double d) s.Gyms[kv.Key] = d;
             var stone = o.Obj("stone");
             s.HomeStone = stone.Str("home"); s.LastStone = stone.Str("last"); s.RecallAt = stone.Num("rt");
             var meta = o.Obj("meta"); if (meta != null) foreach (var kv in meta) if (kv.Value is double d) s.Meta[kv.Key] = (int)d;

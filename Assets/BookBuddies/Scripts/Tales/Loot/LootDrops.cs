@@ -271,6 +271,9 @@ namespace BookBuddies.Tales
             };
         }
 
+        /// <summary>gymTab: gives a foe its own loot table (a Book Boss: its town's theme, two slots and a legendary signature).</summary>
+        public static void SetFoeTable(string name, FoeLoot table) => foeTables[name] = table;
+
         static string ThemeOfGenre(int g) => g >= 0 && g < Data.GenreThemes.Length ? Data.GenreThemes[g] : null;
     }
 }

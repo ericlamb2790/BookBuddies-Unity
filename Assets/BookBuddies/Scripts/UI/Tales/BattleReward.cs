@@ -24,20 +24,23 @@ namespace BookBuddies.Tales
         float left = Countdown, startsAt;
         bool stopped, finished;
 
-        /// <summary>Shows the card on the battle's top layer. keepGoing closes the battle; openBag closes it and opens the bag on that item.</summary>
-        public static BattleReward Show(RectTransform layer, BattleOutcome o, BattleSound sound, Action keepGoing, Action<string> openBag)
+        /// <summary>
+        /// Shows the card on the battle's top layer. keepGoing closes the battle; openBag closes it and opens the bag on
+        /// that item. After a Book Boss the pet rests where it is instead of waking up in town.
+        /// </summary>
+        public static BattleReward Show(RectTransform layer, BattleOutcome o, BattleSound sound, Action keepGoing, Action<string> openBag, bool bookBoss = false)
         {
             var root = UiKit.Node("end card", layer).Fill();
             UiKit.Cover(root, "scrim", Palette.Ink.WithAlpha(.5f), null, true);
             var r = root.gameObject.AddComponent<BattleReward>();
             r.keepGoing = keepGoing;
             r.openBag = openBag;
-            r.Build(root, layer.rect.width, o, sound);
+            r.Build(root, layer.rect.width, o, sound, bookBoss);
             UiStack.Push(r, r.KeepGoing);
             return r;
         }
 
-        void Build(RectTransform root, float width, BattleOutcome o, BattleSound sound)
+        void Build(RectTransform root, float width, BattleOutcome o, BattleSound sound, bool bookBoss)
         {
             var bg = UiKit.Panel(root, "card", Palette.Cream, 18);
             var card = bg.rectTransform.Pin(new Vector2(.5f, .5f), Vector2.zero, new Vector2(Mathf.Min(680, width - 32), 10));
@@ -54,6 +57,7 @@ namespace BookBuddies.Tales
             UiKit.Label(head, o.Won ? "Victory!" : "Time for a nap", 44, Palette.Ink, UiKit.Title);
             UiKit.Label(card, o.Won
                 ? $"{pet} won in {o.Rounds} round{(o.Rounds == 1 ? "" : "s")}."
+                : bookBoss ? $"{pet} ran out of steam. Rest up and challenge again any time."
                 : $"{pet} ran out of steam and will wake up back in Pawtopia.", UiKit.BodySize, Palette.InkSoft);
             startsAt = Time.unscaledTime + FlipDelay;
             if (o.Won) Renown(card, o);

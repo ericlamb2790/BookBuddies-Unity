@@ -1,6 +1,7 @@
 using System.Collections;
 using BookBuddies.Live;
 using BookBuddies.Net;
+using BookBuddies.Pets;
 using BookBuddies.Road;
 using BookBuddies.Tales;
 using BookBuddies.UI;
@@ -51,6 +52,7 @@ namespace BookBuddies
             Art.Load();
             RoadSpots.Register(() => world);
             TownSpots.Register(() => world);
+            BossSpots.Register(() => world);
             TownShop.Register();
             var loading = LoadingScreen.Show(Buddy.ShownLook, "Opening the storybook…");
             Sound.Music("home");
@@ -260,6 +262,17 @@ namespace BookBuddies
                 if (halfway != null && p >= .5f) loading.Stage(halfway);
             });
             cam.Setup(map, new Vector2(map.Start.x + .5f, map.Start.y + .5f));
+
+            // draw the storybook folk now, one a frame, so arriving doesn't stall on drawing them all at once
+            var book = TownBook.Current.Folk;
+            foreach (var r in map.Folk)
+            {
+                if (r.Folk < 0 || r.Folk >= book.Count) continue;
+                string look = book[r.Folk].LookFor(r.Copy);
+                if (PetSprites.Has(look)) continue;
+                PetSprites.For(look);
+                yield return null;
+            }
         }
 
         // the HUD, the road's own corner of it, and the cave darkness, the weather or a town's fog

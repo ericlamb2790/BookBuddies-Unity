@@ -56,7 +56,7 @@ namespace BookBuddies
             loaded = true;
             Merge(Json.ParseObject(Text("Data/art_index")));
             // features add their own indexes (Tales emoji, Bramble Road props), so each export writes only its own file
-            foreach (var extra in new[] { "Data/art_tales", "Data/art_road", "Data/art_towns", "Data/art_shop" })
+            foreach (var extra in new[] { "Data/art_tales", "Data/art_road", "Data/art_towns", "Data/art_shop", "Data/art_bosses" })
             {
                 var more = TryText(extra);
                 if (more != null) Merge(Json.ParseObject(more));

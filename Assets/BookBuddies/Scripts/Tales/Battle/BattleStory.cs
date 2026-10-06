@@ -6,12 +6,18 @@ namespace BookBuddies.Tales
     // The storybook side of a fight: fate rolls and the friends they bring, bosses rising again, and villains' banter
     public sealed partial class BattleEngine
     {
-        // a boss with no phase list (every wild boss) rises once
-        const int Rises = 1;
+        // a boss with no phase list (every wild boss) rises once, as an enraged "Second Edition"
+        static readonly BossPhase[] NoPhases = new BossPhase[0];
+        static readonly string[] Enrage = { "enrage" };
         static readonly (string edition, string boast)[] Editions =
         {
             ("Second Edition", "You thought that was the ending? That was only the first draft!"),
             ("Final Chapter", "Every story has a last chapter. This one is MINE!"),
+        };
+        static readonly Dictionary<string, string> Risen = new Dictionary<string, string>
+        {
+            ["enrage"] = "hits much harder", ["shield"] = "raises a hardcover shield", ["summon"] = "calls its team back in",
+            ["regen"] = "starts mending its pages", ["haste"] = "speeds up",
         };
 
         readonly List<string> usedNpcs = new List<string>();
@@ -136,28 +142,58 @@ namespace BookBuddies.Tales
             return o;
         }
 
-        // bossRise: a boss at 0 HP comes back bigger and meaner with a full bar ("…, Second Edition")
+        // bossRise: a boss at 0 HP comes back bigger and meaner with a full bar: a wild boss once ("…, Second Edition"),
+        // a Book Boss once for each phase of its own (a new name, its boast and its twists)
         void BossRise(List<BattleEvent> evs)
         {
             for (int i = 0; i < Foes.Count; i++)
             {
                 var f = Foes[i];
-                if (!f.Boss || f.Hp > 0 || f.Phase >= Rises) continue;
+                var phases = f.Foe?.Phases ?? NoPhases;
                 int ph = f.Phase;
+                if (!f.Boss || f.Hp > 0 || ph >= Math.Max(2, phases.Length + 1) - 1) continue;
+                var q = ph < phases.Length ? phases[ph] : null;
                 var ed = Editions[Math.Min(ph, 1)];
                 f.Phase = ph + 1;
                 f.BaseName = f.BaseName ?? f.Name;
-                f.Max = JsMath.Round(f.Max * (1.2 + ph * .1));
+                f.Max = JsMath.Round(f.Max * (q?.Hp ?? 1.2 + ph * .1));
                 f.Hp = f.Max;
-                f.Atk = JsMath.Round(f.Atk * 1.3);
+                f.Atk = JsMath.Round(f.Atk * (q?.Atk ?? 1.3));
                 f.Def = JsMath.Round(f.Def * 1.15);
                 f.Spd += 2 + ph;
                 f.St.Clear();
-                f.Name = $"{f.BaseName}, {ed.edition}";
-                f.Atk = JsMath.Round(f.Atk * 1.15);   // enrage, the default rise
-                var e = new BattleEvent { Kind = "rise", Actor = f.Key, Name = f.Name, Line = ed.boast, Sub = "hits much harder", Foe = true };
+                f.Name = q?.Name ?? $"{f.BaseName}, {ed.edition}";
+                var twists = q?.Twists ?? Enrage;
+                var gained = new List<string>();
+                foreach (var m in twists)
+                {
+                    Twist(f, m);
+                    if (Risen.TryGetValue(m, out var what)) gained.Add(what);
+                }
+                var e = new BattleEvent { Kind = "rise", Actor = f.Key, Name = f.Name, Line = q?.Say ?? ed.boast, Sub = string.Join(" · ", gained), Foe = true };
                 e.Fx.Add(Snap(f));
                 Emit(evs, e);
+            }
+        }
+
+        // what a rising boss gains; a summon calls in up to two of its team (or random minions), never past five foes
+        void Twist(BattleUnit f, string m)
+        {
+            switch (m)
+            {
+                case "shield": f.St["shield"] = JsMath.Round(f.Max * .25); break;
+                case "regen": f.St["regen"] = 8; break;
+                case "haste": f.Spd += 6; break;
+                case "enrage": f.Atk = JsMath.Round(f.Atk * 1.15); break;
+                case "summon":
+                    var team = f.Foe?.Team;
+                    int n = Math.Min(2, 5 - LiveFoes().Count);
+                    for (int j = 0; j < n; j++)
+                    {
+                        var v = team != null && team.Length > 0 ? team[j % team.Length] : FoeFactory.Plain(rng.Pick(TalesData.Current.Minions));
+                        Foes.Add(FoeFactory.Make(v, f.Lvl, false, true, "fr" + f.Phase + j, 1, rng));
+                    }
+                    break;
             }
         }
 

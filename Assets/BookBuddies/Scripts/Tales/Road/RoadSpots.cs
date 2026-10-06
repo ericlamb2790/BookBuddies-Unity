@@ -8,9 +8,10 @@ using UnityEngine;
 namespace BookBuddies.Road
 {
     /// <summary>
-    /// What the road's places do (the site's wildAct and road extras): the town gates, the ways back and on at each
-    /// end of a road, the cave mouth and its exit, the trailhead, the campfire, the wayshrine, the hidden stash and the
-    /// guardian's chest. Registered once with SpotActions; each handler acts on the town you're in now.
+    /// What the road's places do (the site's wildAct and road extras): the ways back and on at each end of a road,
+    /// the cave mouth and its exit, the trailhead, the campfire, the wayshrine, the hidden stash and the guardian's
+    /// chest (the town gates are BossSpots', which checks the Book Boss's seal first). Registered once with
+    /// SpotActions; each handler acts on the town you're in now.
     /// </summary>
     public static class RoadSpots
     {
@@ -30,7 +31,6 @@ namespace BookBuddies.Road
         public static void Register(System.Func<PlazaWorld> world)
         {
             current = world;
-            SpotActions.Register("road", spot => TownSheets.Gate(World, spot.Side));
             SpotActions.Register("home", _ => WalkOff(false));
             SpotActions.Register("towns", _ => WalkOff(true));
             SpotActions.Register("cave", _ => IntoTheCaves());

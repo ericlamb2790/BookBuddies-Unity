@@ -90,6 +90,9 @@ namespace BookBuddies.World
         /// <summary>Where you come into a town walking off the road: its west gate from the west, its east gate from the east.</summary>
         public static int[] ArrivalFromRoad(string key, bool fromWest) => key == "pawtopia" ? new[] { 77, 40 } : fromWest ? new[] { 4, 22 } : new[] { 53, 22 };
 
+        /// <summary>Where the Paw Express lets you off: a town's platform by its station, or null in Pawtopia, which puts you back where you were.</summary>
+        public static int[] ArrivalByTrain(string key) => key == "pawtopia" ? null : new[] { 9, 22 };
+
         /// <summary>The road's middle row at column x on link l (the site's rRY): where you arrive from the east.</summary>
         public static int RoadY(int x, int link)
         {

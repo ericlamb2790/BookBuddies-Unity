@@ -172,7 +172,7 @@ namespace BookBuddies.Tales
             Grant(o);
             if (foeCard) foeCard.Close();
             log.Close();
-            BattleReward.Show(top, o, sound, () => Close(o, null), item => Close(o, item));
+            BattleReward.Show(top, o, sound, () => Close(o, null), item => Close(o, item), engine.Setup.BookBoss);
         }
 
         // renown and loot before the card shows them (a ready-made test hero earns nothing); the save also keeps the lane picked

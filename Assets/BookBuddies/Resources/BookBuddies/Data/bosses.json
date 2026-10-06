@@ -1,0 +1,1018 @@
+{
+ "note": "Town Book Bosses (made by tools/export_bosses.js from the site)",
+ "route": [
+  "pawtopia",
+  "romance",
+  "classics",
+  "adventure",
+  "mystery",
+  "fantasy",
+  "scifi",
+  "horror",
+  "cozy",
+  "fairytale",
+  "poetry",
+  "western",
+  "ocean",
+  "historical",
+  "thriller",
+  "dystopia",
+  "myth",
+  "gothic"
+ ],
+ "twists": {
+  "enrage": [
+   "💢",
+   "Hits harder"
+  ],
+  "shield": [
+   "🛡️",
+   "Hardcover shield"
+  ],
+  "summon": [
+   "📣",
+   "Calls the team"
+  ],
+  "regen": [
+   "💚",
+   "Mends its pages"
+  ],
+  "haste": [
+   "⚡",
+   "Speeds up"
+  ]
+ },
+ "bosses": {
+  "pawtopia": {
+   "n": "Hazel the Head Librarian",
+   "i": "📚",
+   "c": "#c98a3a",
+   "b": "Rumpelstiltskin",
+   "th": "Z",
+   "hall": "The Lending Library Ring",
+   "bd": [
+    "Library Card Badge",
+    "🪪"
+   ],
+   "say": [
+    "Shh. The first rule of the library is: no running. The second rule is: show me what you’ve got.",
+    "Well read, little one. The road is yours.",
+    "Back to the stacks with you. Come again when you’ve read a little more."
+   ],
+   "team": [],
+   "phz": [
+    {
+     "n": "Hazel, Overdue Notice",
+     "say": "Your books are OVERDUE. The fine is one battle.",
+     "m": [
+      "shield"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "Hazel, Keeper of the Silent Stacks",
+     "say": "SHHHHHH!",
+     "m": [
+      "haste",
+      "regen"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 1,
+   "mul": 1.15,
+   "loot": {
+    "th": "Z",
+    "sl": [
+     "w",
+     "a"
+    ],
+    "sig": "L109",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "romance": {
+   "n": "Duchess Valentina",
+   "i": "💘",
+   "c": "#e0568a",
+   "b": "The Sea Witch",
+   "th": "R",
+   "hall": "The Rose Garden Court",
+   "bd": [
+    "Heartstring Badge",
+    "💝"
+   ],
+   "say": [
+    "Every great romance starts with a duel. Shall we?",
+    "Oh! You’ve stolen my heart and my badge.",
+    "Not tonight, darling. Perhaps in the sequel."
+   ],
+   "team": [
+    "Spoiler Sprite"
+   ],
+   "phz": [
+    {
+     "n": "Duchess Valentina, Heartbreaker",
+     "say": "You broke my heart. Now I break your guard.",
+     "m": [
+      "enrage"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "Valentina, the Thorned Rose",
+     "say": "Every rose has its thorns, darling.",
+     "m": [
+      "summon",
+      "shield"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 2,
+   "mul": 1.22,
+   "loot": {
+    "th": "R",
+    "sl": [
+     "a",
+     "h"
+    ],
+    "sig": "L70",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "classics": {
+   "n": "Professor Inkwell",
+   "i": "🪶",
+   "c": "#6b5a8e",
+   "b": "Ebenezer Scrooge",
+   "th": "C",
+   "hall": "The Grand Reading Hall",
+   "bd": [
+    "Quill Badge",
+    "🪶"
+   ],
+   "say": [
+    "A classic is a book that has never finished saying what it has to say. Neither have I.",
+    "Splendid. An A-plus, with distinction.",
+    "Revise, and resubmit."
+   ],
+   "team": [
+    "Ink Blot",
+    "Run-on Sentence"
+   ],
+   "phz": [
+    {
+     "n": "Professor Inkwell, Annotated",
+     "say": "I have notes. So many notes.",
+     "m": [
+      "regen"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "Inkwell, the Unabridged",
+     "say": "Now you face the complete edition!",
+     "m": [
+      "summon",
+      "enrage"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 4,
+   "mul": 1.29,
+   "loot": {
+    "th": "C",
+    "sl": [
+     "h",
+     "c"
+    ],
+    "sig": "L103",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "adventure": {
+   "n": "Captain Marigold",
+   "i": "🧭",
+   "c": "#2f8f8a",
+   "b": "Long John Silver",
+   "th": "A",
+   "hall": "The Cartographer’s Deck",
+   "bd": [
+    "Compass Badge",
+    "🧭"
+   ],
+   "say": [
+    "Every map ends at the edge of the page. Let’s see if you can draw past it.",
+    "Ha! You’ve earned your sea legs, matey.",
+    "Overboard! Swim back when you’re ready."
+   ],
+   "team": [
+    "Pirate Deckhand",
+    "Bookmark Magpie"
+   ],
+   "phz": [
+    {
+     "n": "Captain Marigold, Storm Chaser",
+     "say": "Batten the hatches, here comes the squall!",
+     "m": [
+      "haste"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "Marigold, Captain of the Last Map",
+     "say": "No map goes past here. Except mine.",
+     "m": [
+      "summon",
+      "enrage"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 6,
+   "mul": 1.3599999999999999,
+   "loot": {
+    "th": "A",
+    "sl": [
+     "c",
+     "w"
+    ],
+    "sig": "L88",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "mystery": {
+   "n": "Inspector Fogg",
+   "i": "🔍",
+   "c": "#4c5a72",
+   "b": "Professor Moriarty",
+   "th": "M",
+   "hall": "The Foggy Parlor",
+   "bd": [
+    "Magnifier Badge",
+    "🔍"
+   ],
+   "say": [
+    "I deduce you came here for a badge. Elementary.",
+    "Case closed. You were the twist all along.",
+    "The evidence is clear: not yet."
+   ],
+   "team": [
+    "Fog Footpad",
+    "Fine Print Phantom"
+   ],
+   "phz": [
+    {
+     "n": "Inspector Fogg, the Red Herring",
+     "say": "Was that really me you defeated? Think again.",
+     "m": [
+      "shield"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "Fogg, Unmasked",
+     "say": "The culprit was me all along!",
+     "m": [
+      "enrage",
+      "haste"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 7,
+   "mul": 1.43,
+   "loot": {
+    "th": "M",
+    "sl": [
+     "w",
+     "a"
+    ],
+    "sig": "L57",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "fantasy": {
+   "n": "Archmage Elowen",
+   "i": "🧙",
+   "c": "#3d7fd1",
+   "b": "The Snow Queen",
+   "th": "F",
+   "hall": "The Crystal Spire",
+   "bd": [
+    "Dragon Scale Badge",
+    "🐉"
+   ],
+   "say": [
+    "The spire hums when a hero climbs it. It is humming now.",
+    "The prophecy was right about you.",
+    "Every chosen one fails the first trial. Try again."
+   ],
+   "team": [
+    "Grammar Gargoyle",
+    "Flying Monkey"
+   ],
+   "phz": [
+    {
+     "n": "Archmage Elowen, Crystal Ascendant",
+     "say": "The spire lends me its light.",
+     "m": [
+      "shield",
+      "regen"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "Elowen, the Dragon Within",
+     "say": "Behold the dragon I was always becoming!",
+     "m": [
+      "enrage",
+      "haste"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 9,
+   "mul": 1.5,
+   "loot": {
+    "th": "F",
+    "sl": [
+     "a",
+     "h"
+    ],
+    "sig": "L50",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "scifi": {
+   "n": "Commander Nova",
+   "i": "🚀",
+   "c": "#7a52d6",
+   "b": "The Invisible Man",
+   "th": "S",
+   "hall": "The Launch Bay Arena",
+   "bd": [
+    "Star Badge",
+    "⭐"
+   ],
+   "say": [
+    "Countdown started. Ten, nine, eight…",
+    "Mission success. Welcome to the crew.",
+    "Abort, abort. Recalibrate and come back."
+   ],
+   "team": [
+    "Writer’s Block",
+    "Card Soldier"
+   ],
+   "phz": [
+    {
+     "n": "Commander Nova, Overclocked",
+     "say": "Rerouting all power to the paws.",
+     "m": [
+      "haste"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "Nova, Supernova",
+     "say": "Brace for a stellar collapse!",
+     "m": [
+      "enrage",
+      "shield"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 11,
+   "mul": 1.5699999999999998,
+   "loot": {
+    "th": "S",
+    "sl": [
+     "h",
+     "c"
+    ],
+    "sig": "L75",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "horror": {
+   "n": "The Gravekeeper",
+   "i": "🕯️",
+   "c": "#5a4a6e",
+   "b": "Grendel",
+   "th": "H",
+   "hall": "The Moonlit Crypt",
+   "bd": [
+    "Last Page Badge",
+    "🌑"
+   ],
+   "say": [
+    "Nobody reaches the end of the road. Nobody except you, perhaps.",
+    "The last page is yours. Read it well.",
+    "Rest now. The crypt will wait for you."
+   ],
+   "team": [
+    "Cliffhanger Bat",
+    "Will-o’-the-Wisp"
+   ],
+   "phz": [
+    {
+     "n": "The Gravekeeper, Risen",
+     "say": "You can’t keep a good gravekeeper down.",
+     "m": [
+      "regen",
+      "summon"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "The Gravekeeper, Last Page",
+     "say": "Turn the last page. If you dare.",
+     "m": [
+      "enrage",
+      "haste"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 13,
+   "mul": 1.64,
+   "loot": {
+    "th": "H",
+    "sl": [
+     "c",
+     "w"
+    ],
+    "sig": "L84",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "cozy": {
+   "n": "Granny Crumpet",
+   "i": "🫖",
+   "c": "#d9814f",
+   "b": "Rumpelstiltskin",
+   "th": "Z",
+   "hall": "The Kitchen Table",
+   "bd": [
+    "Teacup Badge",
+    "☕"
+   ],
+   "say": [
+    "Sit down, dear. Have a scone. Then let’s see what you’re made of.",
+    "Oh, well done! Take a scone for the road.",
+    "Never mind, sweetheart. Have a cuppa and try again."
+   ],
+   "team": [
+    "Coffee Ring",
+    "Dust Bunny"
+   ],
+   "phz": [
+    {
+     "n": "Granny Crumpet, Second Helping",
+     "say": "Have some more, dear. I insist.",
+     "m": [
+      "regen"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "Granny Crumpet, Kettle Boiling",
+     "say": "Now the kettle’s whistling!",
+     "m": [
+      "enrage",
+      "haste"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 14,
+   "mul": 1.71,
+   "loot": {
+    "th": "Z",
+    "sl": [
+     "w",
+     "a"
+    ],
+    "sig": "L109",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "fairytale": {
+   "n": "The Fairy Godmother",
+   "i": "🪄",
+   "c": "#8f6bd1",
+   "b": "The Snow Queen",
+   "th": "F",
+   "hall": "The Midnight Ballroom",
+   "bd": [
+    "Slipper Badge",
+    "👠"
+   ],
+   "say": [
+    "Bibbidi, bobbidi, battle!",
+    "You shall go to the next town!",
+    "The clock struck twelve on you, dear. Try again."
+   ],
+   "team": [
+    "Golden-Egg Hen",
+    "Gingerbread Brute"
+   ],
+   "phz": [
+    {
+     "n": "The Fairy Godmother, Stroke of Midnight",
+     "say": "The clock strikes twelve. The magic gets real.",
+     "m": [
+      "haste"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "The Wicked Godmother",
+     "say": "Not every godmother is a good one.",
+     "m": [
+      "summon",
+      "enrage"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 15,
+   "mul": 1.78,
+   "loot": {
+    "th": "F",
+    "sl": [
+     "a",
+     "h"
+    ],
+    "sig": "L54",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "poetry": {
+   "n": "Bard Willowby",
+   "i": "🎻",
+   "c": "#3f5f8f",
+   "b": "The Phantom of the Opera",
+   "th": "C",
+   "hall": "The Moonlit Stage",
+   "bd": [
+    "Sonnet Badge",
+    "🌙"
+   ],
+   "say": [
+    "Shall I compare thee to a worthy foe?",
+    "Bravo! An ode shall be written in your honour.",
+    "Your verse is fine, but your meter is off."
+   ],
+   "team": [
+    "Run-on Sentence",
+    "Dangling Modifier"
+   ],
+   "phz": [
+    {
+     "n": "Bard Willowby, Encore",
+     "say": "The crowd demands an encore!",
+     "m": [
+      "shield"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "Willowby, the Final Stanza",
+     "say": "And now, the final verse!",
+     "m": [
+      "regen",
+      "enrage"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 16,
+   "mul": 1.85,
+   "loot": {
+    "th": "C",
+    "sl": [
+     "h",
+     "c"
+    ],
+    "sig": "L103",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "western": {
+   "n": "Sheriff Biscuit",
+   "i": "⭐",
+   "c": "#b5562e",
+   "b": "Long John Silver",
+   "th": "A",
+   "hall": "The High Noon Corral",
+   "bd": [
+    "Sheriff’s Star Badge",
+    "⭐"
+   ],
+   "say": [
+    "This town ain’t big enough for two readers. Draw!",
+    "Fastest reader in the West. Fair and square.",
+    "Ride on outta here and practise, partner."
+   ],
+   "team": [
+    "Blind Pew",
+    "Pirate Deckhand"
+   ],
+   "phz": [
+    {
+     "n": "Sheriff Biscuit, Quick Draw",
+     "say": "Too slow, partner.",
+     "m": [
+      "haste"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "Sheriff Biscuit, Showdown at Noon",
+     "say": "It’s high noon. Deputies, saddle up!",
+     "m": [
+      "enrage",
+      "summon"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 17,
+   "mul": 1.92,
+   "loot": {
+    "th": "A",
+    "sl": [
+     "c",
+     "w"
+    ],
+    "sig": "L88",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "ocean": {
+   "n": "Captain Barnacle",
+   "i": "⚓",
+   "c": "#2f7fa8",
+   "b": "The Sea Witch",
+   "th": "A",
+   "hall": "The Tidepool Arena",
+   "bd": [
+    "Anchor Badge",
+    "⚓"
+   ],
+   "say": [
+    "All hands on deck! Let’s see if you sink or swim.",
+    "Ye’ve earned yer sea legs and then some.",
+    "Man overboard! Dry off and come back."
+   ],
+   "team": [
+    "Squidlet",
+    "Soggy Paperback"
+   ],
+   "phz": [
+    {
+     "n": "Captain Barnacle, the Riptide",
+     "say": "The tide’s turnin’, matey!",
+     "m": [
+      "shield"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "Barnacle, Kraken-Touched",
+     "say": "Release the kraken in me!",
+     "m": [
+      "enrage",
+      "summon"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 19,
+   "mul": 1.99,
+   "loot": {
+    "th": "A",
+    "sl": [
+     "w",
+     "a"
+    ],
+    "sig": "L89",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "historical": {
+   "n": "Archivist Pennywhistle",
+   "i": "⏳",
+   "c": "#7a5a3a",
+   "b": "Ebenezer Scrooge",
+   "th": "C",
+   "hall": "The Hall of Records",
+   "bd": [
+    "Hourglass Badge",
+    "⏳"
+   ],
+   "say": [
+    "History repeats itself. Shall we find out how?",
+    "A historic victory. I shall write it down at once.",
+    "History will forget this. I won’t."
+   ],
+   "team": [
+    "Card Soldier",
+    "Sheriff’s Guard"
+   ],
+   "phz": [
+    {
+     "n": "Archivist Pennywhistle, Revised History",
+     "say": "History is written by the winners. I’m rewriting it.",
+     "m": [
+      "regen"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "Pennywhistle, the Forgotten Age",
+     "say": "Witness an age long lost!",
+     "m": [
+      "shield",
+      "enrage"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 21,
+   "mul": 2.06,
+   "loot": {
+    "th": "C",
+    "sl": [
+     "a",
+     "h"
+    ],
+    "sig": "L98",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "thriller": {
+   "n": "Agent Velvet",
+   "i": "🕶️",
+   "c": "#2f3440",
+   "b": "Professor Moriarty",
+   "th": "M",
+   "hall": "The Safe House Vault",
+   "bd": [
+    "Cipher Badge",
+    "🔐"
+   ],
+   "say": [
+    "You weren’t supposed to find this place. Now you have to win.",
+    "Mission accomplished. This badge will self-destruct. Kidding.",
+    "Your cover is blown. Regroup and come back."
+   ],
+   "team": [
+    "Fog Footpad",
+    "Fine Print Phantom",
+    "Shush Phantom"
+   ],
+   "phz": [
+    {
+     "n": "Agent Velvet, Double Agent",
+     "say": "I was on their side all along. Or was I?",
+     "m": [
+      "haste"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "Agent Velvet, Endgame",
+     "say": "This is the part where the twist hits.",
+     "m": [
+      "enrage",
+      "shield"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 23,
+   "mul": 2.13,
+   "loot": {
+    "th": "M",
+    "sl": [
+     "h",
+     "c"
+    ],
+    "sig": "L59",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "dystopia": {
+   "n": "Citizen 451",
+   "i": "📕",
+   "c": "#4a5560",
+   "b": "The Invisible Man",
+   "th": "S",
+   "hall": "The Underground Library",
+   "bd": [
+    "Rebel Badge",
+    "📕"
+   ],
+   "say": [
+    "Prove you’re a real reader, and the resistance is yours.",
+    "Welcome to the resistance, comrade.",
+    "Not ready yet. Read more, then come back."
+   ],
+   "team": [
+    "Writer’s Block"
+   ],
+   "phz": [
+    {
+     "n": "Citizen 451, Burning Bright",
+     "say": "You can’t burn what’s already on fire.",
+     "m": [
+      "enrage"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "Citizen 451, the Last Free Reader",
+     "say": "I will not be erased!",
+     "m": [
+      "regen",
+      "haste"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 25,
+   "mul": 2.2,
+   "loot": {
+    "th": "S",
+    "sl": [
+     "c",
+     "w"
+    ],
+    "sig": "L76",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "myth": {
+   "n": "Oracle Olivetta",
+   "i": "🏛️",
+   "c": "#b38a2e",
+   "b": "The Queen of Hearts",
+   "th": "F",
+   "hall": "The Temple Steps",
+   "bd": [
+    "Laurel Badge",
+    "🌿"
+   ],
+   "say": [
+    "I foresaw this battle. I foresaw a snack after it, too.",
+    "Exactly as I predicted. Mostly.",
+    "The prophecy said “not yet.” Come back soon."
+   ],
+   "team": [
+    "Flying Monkey",
+    "Grammar Gargoyle",
+    "Heffalump"
+   ],
+   "phz": [
+    {
+     "n": "Oracle Olivetta, Voice of the Fates",
+     "say": "The Fates have spoken. They said: hit harder.",
+     "m": [
+      "shield"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "Olivetta, Ascended",
+     "say": "I foresaw this, and I am ready.",
+     "m": [
+      "summon",
+      "enrage"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 28,
+   "mul": 2.27,
+   "loot": {
+    "th": "F",
+    "sl": [
+     "w",
+     "a"
+    ],
+    "sig": "L53",
+    "rate": 1,
+    "sc": 0.15
+   }
+  },
+  "gothic": {
+   "n": "Lady Nightshade",
+   "i": "🥀",
+   "c": "#3a2f4a",
+   "b": "Count Dracula",
+   "th": "H",
+   "hall": "The Abbey Ruins",
+   "bd": [
+    "Raven Badge",
+    "🐦"
+   ],
+   "say": [
+    "At the end of every road waits a final chapter. I am yours.",
+    "The last page belongs to you. Read it slowly.",
+    "Not every story ends the first time. Come back."
+   ],
+   "team": [
+    "Cliffhanger Bat"
+   ],
+   "phz": [
+    {
+     "n": "Lady Nightshade, Thirst",
+     "say": "How long since I’ve had a worthy reader…",
+     "m": [
+      "regen"
+     ],
+     "hp": 1.25,
+     "atk": 1.3
+    },
+    {
+     "n": "Lady Nightshade, the Final Chapter",
+     "say": "At the end of the road, there is only me.",
+     "m": [
+      "enrage",
+      "haste",
+      "summon"
+     ],
+     "hp": 1.35,
+     "atk": 1.4000000000000001
+    }
+   ],
+   "lvl": 31,
+   "mul": 2.34,
+   "loot": {
+    "th": "H",
+    "sl": [
+     "a",
+     "h"
+    ],
+    "sig": "L86",
+    "rate": 1,
+    "sc": 0.15
+   }
+  }
+ }
+}

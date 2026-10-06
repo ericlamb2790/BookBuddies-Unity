@@ -10,8 +10,9 @@ namespace BookBuddies.Road
 {
     /// <summary>
     /// The road's own corner of the HUD: the objective card under the pet card (and as wide), pointing the way on
-    /// ("On to Rosewater" in town, "East to Rosewater · 42 steps" on the road). Tapping it walks you there; its – button
-    /// tucks it into a small arrow, and tapping the arrow brings the card back. HP and ink are on the pet card.
+    /// ("Beat Inspector Fogg" while a Book Boss seals the road, "On to Rosewater" in town, "East to Rosewater · 42 steps"
+    /// on the road). Tapping it walks you there; its – button tucks it into a small arrow, and tapping the arrow brings
+    /// the card back. HP and ink are on the pet card.
     /// </summary>
     public sealed class RoadHud : MonoBehaviour
     {
@@ -134,12 +135,16 @@ namespace BookBuddies.Road
             arrow.localRotation = Quaternion.Euler(0, 0, Mathf.Atan2(to.y - from.y, to.x - from.x) * Mathf.Rad2Deg);
         }
 
-        // the site's goalNow: in town, the road out; on the road, the sign at the east end; nothing in the caves
+        // the site's goalNow: in town, the Book Boss while it seals the road, else the road out; on the road, the sign at
+        // the east end; nothing in the caves
         Goal FindGoal()
         {
             var map = world.Map;
             if (map.Wild == null)
             {
+                var boss = BossBook.Current.Seals(TalesSave.Current, map.Key) ? map.Spots.Find(s => s.Kind == "gym") : null;
+                if (boss != null)
+                    return new Goal { At = boss.Use + new Vector2(.5f, -1), Icon = "📕", Title = "Beat " + BossBook.Current.Get(map.Key).Name, Sub = "Book Boss at " + boss.Name, Spot = boss };
                 var road = map.Spots.Find(s => s.Kind == "road");
                 string next = NextTown();
                 if (road == null || next == null) return null;

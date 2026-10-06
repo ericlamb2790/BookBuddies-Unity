@@ -9,9 +9,8 @@ namespace BookBuddies.Road
 {
     /// <summary>
     /// What the places in a town on Bramble Road do (the site's wildAct, curioAct and the gag handler): the landmark
-    /// and Pawtopia's fountain (a line, then the lore stone), the curios (sometimes hiding gear), the silly gags and
-    /// the cottage doors. The Book Boss ring and the Paw Express get an "opens soon" card until their own features
-    /// register them with SpotActions.Register (the shop is UI/Shop/TownShop).
+    /// and Pawtopia's fountain (a line, then the lore stone), the curios (sometimes hiding gear), the silly gags, the
+    /// cottage doors and the Paw Express station (the shop is UI/Shop/TownShop, the Book Boss ring Tales/Road/BossSpots).
     /// </summary>
     public static class TownSpots
     {
@@ -28,8 +27,7 @@ namespace BookBuddies.Road
             SpotActions.Register("curio", Curio);
             SpotActions.Register("gag", Gag);
             SpotActions.Register("door", Door);
-            SpotActions.RegisterDefault("gym", spot => RoadCard.Tell(spot.Icon, spot.Name, "The Book Boss is still getting ready. Challenges open soon."));
-            SpotActions.RegisterDefault("station", _ => RoadCard.Tell("🚂", "Paw Express", "Trains start running soon. Until then, a lore stone can take you to any town you’ve walked to."));
+            SpotActions.Register("station", _ => TownSheets.Station(World));
         }
 
         static PlazaWorld World => current?.Invoke();

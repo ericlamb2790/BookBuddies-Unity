@@ -9,7 +9,7 @@ namespace BookBuddies.Pets
 {
     /// <summary>
     /// Turns a pet's look into a crisp, anti-aliased sprite, once per look and mood, using Unity's Vector Graphics package.
-    /// Sprites are cached (the most recent 96, by look and mood), so menus, the town and battles never tessellate the same
+    /// Sprites are cached (the most recent 192, by look and mood), so menus, the town and battles never tessellate the same
     /// pet twice; screens with many pets can ask Has() and draw the missing ones a frame apart.
     /// Without that package installed, pets show as simple coloured blobs (see SETUP.md).
     /// </summary>
@@ -18,7 +18,7 @@ namespace BookBuddies.Pets
         public const float Height = 1.5f;          // tiles tall, same as the website
         const int TextureWidth = 400, TextureHeight = 464; // 2x the site's 200x232 art
         const float BaseInset = .04f;              // the site lifts the art .04 tiles off its base point
-        const int CacheLimit = 96;
+        const int CacheLimit = 192;
 
         static readonly Dictionary<string, LinkedListNode<(string key, Sprite sprite)>> cache = new Dictionary<string, LinkedListNode<(string, Sprite)>>();
         static readonly LinkedList<(string key, Sprite sprite)> recent = new LinkedList<(string, Sprite)>(); // most recently used first

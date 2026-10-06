@@ -15,7 +15,17 @@ namespace BookBuddies.Tales
         public string Ax, Tc, Au, Xp;     // affix name, tint colour, aura colour, extra costume part
         public double Vs, Vdf, Vsx;       // size (0 = 1), def multiplier (0 = 1), speed bonus
         public string Sp, Sn, Si;         // special (may be swapped by the affix)
+        public BossPhase[] Phases;        // a Book Boss's own rises (v.phz); null: a wild boss rises once
+        public FoeVariant[] Team;         // who its summon calls in (v.team); null or empty: random minions
         public string Name => Dn ?? Def.N;
+    }
+
+    /// <summary>One rise of a Book Boss (bbPhz): its new name and boast, its twists (enrage shield summon regen haste) and HP/attack multipliers.</summary>
+    public sealed class BossPhase
+    {
+        public string Name, Say;
+        public string[] Twists = new string[0];
+        public double Hp, Atk;
     }
 
     /// <summary>Gear totals for a hero (lootSum/lootHero's gx): percentages, perks and power.</summary>
@@ -108,6 +118,7 @@ namespace BookBuddies.Tales
         public int Lvl = 2;
         public double Mul = 1;
         public bool Guardian;
+        public bool BookBoss;                // a town's Book Boss (the site's bb): the top bar says so
         public readonly List<(FoeVariant v, bool boss, bool elite)> Foes = new List<(FoeVariant, bool, bool)>();
         public double HpFrac = 1;
         public int Ink;
