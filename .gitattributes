@@ -1,0 +1,11 @@
+# Normalise text line endings; never touch binary art, fonts or sound
+* text=auto
+*.cs text diff=csharp
+*.png binary
+*.jpg binary
+*.ttf binary
+*.otf binary
+*.wav binary
+*.ogg binary
+*.mp3 binary
+*.zip binary

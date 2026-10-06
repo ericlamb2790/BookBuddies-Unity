@@ -1,0 +1,1648 @@
+{
+ "ppuNote": "size is in tiles; any PNG resolution works",
+ "ground": {
+  "chunk": 16,
+  "files": {
+   "0,0": "Town/Ground/pawtopia_0_0",
+   "1,0": "Town/Ground/pawtopia_1_0",
+   "2,0": "Town/Ground/pawtopia_2_0",
+   "3,0": "Town/Ground/pawtopia_3_0",
+   "4,0": "Town/Ground/pawtopia_4_0",
+   "0,1": "Town/Ground/pawtopia_0_1",
+   "1,1": "Town/Ground/pawtopia_1_1",
+   "2,1": "Town/Ground/pawtopia_2_1",
+   "3,1": "Town/Ground/pawtopia_3_1",
+   "4,1": "Town/Ground/pawtopia_4_1",
+   "0,2": "Town/Ground/pawtopia_0_2",
+   "1,2": "Town/Ground/pawtopia_1_2",
+   "2,2": "Town/Ground/pawtopia_2_2",
+   "3,2": "Town/Ground/pawtopia_3_2",
+   "4,2": "Town/Ground/pawtopia_4_2",
+   "0,3": "Town/Ground/pawtopia_0_3",
+   "1,3": "Town/Ground/pawtopia_1_3",
+   "2,3": "Town/Ground/pawtopia_2_3",
+   "3,3": "Town/Ground/pawtopia_3_3",
+   "4,3": "Town/Ground/pawtopia_4_3"
+  }
+ },
+ "objects": {
+  "fence_01": {
+   "file": "Town/Objects/fence_01",
+   "size": [
+    1.125,
+    1.0469
+   ],
+   "pivot": [
+    0.5,
+    -0.2239
+   ],
+   "shadows": []
+  },
+  "fence_02": {
+   "file": "Town/Objects/fence_02",
+   "size": [
+    0.2813,
+    1.3438
+   ],
+   "pivot": [
+    0.5,
+    0.0116
+   ],
+   "shadows": []
+  },
+  "hall_01": {
+   "file": "Town/Objects/hall_01",
+   "size": [
+    8.4844,
+    10.1641
+   ],
+   "pivot": [
+    0.5,
+    0.0069
+   ],
+   "shadows": [
+    {
+     "dx": 0.2,
+     "dy": 0,
+     "rx": 4.3,
+     "ry": 0.35,
+     "a": 0.16
+    }
+   ]
+  },
+  "tent_01": {
+   "file": "Town/Objects/tent_01",
+   "size": [
+    5.9219,
+    6.6797
+   ],
+   "pivot": [
+    0.5,
+    0.0058
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": 0,
+     "rx": 2.7,
+     "ry": 0.35,
+     "a": 0.16
+    }
+   ]
+  },
+  "tent_02": {
+   "file": "Town/Objects/tent_02",
+   "size": [
+    5.9219,
+    6.6797
+   ],
+   "pivot": [
+    0.5,
+    0.0058
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": 0,
+     "rx": 2.7,
+     "ry": 0.35,
+     "a": 0.16
+    }
+   ]
+  },
+  "capsule_01": {
+   "file": "Town/Objects/capsule_01",
+   "size": [
+    1.8906,
+    1.7734
+   ],
+   "pivot": [
+    0.5,
+    -0.0044
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": 0,
+     "rx": 0.95,
+     "ry": 0.25,
+     "a": 0.18
+    }
+   ]
+  },
+  "duckbooth_01": {
+   "file": "Town/Objects/duckbooth_01",
+   "size": [
+    2.0781,
+    2.4375
+   ],
+   "pivot": [
+    0.5,
+    -0.0224
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.95,
+     "ry": 0.2,
+     "a": 0.18
+    }
+   ]
+  },
+  "arch_01": {
+   "file": "Town/Objects/arch_01",
+   "size": [
+    3.6875,
+    3.6719
+   ],
+   "pivot": [
+    0.5,
+    -0.0021
+   ],
+   "shadows": [
+    {
+     "dx": -1.5,
+     "dy": -0.05,
+     "rx": 0.4,
+     "ry": 0.12,
+     "a": 0.18
+    },
+    {
+     "dx": 1.5,
+     "dy": -0.05,
+     "rx": 0.4,
+     "ry": 0.12,
+     "a": 0.18
+    }
+   ]
+  },
+  "tbooth_01": {
+   "file": "Town/Objects/tbooth_01",
+   "size": [
+    2.3438,
+    3.6094
+   ],
+   "pivot": [
+    0.4667,
+    -0.0022
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 1.1,
+     "ry": 0.22,
+     "a": 0.18
+    }
+   ]
+  },
+  "fairbooks_01": {
+   "file": "Town/Objects/fairbooks_01",
+   "size": [
+    1,
+    1.6016
+   ],
+   "pivot": [
+    0.5156,
+    -0.0341
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.5,
+     "ry": 0.16,
+     "a": 0.18
+    }
+   ]
+  },
+  "fairbooks_02": {
+   "file": "Town/Objects/fairbooks_02",
+   "size": [
+    1,
+    1.6016
+   ],
+   "pivot": [
+    0.5156,
+    -0.0341
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.5,
+     "ry": 0.16,
+     "a": 0.18
+    }
+   ]
+  },
+  "fairbooks_03": {
+   "file": "Town/Objects/fairbooks_03",
+   "size": [
+    1,
+    1.6016
+   ],
+   "pivot": [
+    0.5156,
+    -0.0341
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.5,
+     "ry": 0.16,
+     "a": 0.18
+    }
+   ]
+  },
+  "balloons_01": {
+   "file": "Town/Objects/balloons_01",
+   "size": [
+    1.8203,
+    3.375
+   ],
+   "pivot": [
+    0.5408,
+    -0.0162
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.35,
+     "ry": 0.1,
+     "a": 0.18
+    }
+   ]
+  },
+  "flag_01": {
+   "file": "Town/Objects/flag_01",
+   "size": [
+    0.9531,
+    3.3047
+   ],
+   "pivot": [
+    0.1148,
+    -0.0165
+   ],
+   "shadows": []
+  },
+  "flag_02": {
+   "file": "Town/Objects/flag_02",
+   "size": [
+    0.9531,
+    3.3047
+   ],
+   "pivot": [
+    0.1148,
+    -0.0165
+   ],
+   "shadows": []
+  },
+  "flag_03": {
+   "file": "Town/Objects/flag_03",
+   "size": [
+    0.9531,
+    3.3047
+   ],
+   "pivot": [
+    0.1148,
+    -0.0165
+   ],
+   "shadows": []
+  },
+  "flag_04": {
+   "file": "Town/Objects/flag_04",
+   "size": [
+    0.9531,
+    3.3047
+   ],
+   "pivot": [
+    0.1148,
+    -0.0165
+   ],
+   "shadows": []
+  },
+  "board_01": {
+   "file": "Town/Objects/board_01",
+   "size": [
+    2.0859,
+    1.8359
+   ],
+   "pivot": [
+    0.5019,
+    -0.0043
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": 0,
+     "rx": 0.9,
+     "ry": 0.2,
+     "a": 0.18
+    }
+   ]
+  },
+  "statue_01": {
+   "file": "Town/Objects/statue_01",
+   "size": [
+    1.0781,
+    2.8125
+   ],
+   "pivot": [
+    0.5,
+    -0.0028
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.6,
+     "ry": 0.2,
+     "a": 0.18
+    }
+   ]
+  },
+  "planter_01": {
+   "file": "Town/Objects/planter_01",
+   "size": [
+    1.9844,
+    1.2578
+   ],
+   "pivot": [
+    0.5,
+    -0.0435
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.95,
+     "ry": 0.18,
+     "a": 0.18
+    }
+   ]
+  },
+  "lamp_01": {
+   "file": "Town/Objects/lamp_01",
+   "size": [
+    1.0781,
+    2.9375
+   ],
+   "pivot": [
+    0.5,
+    -0.0186
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.25,
+     "ry": 0.08,
+     "a": 0.18
+    }
+   ]
+  },
+  "apts_01": {
+   "file": "Town/Objects/apts_01",
+   "size": [
+    12.4844,
+    8.7109
+   ],
+   "pivot": [
+    0.5,
+    0.0081
+   ],
+   "shadows": [
+    {
+     "dx": 0.2,
+     "dy": 0,
+     "rx": 6.3,
+     "ry": 0.35,
+     "a": 0.16
+    }
+   ]
+  },
+  "mailbox_01": {
+   "file": "Town/Objects/mailbox_01",
+   "size": [
+    0.7813,
+    1.5391
+   ],
+   "pivot": [
+    0.5,
+    -0.0355
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.3,
+     "ry": 0.1,
+     "a": 0.18
+    }
+   ]
+  },
+  "sign_01": {
+   "file": "Town/Objects/sign_01",
+   "size": [
+    1.3906,
+    1.9844
+   ],
+   "pivot": [
+    0.5,
+    -0.0276
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.3,
+     "ry": 0.1,
+     "a": 0.18
+    }
+   ]
+  },
+  "cafe_01": {
+   "file": "Town/Objects/cafe_01",
+   "size": [
+    8.4844,
+    5.875
+   ],
+   "pivot": [
+    0.5,
+    0.012
+   ],
+   "shadows": [
+    {
+     "dx": 0.2,
+     "dy": 0,
+     "rx": 4.3,
+     "ry": 0.35,
+     "a": 0.16
+    }
+   ]
+  },
+  "table_01": {
+   "file": "Town/Objects/table_01",
+   "size": [
+    1.9844,
+    3.0859
+   ],
+   "pivot": [
+    0.5,
+    -0.0354
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.5,
+     "ry": 0.15,
+     "a": 0.18
+    }
+   ]
+  },
+  "libbox_01": {
+   "file": "Town/Objects/libbox_01",
+   "size": [
+    2.1875,
+    2.7813
+   ],
+   "pivot": [
+    0.5,
+    -0.0028
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.9,
+     "ry": 0.18,
+     "a": 0.18
+    }
+   ]
+  },
+  "hammock_01": {
+   "file": "Town/Objects/hammock_01",
+   "size": [
+    2.2813,
+    2.2891
+   ],
+   "pivot": [
+    0.5,
+    -0.0239
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 1.4,
+     "ry": 0.2,
+     "a": 0.18
+    }
+   ]
+  },
+  "cabinet_01": {
+   "file": "Town/Objects/cabinet_01",
+   "size": [
+    0.9844,
+    2.0313
+   ],
+   "pivot": [
+    0.5,
+    -0.0038
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": 0,
+     "rx": 0.5,
+     "ry": 0.15,
+     "a": 0.18
+    }
+   ]
+  },
+  "umbrella_01": {
+   "file": "Town/Objects/umbrella_01",
+   "size": [
+    2.0781,
+    2.7813
+   ],
+   "pivot": [
+    0.5,
+    -0.0028
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": 0,
+     "rx": 0.75,
+     "ry": 0.25,
+     "a": 0.18
+    }
+   ]
+  },
+  "castle_01": {
+   "file": "Town/Objects/castle_01",
+   "size": [
+    1.0781,
+    1.5859
+   ],
+   "pivot": [
+    0.5,
+    -0.069
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.55,
+     "ry": 0.15,
+     "a": 0.18
+    }
+   ]
+  },
+  "dockpost_01": {
+   "file": "Town/Objects/dockpost_01",
+   "size": [
+    0.3906,
+    1.3594
+   ],
+   "pivot": [
+    0.5,
+    -0.1149
+   ],
+   "shadows": []
+  },
+  "rock_01": {
+   "file": "Town/Objects/rock_01",
+   "size": [
+    0.9844,
+    0.7813
+   ],
+   "pivot": [
+    0.5,
+    -0.14
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.15,
+     "rx": 0.5,
+     "ry": 0.15,
+     "a": 0.18
+    }
+   ]
+  },
+  "stump_01": {
+   "file": "Town/Objects/stump_01",
+   "size": [
+    1.25,
+    1.3516
+   ],
+   "pivot": [
+    0.4875,
+    0.052
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.1,
+     "rx": 0.6,
+     "ry": 0.16,
+     "a": 0.18
+    }
+   ]
+  },
+  "bench_01": {
+   "file": "Town/Objects/bench_01",
+   "size": [
+    1.9844,
+    0.9844
+   ],
+   "pivot": [
+    0.5,
+    -0.1111
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.95,
+     "ry": 0.18,
+     "a": 0.18
+    }
+   ]
+  },
+  "chair_01": {
+   "file": "Town/Objects/chair_01",
+   "size": [
+    0.7266,
+    1.3906
+   ],
+   "pivot": [
+    0.5269,
+    -0.0393
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.08,
+     "rx": 0.3,
+     "ry": 0.1,
+     "a": 0.18
+    }
+   ]
+  },
+  "chair_02": {
+   "file": "Town/Objects/chair_02",
+   "size": [
+    0.7266,
+    1.3906
+   ],
+   "pivot": [
+    0.4731,
+    -0.0393
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.08,
+     "rx": 0.3,
+     "ry": 0.1,
+     "a": 0.18
+    }
+   ]
+  },
+  "beanbag_01": {
+   "file": "Town/Objects/beanbag_01",
+   "size": [
+    0.9844,
+    0.7266
+   ],
+   "pivot": [
+    0.5,
+    -0.1183
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.15,
+     "rx": 0.45,
+     "ry": 0.14,
+     "a": 0.18
+    }
+   ]
+  },
+  "beanbag_02": {
+   "file": "Town/Objects/beanbag_02",
+   "size": [
+    0.9844,
+    0.7266
+   ],
+   "pivot": [
+    0.5,
+    -0.1183
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.15,
+     "rx": 0.45,
+     "ry": 0.14,
+     "a": 0.18
+    }
+   ]
+  },
+  "beanbag_03": {
+   "file": "Town/Objects/beanbag_03",
+   "size": [
+    0.9844,
+    0.7266
+   ],
+   "pivot": [
+    0.5,
+    -0.1183
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.15,
+     "rx": 0.45,
+     "ry": 0.14,
+     "a": 0.18
+    }
+   ]
+  },
+  "beanbag_04": {
+   "file": "Town/Objects/beanbag_04",
+   "size": [
+    0.9844,
+    0.7266
+   ],
+   "pivot": [
+    0.5,
+    -0.1183
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.15,
+     "rx": 0.45,
+     "ry": 0.14,
+     "a": 0.18
+    }
+   ]
+  },
+  "beanbag_05": {
+   "file": "Town/Objects/beanbag_05",
+   "size": [
+    0.9844,
+    0.7266
+   ],
+   "pivot": [
+    0.5,
+    -0.1183
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.15,
+     "rx": 0.45,
+     "ry": 0.14,
+     "a": 0.18
+    }
+   ]
+  },
+  "beanbag_06": {
+   "file": "Town/Objects/beanbag_06",
+   "size": [
+    0.9844,
+    0.7266
+   ],
+   "pivot": [
+    0.5,
+    -0.1183
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.15,
+     "rx": 0.45,
+     "ry": 0.14,
+     "a": 0.18
+    }
+   ]
+  },
+  "shop_01": {
+   "file": "Town/Objects/shop_01",
+   "size": [
+    6.4844,
+    5.0313
+   ],
+   "pivot": [
+    0.5,
+    0.014
+   ],
+   "shadows": [
+    {
+     "dx": 0.2,
+     "dy": 0,
+     "rx": 3.3,
+     "ry": 0.35,
+     "a": 0.16
+    }
+   ]
+  },
+  "station_01": {
+   "file": "Town/Objects/station_01",
+   "size": [
+    7.4844,
+    4.9531
+   ],
+   "pivot": [
+    0.5,
+    0.0142
+   ],
+   "shadows": [
+    {
+     "dx": 0.2,
+     "dy": 0,
+     "rx": 3.8,
+     "ry": 0.35,
+     "a": 0.16
+    }
+   ]
+  },
+  "tree_01": {
+   "file": "Town/Objects/tree_01",
+   "size": [
+    1.1875,
+    2.5313
+   ],
+   "pivot": [
+    0.5,
+    -0.0031
+   ],
+   "shadows": [
+    {
+     "dx": 0.05,
+     "dy": -0.1,
+     "rx": 0.62,
+     "ry": 0.22,
+     "a": 0.18
+    }
+   ]
+  },
+  "tree_02": {
+   "file": "Town/Objects/tree_02",
+   "size": [
+    1.5781,
+    1.8828
+   ],
+   "pivot": [
+    0.5,
+    -0.0041
+   ],
+   "shadows": [
+    {
+     "dx": 0.05,
+     "dy": -0.1,
+     "rx": 0.62,
+     "ry": 0.22,
+     "a": 0.18
+    }
+   ]
+  },
+  "tree_03": {
+   "file": "Town/Objects/tree_03",
+   "size": [
+    1.5781,
+    1.8828
+   ],
+   "pivot": [
+    0.5,
+    -0.0041
+   ],
+   "shadows": [
+    {
+     "dx": 0.05,
+     "dy": -0.1,
+     "rx": 0.62,
+     "ry": 0.22,
+     "a": 0.18
+    }
+   ]
+  },
+  "tree_04": {
+   "file": "Town/Objects/tree_04",
+   "size": [
+    1.5781,
+    1.8828
+   ],
+   "pivot": [
+    0.5,
+    -0.0041
+   ],
+   "shadows": [
+    {
+     "dx": 0.05,
+     "dy": -0.1,
+     "rx": 0.62,
+     "ry": 0.22,
+     "a": 0.18
+    }
+   ]
+  },
+  "wsign_01": {
+   "file": "Town/Objects/wsign_01",
+   "size": [
+    1.9922,
+    2.4609
+   ],
+   "pivot": [
+    0.498,
+    -0.0032
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.45,
+     "ry": 0.162,
+     "a": 0.18
+    }
+   ]
+  },
+  "gym_01": {
+   "file": "Town/Objects/gym_01",
+   "size": [
+    3.0234,
+    2.7578
+   ],
+   "pivot": [
+    0.4264,
+    0.0595
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.38,
+     "rx": 1.25,
+     "ry": 0.45,
+     "a": 0.18
+    }
+   ]
+  },
+  "curio_01": {
+   "file": "Town/Objects/curio_01",
+   "size": [
+    1.0469,
+    1.7656
+   ],
+   "pivot": [
+    0.5,
+    -0.0221
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.45,
+     "ry": 0.162,
+     "a": 0.18
+    }
+   ]
+  },
+  "curio_02": {
+   "file": "Town/Objects/curio_02",
+   "size": [
+    1.0469,
+    1.7656
+   ],
+   "pivot": [
+    0.5,
+    -0.0221
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.45,
+     "ry": 0.162,
+     "a": 0.18
+    }
+   ]
+  },
+  "curio_03": {
+   "file": "Town/Objects/curio_03",
+   "size": [
+    1.0469,
+    1.7656
+   ],
+   "pivot": [
+    0.5,
+    -0.0221
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.45,
+     "ry": 0.162,
+     "a": 0.18
+    }
+   ]
+  },
+  "curio_04": {
+   "file": "Town/Objects/curio_04",
+   "size": [
+    1.0469,
+    1.7656
+   ],
+   "pivot": [
+    0.5,
+    -0.0221
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.45,
+     "ry": 0.162,
+     "a": 0.18
+    }
+   ]
+  },
+  "curio_05": {
+   "file": "Town/Objects/curio_05",
+   "size": [
+    1.0469,
+    1.7656
+   ],
+   "pivot": [
+    0.5,
+    -0.0221
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.45,
+     "ry": 0.162,
+     "a": 0.18
+    }
+   ]
+  },
+  "curio_06": {
+   "file": "Town/Objects/curio_06",
+   "size": [
+    1.0469,
+    1.7656
+   ],
+   "pivot": [
+    0.5,
+    -0.0221
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.45,
+     "ry": 0.162,
+     "a": 0.18
+    }
+   ]
+  },
+  "curio_07": {
+   "file": "Town/Objects/curio_07",
+   "size": [
+    1.0469,
+    1.7656
+   ],
+   "pivot": [
+    0.5,
+    -0.0221
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.45,
+     "ry": 0.162,
+     "a": 0.18
+    }
+   ]
+  },
+  "curio_08": {
+   "file": "Town/Objects/curio_08",
+   "size": [
+    1.0469,
+    1.7656
+   ],
+   "pivot": [
+    0.5,
+    -0.0221
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 0.45,
+     "ry": 0.162,
+     "a": 0.18
+    }
+   ]
+  }
+ },
+ "anim": {
+  "fountain": {
+   "file": "Town/Anim/fountain_",
+   "size": [
+    4.125,
+    4.2031
+   ],
+   "pivot": [
+    0.5,
+    -0.0074
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.3,
+     "rx": 2.1,
+     "ry": 0.5,
+     "a": 0.14
+    }
+   ],
+   "frames": 24,
+   "seconds": 4
+  },
+  "wheel": {
+   "file": "Town/Anim/wheel_",
+   "size": [
+    4.5625,
+    5.7344
+   ],
+   "pivot": [
+    0.5,
+    0.0082
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.05,
+     "rx": 2,
+     "ry": 0.3,
+     "a": 0.18
+    }
+   ],
+   "frames": 24,
+   "seconds": 3.927
+  },
+  "carousel": {
+   "file": "Town/Anim/carousel_",
+   "size": [
+    4.625,
+    4.3125
+   ],
+   "pivot": [
+    0.5034,
+    0.0145
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": -0.3,
+     "rx": 2.1,
+     "ry": 0.5,
+     "a": 0.16
+    }
+   ],
+   "frames": 24,
+   "seconds": 4
+  }
+ },
+ "plants": {
+  "bluebell_0": {
+   "file": "Town/Plants/bluebell_0",
+   "size": [
+    0.5313,
+    0.2891
+   ],
+   "pivot": [
+    0.5,
+    0.227
+   ],
+   "shadows": []
+  },
+  "bluebell_1": {
+   "file": "Town/Plants/bluebell_1",
+   "size": [
+    0.5625,
+    0.4453
+   ],
+   "pivot": [
+    0.5,
+    -0.0105
+   ],
+   "shadows": []
+  },
+  "bluebell_2": {
+   "file": "Town/Plants/bluebell_2",
+   "size": [
+    0.5625,
+    0.7891
+   ],
+   "pivot": [
+    0.5,
+    -0.0059
+   ],
+   "shadows": []
+  },
+  "bluebell_3": {
+   "file": "Town/Plants/bluebell_3",
+   "size": [
+    0.6172,
+    1.0625
+   ],
+   "pivot": [
+    0.4557,
+    -0.0044
+   ],
+   "shadows": []
+  },
+  "tulip_0": {
+   "file": "Town/Plants/tulip_0",
+   "size": [
+    0.5313,
+    0.2891
+   ],
+   "pivot": [
+    0.5,
+    0.227
+   ],
+   "shadows": []
+  },
+  "tulip_1": {
+   "file": "Town/Plants/tulip_1",
+   "size": [
+    0.5625,
+    0.4453
+   ],
+   "pivot": [
+    0.5,
+    -0.0105
+   ],
+   "shadows": []
+  },
+  "tulip_2": {
+   "file": "Town/Plants/tulip_2",
+   "size": [
+    0.5625,
+    0.7891
+   ],
+   "pivot": [
+    0.5,
+    -0.0059
+   ],
+   "shadows": []
+  },
+  "tulip_3": {
+   "file": "Town/Plants/tulip_3",
+   "size": [
+    0.6172,
+    1.0625
+   ],
+   "pivot": [
+    0.4557,
+    -0.0044
+   ],
+   "shadows": []
+  },
+  "strawberry_0": {
+   "file": "Town/Plants/strawberry_0",
+   "size": [
+    0.5313,
+    0.2891
+   ],
+   "pivot": [
+    0.5,
+    0.227
+   ],
+   "shadows": []
+  },
+  "strawberry_1": {
+   "file": "Town/Plants/strawberry_1",
+   "size": [
+    0.5625,
+    0.4453
+   ],
+   "pivot": [
+    0.5,
+    -0.0105
+   ],
+   "shadows": []
+  },
+  "strawberry_2": {
+   "file": "Town/Plants/strawberry_2",
+   "size": [
+    0.5625,
+    0.7891
+   ],
+   "pivot": [
+    0.5,
+    -0.0059
+   ],
+   "shadows": []
+  },
+  "strawberry_3": {
+   "file": "Town/Plants/strawberry_3",
+   "size": [
+    0.6172,
+    1.0625
+   ],
+   "pivot": [
+    0.4557,
+    -0.0044
+   ],
+   "shadows": []
+  },
+  "carrot_0": {
+   "file": "Town/Plants/carrot_0",
+   "size": [
+    0.5313,
+    0.2891
+   ],
+   "pivot": [
+    0.5,
+    0.227
+   ],
+   "shadows": []
+  },
+  "carrot_1": {
+   "file": "Town/Plants/carrot_1",
+   "size": [
+    0.5625,
+    0.4453
+   ],
+   "pivot": [
+    0.5,
+    -0.0105
+   ],
+   "shadows": []
+  },
+  "carrot_2": {
+   "file": "Town/Plants/carrot_2",
+   "size": [
+    0.5625,
+    0.7891
+   ],
+   "pivot": [
+    0.5,
+    -0.0059
+   ],
+   "shadows": []
+  },
+  "carrot_3": {
+   "file": "Town/Plants/carrot_3",
+   "size": [
+    0.5313,
+    1.2109
+   ],
+   "pivot": [
+    0.3676,
+    0.1187
+   ],
+   "shadows": []
+  },
+  "sunflower_0": {
+   "file": "Town/Plants/sunflower_0",
+   "size": [
+    0.5313,
+    0.2891
+   ],
+   "pivot": [
+    0.5,
+    0.227
+   ],
+   "shadows": []
+  },
+  "sunflower_1": {
+   "file": "Town/Plants/sunflower_1",
+   "size": [
+    0.5625,
+    0.4453
+   ],
+   "pivot": [
+    0.5,
+    -0.0105
+   ],
+   "shadows": []
+  },
+  "sunflower_2": {
+   "file": "Town/Plants/sunflower_2",
+   "size": [
+    0.5625,
+    0.7891
+   ],
+   "pivot": [
+    0.5,
+    -0.0059
+   ],
+   "shadows": []
+  },
+  "sunflower_3": {
+   "file": "Town/Plants/sunflower_3",
+   "size": [
+    0.6328,
+    1.0781
+   ],
+   "pivot": [
+    0.4691,
+    -0.0043
+   ],
+   "shadows": []
+  },
+  "pumpkin_0": {
+   "file": "Town/Plants/pumpkin_0",
+   "size": [
+    0.5313,
+    0.2891
+   ],
+   "pivot": [
+    0.5,
+    0.227
+   ],
+   "shadows": []
+  },
+  "pumpkin_1": {
+   "file": "Town/Plants/pumpkin_1",
+   "size": [
+    0.5625,
+    0.4453
+   ],
+   "pivot": [
+    0.5,
+    -0.0105
+   ],
+   "shadows": []
+  },
+  "pumpkin_2": {
+   "file": "Town/Plants/pumpkin_2",
+   "size": [
+    0.5625,
+    0.7891
+   ],
+   "pivot": [
+    0.5,
+    -0.0059
+   ],
+   "shadows": []
+  },
+  "pumpkin_3": {
+   "file": "Town/Plants/pumpkin_3",
+   "size": [
+    0.7188,
+    1.1172
+   ],
+   "pivot": [
+    0.5,
+    0.0448
+   ],
+   "shadows": []
+  }
+ },
+ "items": {
+  "coin": {
+   "file": "Town/Items/coin",
+   "size": [
+    0.5938,
+    0.6094
+   ],
+   "pivot": [
+    0.4868,
+    -0.2282
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": 0.05,
+     "rx": 0.22,
+     "ry": 0.07,
+     "a": 0.2
+    }
+   ]
+  },
+  "bag": {
+   "file": "Town/Items/bag",
+   "size": [
+    0.6094,
+    0.7266
+   ],
+   "pivot": [
+    0.5,
+    -0.0301
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": 0.05,
+     "rx": 0.22,
+     "ry": 0.07,
+     "a": 0.2
+    }
+   ]
+  },
+  "gift": {
+   "file": "Town/Items/gift",
+   "size": [
+    0.5859,
+    0.6406
+   ],
+   "pivot": [
+    0.48,
+    -0.1683
+   ],
+   "shadows": [
+    {
+     "dx": 0,
+     "dy": 0.05,
+     "rx": 0.22,
+     "ry": 0.07,
+     "a": 0.2
+    }
+   ]
+  }
+ },
+ "sway": [
+  "tree",
+  "flower",
+  "flowers",
+  "bush",
+  "reeds",
+  "flag",
+  "balloons",
+  "hballoons",
+  "sunflower",
+  "palm",
+  "lantern"
+ ],
+ "emotes": {
+  "❤️": "UI/Emotes/heart",
+  "😂": "UI/Emotes/laugh",
+  "👋": "UI/Emotes/wave",
+  "🎉": "UI/Emotes/party",
+  "😮": "UI/Emotes/wow",
+  "📚": "UI/Emotes/books",
+  "✨": "UI/Emotes/sparkle",
+  "💤": "UI/Emotes/sleepy",
+  "🤗": "UI/Emotes/hug",
+  "👃": "UI/Emotes/boop",
+  "🎾": "UI/Emotes/ball",
+  "🍪": "UI/Emotes/cookie",
+  "🐾": "UI/Emotes/paws",
+  "💃": "UI/Emotes/dance",
+  "🐰": "UI/Emotes/bunny",
+  "🌀": "UI/Emotes/spin",
+  "😊": "UI/Emotes/smile",
+  "💛": "UI/Emotes/yellow_heart",
+  "🪑": "UI/Emotes/bench",
+  "☕": "UI/Emotes/coffee",
+  "📖": "UI/Emotes/open_book",
+  "🧺": "UI/Emotes/basket",
+  "🎁": "UI/Emotes/gift",
+  "🌱": "UI/Emotes/seedling",
+  "📣": "UI/Emotes/megaphone",
+  "❗": "UI/Emotes/alert",
+  "🪙": "UI/Emotes/coin",
+  "🏡": "UI/Emotes/house",
+  "📜": "UI/Emotes/scroll",
+  "🎟️": "UI/Emotes/ticket",
+  "🎯": "UI/Emotes/target",
+  "🃏": "UI/Emotes/cards",
+  "🎰": "UI/Emotes/slots",
+  "🎡": "UI/Emotes/ferris",
+  "🌈": "UI/Emotes/rainbow",
+  "🦆": "UI/Emotes/duck",
+  "🎠": "UI/Emotes/carousel",
+  "🎣": "UI/Emotes/fishing",
+  "🐍": "UI/Emotes/snake",
+  "⛲": "UI/Emotes/fountain",
+  "📌": "UI/Emotes/pin",
+  "🗿": "UI/Emotes/statue",
+  "🏢": "UI/Emotes/office",
+  "🍄": "UI/Emotes/mushroom",
+  "🚂": "UI/Emotes/train",
+  "🌷": "UI/Emotes/tulip",
+  "🌾": "UI/Emotes/wheat",
+  "📕": "UI/Emotes/red_book",
+  "🔔": "UI/Emotes/bell",
+  "📮": "UI/Emotes/mailbox",
+  "📦": "UI/Emotes/box",
+  "🛒": "UI/Emotes/cart"
+ }
+}

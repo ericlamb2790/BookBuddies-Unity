@@ -1,0 +1,15 @@
+{
+  "name": "bookbuddies-unity-server",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create bookbuddies-unity",
+    "db:schema": "wrangler d1 execute bookbuddies-unity --remote --file=schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^4.40.0"
+  }
+}
