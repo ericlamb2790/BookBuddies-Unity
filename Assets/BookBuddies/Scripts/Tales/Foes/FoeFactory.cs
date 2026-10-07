@@ -48,7 +48,7 @@ namespace BookBuddies.Tales
         {
             rng = rng ?? SystemRng.Shared;
             double sc = Math.Pow(1.17, lvl - 1) * (boss ? 1 : elite ? 1.35 : 1);
-            const double partyScale = 1;   // .75 + .25 * max(1, party size), solo
+            const double partyScale = 1;   // the site's .75 + .25 * max(1, party size), solo; a party fight scales its foes in BattleEngine.AddFoe
             var u = new BattleUnit
             {
                 Key = key, Name = v.Name, IsFoe = true, Boss = boss, Elite = elite, Gen = v.Def.G, Lvl = lvl, Foe = v,

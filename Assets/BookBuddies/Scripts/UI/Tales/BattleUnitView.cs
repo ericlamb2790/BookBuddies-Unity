@@ -8,8 +8,9 @@ namespace BookBuddies.Tales
 {
     /// <summary>
     /// One fighter on the field: its art standing on its feet and a nameplate under it with the HP bar (a delayed
-    /// damage chip and a separate shield strip), six ink pips for pets and a tidy row of status icons. It glides to
-    /// where the stage puts it, idles in its own style (the site's tqbob, float, wobble…), glows on its turn and naps when out.
+    /// damage chip and a separate shield strip), six ink pips for pets and a tidy row of status icons (a pet's row is left
+    /// off a plate too narrow for it, in a crowded lane). It glides to where the stage puts it, idles in its own style
+    /// (the site's tqbob, float, wobble…), glows on its turn and naps when out.
     /// </summary>
     public sealed class BattleUnitView : MonoBehaviour
     {
@@ -227,6 +228,7 @@ namespace BookBuddies.Tales
         public void Place(Vector2 feet, float size, float plateWidth, bool isDense, bool instant, bool jump)
         {
             plate.sizeDelta = new Vector2(plateWidth, plate.sizeDelta.y);
+            if (pips) UiKit.Show(statusRow, plateWidth >= 100); // pips need ~100 px: a crowded lane's plates keep name, player and HP
             dense = isDense;
             if (instant || glideAt < 0)
             {
@@ -298,6 +300,17 @@ namespace BookBuddies.Tales
                 UiKit.Show(statusIcons[i], on && statusIcons[i].sprite != null);
             }
             if (hpText) hpText.transform.SetAsLastSibling();
+        }
+
+        /// <summary>A party fight's pet: the player behind it under its name, or "You" and an amber edge on the plate for yours.</summary>
+        public void Owner(string who, bool you)
+        {
+            if (!you && string.IsNullOrEmpty(who)) return;
+            var line = UiKit.Label(plate, you ? "You" : who, UiKit.SmallSize, you ? Palette.Amber : Palette.Cream.WithAlpha(.72f), UiKit.Bold, TextAnchor.MiddleCenter);
+            line.verticalOverflow = VerticalWrapMode.Truncate; // one line, however narrow the plate
+            UiKit.Size(line, -1, 20);
+            line.transform.SetSiblingIndex(nameText.transform.parent.GetSiblingIndex() + 1);
+            if (you) UiKit.Outline(plate, Palette.Amber, 10, 2);
         }
 
         /// <summary>The gold glow under the feet while it's this fighter's turn.</summary>

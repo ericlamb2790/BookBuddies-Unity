@@ -31,6 +31,8 @@ namespace BookBuddies.Tales
     /// starting ink clamped to 0..6, banter at the intro (always in a boss fight, else 20%), a friend at the intro (a fate
     /// event with Result "ally" and no roll), the land's hazard, the fight's twist, a boss's tactic changes after each turn,
     /// and the run's ink drops won or stolen mid-fight (Outcome.Gold).
+    /// With Setup.Party it is a shared party fight (BattleParty.cs): every pet in it, foes made tougher for the party, and
+    /// this game's player is Me (the outcome is Me's).
     /// </remarks>
     public sealed partial class BattleEngine
     {
@@ -39,18 +41,21 @@ namespace BookBuddies.Tales
         public int Round { get; private set; }
         public bool Over { get; private set; }
         public BattleOutcome Outcome { get; private set; }
+        /// <summary>The pet this game plays (Setup.Me, else the first): the screen's "you" and the outcome's hero.</summary>
+        public BattleUnit Me { get; }
         /// <summary>Lane a pending slam will hit, or null.</summary>
         public string SlamZone => slam == null ? null : slam.Value.zone.ToString();
         /// <summary>The battle level: the road's (1 to 12; the hero fights at tale level min(6, Lvl)), or a tale's chapter.</summary>
         public readonly int Lvl;
 
         readonly IRng rng;
-        readonly TalesSave save;                 // where your lane choice is kept (null for a ready-made hero)
+        readonly TalesSave save;                 // where your lane choice is kept (null for a ready-made hero or a party's pets)
         readonly List<string> queue = new List<string>();
         /// <summary>Who acts next this round, by unit key, first to last.</summary>
         public IReadOnlyList<string> TurnQueue => queue;
         readonly Dictionary<BattleUnit, int> buffs = new Dictionary<BattleUnit, int>();
-        bool intro, mid, cheered, revived;
+        bool intro, mid, revived;
+        readonly HashSet<string> cheered = new HashSet<string>(); // pets whose players have cheered
         int nextFate = 2, nat20s, helpers, crits, heals;
         (string name, string move, double d)? best;
         (string n, string ab)? ult;
@@ -63,24 +68,26 @@ namespace BookBuddies.Tales
             var tale = setup.Tale;
             Lvl = tale != null ? Math.Max(1, tale.Ch) : JsMath.Clamp(setup.Lvl == 0 ? 2 : setup.Lvl, 1, 12);
             int heroLvl = tale != null ? Math.Max(1, tale.HeroLvl) : Math.Min(6, Lvl);
-            var hero = setup.Hero;
-            if (hero == null)
+            if (setup.Party.Count > 0)
+                foreach (var p in setup.Party) AddHero(p.Unit, heroLvl, p.HpFrac, p.Ink);
+            else
             {
-                save = TalesSave.Current;
-                hero = HeroFactory.Build(setup.Look, string.IsNullOrEmpty(setup.PetName) ? "Your pet" : setup.PetName, heroLvl);
+                var hero = setup.Hero;
+                if (hero == null)
+                {
+                    save = TalesSave.Current;
+                    hero = HeroFactory.Build(setup.Look, string.IsNullOrEmpty(setup.PetName) ? "Your pet" : setup.PetName, heroLvl);
+                }
+                AddHero(hero, heroLvl, setup.HpFrac, setup.Ink);
             }
-            HeroFactory.SetLevel(hero, heroLvl, tale?.Boons);
-            hero.Ko = false;
-            hero.Hp = Math.Max(1, Math.Min(hero.Max, JsMath.Round(setup.HpFrac * hero.Max)));
-            Heroes.Add(hero);
-            if (tale != null) Foes.AddRange(tale.ReadyFoes);
+            Me = (setup.Me == null ? null : Heroes.Find(h => h.Key == setup.Me)) ?? Heroes[0];
+            if (tale != null) foreach (var f in tale.ReadyFoes) AddFoe(f);
             else
                 for (int i = 0; i < setup.Foes.Count; i++)
                 {
                     var f = setup.Foes[i];
-                    Foes.Add(FoeFactory.Make(f.v, Lvl, f.boss, f.elite, "f" + i, setup.Mul, this.rng));
+                    AddFoe(FoeFactory.Make(f.v, Lvl, f.boss, f.elite, "f" + i, setup.Mul, this.rng));
                 }
-            foreach (var h in Heroes) StartHero(h);
             LaneInit();
             LaneFix();
             RollCover();
@@ -114,13 +121,13 @@ namespace BookBuddies.Tales
             return true;
         }
 
-        /// <summary>A cheer from the player; the first one in a fight gives +1 ink. Returns its event, or null.</summary>
+        /// <summary>A cheer from a pet's player (null: Me's); each player's first one in a fight gives +1 ink. Returns its event, or null.</summary>
         public BattleEvent Cheer(BattleUnit hero)
         {
-            if (Over || cheered) return null;
-            cheered = true;
+            hero = hero ?? Me;
+            if (Over || !cheered.Add(hero.Key)) return null;
             var live = LiveHeroes();
-            var h = hero != null && !hero.Ko ? hero : live.Count > 0 ? live[0] : null;
+            var h = !hero.Ko ? hero : live.Count > 0 ? live[0] : null;
             if (h == null) return null;
             h.Ink = Math.Min(6, h.Ink + 1);
             var e = new BattleEvent { Kind = "cheer", Actor = h.Key };
@@ -169,10 +176,20 @@ namespace BookBuddies.Tales
             return true;
         }
 
+        // a pet joins at the fight's level with the HP share and ink it brings
+        void AddHero(BattleUnit h, int lvl, double hpFrac, int ink)
+        {
+            HeroFactory.SetLevel(h, lvl, Setup.Tale?.Boons);
+            h.Ko = false;
+            h.Hp = Math.Max(1, Math.Min(h.Max, JsMath.Round(hpFrac * h.Max)));
+            Heroes.Add(h);
+            StartHero(h, ink);
+        }
+
         // startBattle and gearStart: fresh statuses and the gear shield. Ink is the ink carried in from the road plus gear ink and
         // the library's Inkwell (deliberate fix: the site's startBattle reset the carried ink to 1 right after wildRun copied it in);
         // a tale starts from its own formula (TaleInk) and keeps the statuses its setup gave (epStartBattle's bless and Glass Slipper shields)
-        void StartHero(BattleUnit h)
+        void StartHero(BattleUnit h, int ink)
         {
             var info = h.Hero;
             if (Setup.Tale == null) h.St.Clear();
@@ -180,7 +197,7 @@ namespace BookBuddies.Tales
             info.WantUlt = false;
             info.Dark = 0;
             info.PhoenixUsed = false;
-            h.Ink = Math.Min(6, (Setup.Tale != null ? TaleInk(info) : Setup.Ink + info.MetaInk) + info.GearInk);
+            h.Ink = Math.Min(6, (Setup.Tale != null ? TaleInk(info) : ink + info.MetaInk) + info.GearInk);
             if (info.Sh != 0) h.St["shield"] = h.S("shield") + JsMath.Round(h.Max * info.Sh / 100);
         }
 
@@ -214,9 +231,16 @@ namespace BookBuddies.Tales
 
         void End(List<BattleEvent> evs, bool won)
         {
-            var hero = Heroes[0];
-            if (won) foreach (var h in Heroes) h.St.Clear();
             Emit(evs, new BattleEvent { Kind = won ? "win" : "lose" });
+            ForceEnd(won);
+        }
+
+        /// <summary>Ends the fight with no events (a shared fight's captain says it's over); the outcome is Me's.</summary>
+        public void ForceEnd(bool won)
+        {
+            if (Over) return;
+            var hero = Me;
+            if (won) foreach (var h in Heroes) h.St.Clear();
             Over = true;
             slam = null;
             Outcome = new BattleOutcome

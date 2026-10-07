@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using BookBuddies.Live;
 using BookBuddies.Pets;
@@ -12,7 +13,8 @@ namespace BookBuddies.Road
     /// <summary>
     /// Town Book Bosses (the site's gym): the ring opens the boss's sheet, Challenge starts a wild battle against the
     /// boss and its team, a win brings the Book Badge, a gift and its moment (the chapter title, then the badge turning
-    /// over), and from the third town on the east gate stays sealed until the boss is beaten.
+    /// over), and from the third town on the east gate stays sealed until the boss is beaten. In a hosted world the party
+    /// is asked to fight it together first (PartyBattle), and everyone who fights wins their own badge.
     /// </summary>
     public static class BossSpots
     {
@@ -38,7 +40,7 @@ namespace BookBuddies.Road
             if (spot.Side == "e" || !TownSheets.Sealed(w, spot.Side)) TownSheets.Gate(w, spot.Side);
         }
 
-        /// <summary>gymFight: the boss says its line, and a moment later the battle opens from your pet.</summary>
+        /// <summary>gymFight: the boss says its line, and a moment later the battle opens from your pet (the party's ready check first, when there is one).</summary>
         public static void Fight(string town)
         {
             var w = World;
@@ -59,7 +61,37 @@ namespace BookBuddies.Road
             var setup = BossBook.Setup(b, BossBook.Beaten(TalesSave.Current, b.Town), hp, ink);
             var cam = Camera.main;
             Vector2 from = cam ? (Vector2)cam.WorldToScreenPoint(TownMap.ToWorld(w.Me.Pos.x, w.Me.Pos.y)) : new Vector2(Screen.width / 2f, Screen.height / 2f);
-            BattleScreen.Run(setup, from, o => Done(w, b, o));
+            PartyBattle.AskBoss("book:" + b.Town, setup, Info(b, setup), from, o => Done(w, b, o));
+        }
+
+        // the party's ready check card: the boss, the reader level it's meant for and its fight's level, its rises and its team
+        static ReadyInfo Info(BossBook.Boss b, BattleSetup setup)
+        {
+            var info = new ReadyInfo { Icon = b.Icon, Name = b.Name, Title = "Book Boss", Place = b.Hall, Quote = b.Challenge, Level = setup.Lvl, Rec = b.Level };
+            foreach (var p in b.Phases)
+            {
+                string icon = "💢";
+                var gains = new List<string>();
+                foreach (var m in p.Twists)
+                    if (BossBook.Current.Twists.TryGetValue(m, out var t))
+                    {
+                        if (gains.Count == 0) icon = t.icon;
+                        gains.Add(t.text);
+                    }
+                info.Lines.Add($"{icon} Rises again as {p.Name}" + (gains.Count > 0 ? ": " + string.Join(" · ", gains) : ""));
+            }
+            var team = BossBook.TeamOf(b);
+            if (team.Length > 0) info.Lines.Add("👥 Fights beside " + string.Join(", ", System.Array.ConvertAll(team, v => v.Name)));
+            return info;
+        }
+
+        /// <summary>A friend's fight with this town's Book Boss that you joined is over: your own badge, gift or rest, as if you'd challenged it.</summary>
+        public static void After(string town, BattleOutcome o)
+        {
+            var w = World;
+            var b = BossBook.Current.Get(town);
+            if (w != null && b != null) Done(w, b, o);
+            else if (o != null && o.Rounds > 0) RoadVitals.After(!o.Won, o);
         }
 
         // gymDone: HP and ink as the fight left them, then the win's moment or the boss's parting shot

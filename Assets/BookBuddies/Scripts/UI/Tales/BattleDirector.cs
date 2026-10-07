@@ -58,6 +58,11 @@ namespace BookBuddies.Tales
                     yield return Wait(T(550));
                     break;
                 case "cheer": Cheer(e); break;
+                case "jump": // the stage hops the foe (and any pet following it) to the new lane
+                    sound.Play("swish");
+                    foreach (var p in e.Pops) fx.Tip(stage.View(p.Key), p.Value);
+                    yield return Wait(T(450));
+                    break;
                 case "fate": yield return fx.Fate(e, f => Apply(f, e)); break;
                 case "rise": yield return Risen(e); break;
                 case "phase": yield return Phase(e); break;
@@ -294,7 +299,7 @@ namespace BookBuddies.Tales
         // a slam is coming for the pet's lane: say so at the top of the screen
         void WarnSlam(string zone)
         {
-            var me = engine.Heroes.Count > 0 ? engine.Heroes[0] : null;
+            var me = engine.Me;
             if (me != null && !me.Ko && zone != null && zone.Length > 0 && me.Lane == zone[0]) fx.Toast("⚠️ Slam on your lane. Pick another lane!");
         }
 

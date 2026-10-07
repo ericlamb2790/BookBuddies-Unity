@@ -56,7 +56,13 @@ namespace BookBuddies.Pets
         public static async Task<Pet> Hatch(string name, string look)
         {
             if (Full) return null;
-            if (await OnServer()) { Take(await BBApi.HatchPet(name, look)); return Active; }
+            if (await OnServer())
+            {
+                PetSync.BeforeSwitch();
+                Take(await BBApi.HatchPet(name, look));
+                PetSync.Hatched(Active);
+                return Active;
+            }
             var pet = new Pet { Id = "p" + DateTime.UtcNow.Ticks.ToString("x"), Name = name, Look = look };
             Current().Add(pet);
             activeId = pet.Id;
@@ -71,7 +77,12 @@ namespace BookBuddies.Pets
 
         public static async Task MakeActive(Pet pet)
         {
-            if (await OnServer()) { Take(await BBApi.SetActivePet(pet.Id)); return; }
+            if (await OnServer())
+            {
+                PetSync.BeforeSwitch();
+                Take(await BBApi.SetActivePet(pet.Id));
+                return;
+            }
             activeId = pet.Id;
             Saved();
         }
@@ -85,7 +96,12 @@ namespace BookBuddies.Pets
 
         static async Task Change(Pet pet, string look, string name)
         {
-            if (await OnServer()) { Take(await BBApi.UpdatePet(pet.Id, look, name)); return; }
+            if (await OnServer())
+            {
+                PetSync.Before(pet);
+                Take(await BBApi.UpdatePet(pet.Id, look, name));
+                return;
+            }
             pet.Look = look ?? pet.Look;
             pet.Name = name ?? pet.Name;
             Saved();

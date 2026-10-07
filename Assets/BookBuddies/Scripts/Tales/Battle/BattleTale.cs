@@ -227,7 +227,7 @@ namespace BookBuddies.Tales
                 var x = FoeFactory.Make(FoeFactory.Variant(def, false, false, rng), f.Lvl, false, false, "s" + Round + i, 1, rng);
                 x.Hp = x.Max;
                 x.Lvl = f.Lvl;
-                Foes.Add(x);
+                AddFoe(x);
             }
         }
     }

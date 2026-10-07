@@ -11,12 +11,13 @@ namespace BookBuddies.Tales
     /// The battle field: the arena sky, drifting motes, three lanes as columns (left, centre, right) with the pet at the
     /// foot of its column and foes above, cover, and every fighter placed so nothing overlaps: foes in a column share it
     /// two to a row (more foes, smaller each), a boss takes the top of its column bigger, and nameplates stay inside it.
-    /// Positions are reference pixels from the bottom-left of the safe area.
+    /// In a party fight pets sharing a lane stand side by side at its foot (smaller when it's crowded), yours with an
+    /// amber plate and each friend's with its player's name. Positions are reference pixels from the bottom-left of the safe area.
     /// </summary>
     public sealed class BattleStage : MonoBehaviour, IPointerClickHandler
     {
         const string LaneKeys = "lcr";
-        const float PlateHeight = 96, MinPlate = 104, MaxPlate = 300, LabelRoom = 40, Gutter = 12, MaxColumn = .46f; // MaxColumn: of the field's height
+        const float PlateHeight = 96, OwnerLine = 24, MinPlate = 104, MaxPlate = 300, LabelRoom = 40, Gutter = 12, MaxColumn = .46f; // MaxColumn: of the field's height
         static readonly Color Rose = Palette.Hex("#ff6a5a"), Gold = Palette.Hex("#ffd27a");
 
         /// <summary>Effects go here (same coordinates as the fighters).</summary>
@@ -27,24 +28,29 @@ namespace BookBuddies.Tales
         public float Height => safe.rect.height;
         /// <summary>A lane was clicked or tapped (on the field, not on a foe or a button).</summary>
         public event Action<char> LaneTapped;
+        /// <summary>Your lane as the screen has it (in a party fight, one you've asked for shows at once); '\0': your pet's.</summary>
+        public char YourLane;
 
         readonly Dictionary<string, BattleUnitView> views = new Dictionary<string, BattleUnitView>();
         readonly Dictionary<BattleUnitView, char> placedLane = new Dictionary<BattleUnitView, char>();
+        readonly List<BattleUnit> team = new List<BattleUnit>();
         readonly Image[] bands = new Image[3], stripes = new Image[3], outlines = new Image[3];
         readonly Text[] labels = new Text[3];
         RectTransform safe, lanes, units;
         RectTransform cover;
         BattleEngine engine;
+        IBattleLink link;
         Func<BattleUnit, Action> onFoeTap;
         Vector2 measured;
         static Sprite topFade, bottomFade;
 
-        /// <summary>Builds the field over the whole screen (root) with the play area inside the safe area.</summary>
-        public static BattleStage Create(RectTransform root, BattleEngine engine, Func<BattleUnit, Action> onFoeTap)
+        /// <summary>Builds the field over the whole screen (root) with the play area inside the safe area (link: a party fight's, for its players' names).</summary>
+        public static BattleStage Create(RectTransform root, BattleEngine engine, Func<BattleUnit, Action> onFoeTap, IBattleLink link = null)
         {
             var world = UiKit.Node("world", root).Fill();
             var s = world.gameObject.AddComponent<BattleStage>();
             s.engine = engine;
+            s.link = link;
             s.onFoeTap = onFoeTap;
             s.Shake = world;
             s.Build(world);
@@ -172,6 +178,7 @@ namespace BookBuddies.Tales
             var v = BattleUnitView.Create(units, u);
             views[u.Key] = v;
             if (v.Tap && onFoeTap != null) v.Tap.onClick.AddListener(() => onFoeTap(u)());
+            if (!u.IsFoe && engine.Heroes.Count > 1) v.Owner(u == engine.Me ? null : link?.NameOf(u.Key), u == engine.Me);
             v.SetHp(u.Hp, u.Max, u.S("shield"));
             v.Paint();
             return v;
@@ -239,7 +246,7 @@ namespace BookBuddies.Tales
 
         void PaintLanes()
         {
-            var me = engine.Heroes.Count > 0 ? engine.Heroes[0] : null;
+            var me = engine.Me;
             string slam = engine.SlamZone;
             for (int i = 0; i < 3; i++)
             {
@@ -248,7 +255,7 @@ namespace BookBuddies.Tales
                 var band = bands[i].rectTransform;
                 band.anchoredPosition = new Vector2(r.x, r.y);
                 band.sizeDelta = new Vector2(r.width, r.height);
-                bool mine = me != null && !me.Ko && me.Lane == z, hasFoes = FoesIn(z) > 0;
+                bool mine = me != null && !me.Ko && (YourLane != '\0' ? YourLane : me.Lane) == z, hasFoes = FoesIn(z) > 0;
                 bool slammed = slam != null && slam[0] == z, open = slam != null && !slammed && !hasFoes;
                 float pulse = .5f + .5f * Mathf.Sin(Time.time * Mathf.PI / .7f);
                 Color tint = slammed ? Rose.WithAlpha(.16f + .14f * pulse) : mine ? Gold.WithAlpha(.1f) : Color.white.WithAlpha(.045f);
@@ -267,7 +274,7 @@ namespace BookBuddies.Tales
             return n;
         }
 
-        // each column: the pet stands at its foot, foes fill the room above in rows of two (a boss gets the top row
+        // each column: the pets stand at its foot, foes fill the room above in rows of two (a boss gets the top row
         // alone and half as tall again), and every nameplate sits under its fighter inside the column
         void Layout(bool instant)
         {
@@ -275,19 +282,16 @@ namespace BookBuddies.Tales
             float colW = ColumnWidth, height = top - bottom;
             // sizes follow the height, so 1080p, 1440p and ultrawide look alike; pet art stands 1.16 of its width tall
             float heroSize = Mathf.Max(40, Mathf.Min(height * .24f, colW * .6f, 230));
-            float heroTop = bottom + PlateHeight + 6 + heroSize * 1.2f; // its plate and the art (pets stand 1.16 wide)
-            float heroFeet = bottom + PlateHeight + 6;
+            float heroFeet = bottom + PlateHeight + (engine.Heroes.Count > 1 ? OwnerLine : 0) + 6; // a party's plates carry the player too
+            float heroTop = heroFeet + heroSize * 1.2f; // its plate and the art (pets stand 1.16 wide)
 
-            foreach (var h in engine.Heroes)
-            {
-                var r = Band(h.Lane);
-                Put(View(h.Key), h.Lane, new Vector2(r.center.x, heroFeet), heroSize, Mathf.Clamp(colW - 24, MinPlate, MaxPlate), false, instant);
-            }
+            foreach (char z in LaneKeys) Team(z, colW, heroFeet, heroSize, instant);
             if (cover != null)
             {
+                char z = engine.CoverZone[0];
                 float size = heroSize * 1.25f;
-                cover.anchoredPosition = new Vector2(Band(engine.CoverZone[0]).center.x, heroFeet);
-                cover.sizeDelta = new Vector2(size, size);
+                cover.anchoredPosition = new Vector2(Band(z).center.x, heroFeet);
+                cover.sizeDelta = new Vector2(HeroesIn(z) > 1 ? Mathf.Max(size, colW) : size, size); // over every pet sheltering there
             }
 
             var shown = new List<BattleUnitView>();
@@ -320,6 +324,26 @@ namespace BookBuddies.Tales
                 }
             }
             SortByLane();
+        }
+
+        // the pets in a lane, side by side at its foot in the party's order; more of them, smaller each (like foes in a row)
+        void Team(char lane, float colW, float feet, float size, bool instant)
+        {
+            team.Clear();
+            foreach (var h in engine.Heroes) if (h.Lane == lane) team.Add(h);
+            if (team.Count == 0) return;
+            float slot = colW / team.Count, x0 = Band(lane).x;
+            float plate = team.Count == 1 ? Mathf.Clamp(colW - 24, MinPlate, MaxPlate) : Mathf.Min(Mathf.Clamp(slot - 16, MinPlate, MaxPlate), slot - 8);
+            size = Mathf.Max(40, Mathf.Min(size, slot * .88f));
+            for (int k = 0; k < team.Count; k++)
+                Put(View(team[k].Key), lane, new Vector2(x0 + slot * (k + .5f), feet), size, plate, team.Count > 1, instant);
+        }
+
+        int HeroesIn(char lane)
+        {
+            int n = 0;
+            foreach (var h in engine.Heroes) if (h.Lane == lane) n++;
+            return n;
         }
 
         void Put(BattleUnitView v, char lane, Vector2 feet, float size, float plate, bool dense, bool instant)

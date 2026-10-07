@@ -621,6 +621,9 @@ namespace BookBuddies.Live
         /// <summary>The road's foes to the rest of the room (RoadFoes, in a hosted world).</summary>
         public void ShareFoes(Dictionary<string, object> m) => Send(m);
 
+        /// <summary>A party battle message to the whole party, wherever they are (PartyBattle, in a hosted world).</summary>
+        public void SendParty(Dictionary<string, object> m) => Send(m);
+
         void SendGo()
         {
             goOwed = false;
@@ -730,6 +733,9 @@ namespace BookBuddies.Live
                     break;
                 case "wf":
                     if (e != null && e != Me && Road != null) Road.Hear(e, m);
+                    break;
+                case "pb":
+                    PartyBattle.Hear(m); // from any member of the party, here or in another town
                     break;
                 case "item":
                     AddItem(m.Obj("it"));

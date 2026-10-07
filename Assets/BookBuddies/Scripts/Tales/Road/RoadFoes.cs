@@ -30,7 +30,7 @@ namespace BookBuddies.Road
         static readonly Vector2Int[] AmbushSpots = { new(1, 0), new(-1, 0), new(0, 1), new(0, -1), new(1, 1), new(-1, -1) };
 
         /// <summary>A fight from the moment a foe touches you until the battle screen hands back the outcome.</summary>
-        sealed class Fight { public List<RoadFoe> Pack; public Vector2 Screen; public float StartedAt, ClosedAt = -1; public bool SawScreen; public int Shared; }
+        sealed class Fight { public List<RoadFoe> Pack; public List<string> Who; public Vector2 Screen; public float StartedAt, ClosedAt = -1; public bool SawScreen; public int Shared; }
 
         PlazaWorld world;
         TownMap map;
@@ -89,7 +89,8 @@ namespace BookBuddies.Road
         // while a fight, the bag or a reward reveal is up, the road waits
         static bool Frozen => BattleScreen.Open || TalesUi.AnyOpen;
 
-        static bool Busy => UiStack.Any || PlazaInput.MenuOpen || PlazaInput.Typing || PlazaInput.Locked;
+        // a menu, a screen or the chat is up, or a party's boss fight is about to open for you
+        static bool Busy => UiStack.Any || PlazaInput.MenuOpen || PlazaInput.Typing || PlazaInput.Locked || PartyBattle.Joining;
 
         void Step(PetActor me, float dt)
         {
@@ -342,21 +343,33 @@ namespace BookBuddies.Road
         bool Caught(RoadFoe lead, PetActor who)
         {
             if (Sharing) FightTogether(lead, who);
-            else Engage(PackOf(lead, who.Pos), 0);
+            else Engage(PackOf(lead, who.Pos), 0, null);
             return true;
         }
 
-        // the foe that touched you and up to two others chasing close by (the guardian fights alone)
-        List<RoadFoe> PackOf(RoadFoe lead, Vector2 at)
+        // the foe that touched you and up to two others chasing close by, one more for each friend in a party fight (six
+        // at most; the guardian fights alone)
+        List<RoadFoe> PackOf(RoadFoe lead, Vector2 at, int fighters = 1)
         {
             var pack = new List<RoadFoe> { lead };
+            int most = MostFoes(fighters);
             if (!lead.Guardian)
                 foreach (var o in foes)
-                    if (pack.Count < 3 && o != lead && !o.Guardian && !o.Fighting && o.Chasing && Vector2.Distance(o.Pos, at) < PackRange) pack.Add(o);
+                    if (pack.Count < most && o != lead && !o.Guardian && !o.Fighting && o.Chasing && Vector2.Distance(o.Pos, at) < PackRange) pack.Add(o);
             return pack;
         }
 
-        void Engage(List<RoadFoe> pack, int shared)
+        static int MostFoes(int fighters) => Mathf.Min(6, 2 + fighters);
+
+        /// <summary>A shared pack that fewer pets fight than it was made for (friends who couldn't come): only the foes they'd have met, the one that touched first kept.</summary>
+        public static void ForPets(BattleSetup setup, int pets)
+        {
+            int most = MostFoes(pets);
+            if (setup.Foes.Count > most) setup.Foes.RemoveRange(most, setup.Foes.Count - most);
+        }
+
+        // who: everyone in a shared fight (room ids, the one caught first)
+        void Engage(List<RoadFoe> pack, int shared, List<string> who)
         {
             if (fight != null || pack.Count == 0) return;
             var me = world.Me;
@@ -368,7 +381,7 @@ namespace BookBuddies.Road
             me.ShowEmote("⚔️");
 
             Vector2 screen = cam.Cam.WorldToScreenPoint(TownMap.ToWorld(me.Pos.x, me.Pos.y) + TownCamera.Facing * Vector3.up * .6f);
-            fight = new Fight { Pack = pack, Screen = screen, Shared = shared };
+            fight = new Fight { Pack = pack, Who = who, Screen = screen, Shared = shared };
             PlazaInput.Locked = true;
             wipe = FightWipe.Play(screen);
             cam.Shake();
@@ -383,12 +396,13 @@ namespace BookBuddies.Road
             if (fight != current) yield break;
             if (!Buddy.Hatched) { world.Notify("Hatch your pet to battle in the wilds"); Finish(current, null); yield break; }
             current.StartedAt = Time.unscaledTime;
-            try { BattleScreen.Run(Setup(current.Pack), current.Screen, o => Finish(current, o)); }
+            try { Battle(current); }
             catch (System.Exception e) { Debug.LogException(e); Finish(current, null); yield break; }
             yield return Watch(current);
         }
 
-        // If the battle never opens, or closes without an outcome, the fight ends as the site's 'none'.
+        // If the battle never opens (a shared fight gets 8 s, as the party gathers), or closes without an outcome, the fight
+        // ends as the site's 'none'.
         IEnumerator Watch(Fight current)
         {
             float wipeGoesAt = -1;
@@ -402,7 +416,8 @@ namespace BookBuddies.Road
                     if (wipeGoesAt < 0) wipeGoesAt = now + .4f;
                     if (wipe && now > wipeGoesAt) { wipe.Hide(); wipe = null; }
                 }
-                else if (!current.SawScreen && now - current.StartedAt > 3) Finish(current, null);
+                else if (PartyBattle.Asking) current.StartedAt = now; // the party is asked to fight the guardian: the wait starts after
+                else if (!current.SawScreen && now - current.StartedAt > (current.Shared > 0 ? 8 : 3)) Finish(current, null);
                 else if (current.SawScreen && !TalesUi.AnyOpen && !UiStack.Any)
                 {
                     if (current.ClosedAt < 0) current.ClosedAt = now;
@@ -450,14 +465,15 @@ namespace BookBuddies.Road
             else Lost(current.Pack);
         }
 
-        void Won(List<RoadFoe> pack)
+        // guardian: the guardian was in it (it may be gone from the list already when a friend's game won first)
+        void Won(List<RoadFoe> pack, bool guardian = false)
         {
             var me = world.Me;
             for (int i = 0; i < pack.Count; i++) { Fx.Sparkle(pack[i].Pos + new Vector2(0, -.4f), i * .12f); beaten.Add(pack[i].Id); Remove(pack[i]); }
             me.Play("happy", .9f, .2f);
             me.ShowEmote("🏆");
             grace = clock + 3.5f;
-            if (!pack.Exists(o => o.Guardian)) return;
+            if (!guardian && !pack.Exists(o => o.Guardian)) return;
             var save = TalesSave.Current;
             save.LairAt = NowMs;
             save.ChestReady = true; // kept in the save, so leaving the cave doesn't lose it (the site's chest did)

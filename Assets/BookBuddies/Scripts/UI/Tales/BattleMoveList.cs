@@ -10,7 +10,8 @@ namespace BookBuddies.Tales
     /// The side panel's move list: one live row per move, in the order the pet tries them. Each row charges a bar
     /// with ink toward the move's cost (or counts down a cooldown), pops when the move comes ready, and flashes gold
     /// when the pet uses it. Drag a row by its grip to reorder: the order is the pet's tactics ("My order"), it takes
-    /// effect from the next turn and is saved for later fights. Reset goes back to Smart. Reduce motion keeps the
+    /// effect from the next turn and is saved for later fights. Reset goes back to Smart. In a party fight the order stays
+    /// as it came in (every game plays the pet the same way), so the list only shows it. Reduce motion keeps the
     /// colours and drops the slides, pops and punches.
     /// </summary>
     public sealed class BattleMoveList : MonoBehaviour
@@ -27,13 +28,14 @@ namespace BookBuddies.Tales
         Row dragging;
         float grab;
 
-        BattleUnit Me => engine.Heroes.Count > 0 ? engine.Heroes[0] : null;
+        BattleUnit Me => engine.Me;
         bool Calm => GameSettings.ReduceMotion;
+        bool Locked => engine.Setup.Party.Count > 0;
 
         /// <summary>Builds the card on a side panel column; null when the pet has no moves.</summary>
         public static BattleMoveList Create(Transform side, BattleEngine engine)
         {
-            var me = engine.Heroes.Count > 0 ? engine.Heroes[0] : null;
+            var me = engine.Me;
             if (me?.Hero == null || me.Moves.Count == 0) return null;
             var card = UiKit.Panel(side, "moves", Palette.Hex("#15122c").WithAlpha(.88f), UiKit.CardRadius);
             card.raycastTarget = false;
@@ -85,8 +87,9 @@ namespace BookBuddies.Tales
             var me = Me;
             if (me?.Hero == null) return;
             bool mine = me.Hero.Order != null && me.Hero.Order.Count > 0;
-            header.text = mine ? $"Moves  <color=#b9b1dd>your order · drag to change</color>" : $"Moves  <color=#b9b1dd>smart · drag to set an order</color>";
-            UiKit.Show(reset, mine);
+            header.text = Locked ? (mine ? "Moves  <color=#b9b1dd>your order · party fight</color>" : "Moves  <color=#b9b1dd>smart · party fight</color>")
+                : mine ? $"Moves  <color=#b9b1dd>your order · drag to change</color>" : $"Moves  <color=#b9b1dd>smart · drag to set an order</color>";
+            UiKit.Show(reset, mine && !Locked);
             float dt = Time.unscaledDeltaTime;
             for (int i = 0; i < list.Count; i++)
             {
@@ -100,6 +103,7 @@ namespace BookBuddies.Tales
 
         void BeginDrag(Row r, PointerEventData e)
         {
+            if (Locked) return;
             dragging = r;
             r.transform.SetAsLastSibling();
             grab = r.Y - Local(e).y;
@@ -184,7 +188,7 @@ namespace BookBuddies.Tales
 
                 row.ring = UiKit.Outline(bg, Gold.WithAlpha(0), 12, 2);
                 row.ring.raycastTarget = false;
-                Grip(r);
+                if (!owner.Locked) Grip(r);
                 var icon = UiKit.Icon(r, m.Icon ?? (m.Ult ? "✨" : "📖"), 24);
                 icon.raycastTarget = false;
                 icon.rectTransform.Pin(new Vector2(0, .5f), new Vector2(42, 2), new Vector2(24, 24));

@@ -38,7 +38,7 @@ namespace BookBuddies.Tales
         /// <summary>The control a controller or keyboard starts on (the Ultimate).</summary>
         public Selectable First => ultButton;
 
-        BattleUnit Hero => engine.Heroes.Count > 0 ? engine.Heroes[0] : null;
+        BattleUnit Hero => engine.Me;
 
         /// <summary>Builds the controls on the HUD layer (a safe-area rect over the field).</summary>
         public static BattleDock Create(RectTransform hud, BattleEngine engine)
@@ -164,34 +164,39 @@ namespace BookBuddies.Tales
 
         // ---- every frame ----
 
-        /// <summary>Shows the fight as it is: paused or not, the speed, whether a cheer is cooling down.</summary>
-        public void Refresh(bool paused, int speed, bool cheerCooling)
+        /// <summary>
+        /// Shows the fight as it is: paused or not, the speed, whether a cheer is cooling down, whether your Ultimate is on
+        /// its way to a party fight's captain, and your lane (in a party fight, one you've asked for shows at once).
+        /// </summary>
+        public void Refresh(bool paused, int speed, bool cheerCooling, bool ultAsked, char lane)
         {
             Layout();
             var me = Hero;
             var setup = engine.Setup;
+            string party = engine.Heroes.Count > 1 ? $" · party of {engine.Heroes.Count}" : "";
             subtitle.text = paused ? "Paused" : setup.Tale != null ? BattleText.Prose(setup.Place)
-                : $"{(setup.BookBoss ? "Book Boss" : setup.Guardian ? "Guardian battle" : "Wild battle")} · {BattleText.Prose(setup.Place)}";
+                : $"{(setup.BookBoss ? "Book Boss" : setup.Guardian ? "Guardian battle" : "Wild battle")}{party} · {BattleText.Prose(setup.Place)}";
             subtitle.color = paused ? Gold : Palette.Cream.WithAlpha(.75f);
             speedText.text = speed + "×";
             cheerButton.interactable = !cheerCooling;
             UiKit.Show(bagDot, TalesSave.Current.Fresh.Count > 0);
-            Lanes(me);
-            UltState(me);
+            Lanes(me, lane);
+            UltState(me, ultAsked);
             if (roomyHint) hintPill.rectTransform.anchoredPosition = new Vector2(Margin + lanes.rect.width + Gap * 2, hintPill.rectTransform.anchoredPosition.y);
             bool alert = me != null && !me.Ko && engine.SlamZone != null && engine.SlamZone[0] == me.Lane;
             quiet.alpha = Mathf.MoveTowards(quiet.alpha, hover.Over || alert ? 1 : Quiet, Time.unscaledDeltaTime * 5);
         }
 
-        // your lane in amber, a slammed lane in red, lanes you can't enter faded; the hint says what to do
-        void Lanes(BattleUnit me)
+        // your lane in amber, a slammed lane in red, lanes you can't enter faded (the one your pet stands in stays open,
+        // to take back a move on its way); the hint says what to do
+        void Lanes(BattleUnit me, char lane)
         {
             string slam = engine.SlamZone;
             for (int i = 0; i < 3; i++)
             {
                 char z = LaneKeys[i];
-                bool mine = me != null && me.Lane == z, slammed = slam != null && slam[0] == z;
-                laneButtons[i].interactable = me != null && !me.Ko && (mine || engine.LaneOK(z));
+                bool mine = me != null && lane == z, slammed = slam != null && slam[0] == z;
+                laneButtons[i].interactable = me != null && !me.Ko && (mine || me.Lane == z || engine.LaneOK(z));
                 ((Image)laneButtons[i].targetGraphic).color = slammed ? Rose : mine ? Palette.Amber : Ink;
                 laneButtons[i].GetComponentInChildren<Text>().color = mine && !slammed ? Palette.Ink : Palette.Cream;
             }
@@ -211,9 +216,9 @@ namespace BookBuddies.Tales
             return "Pick a lane with foes to move";
         }
 
-        void UltState(BattleUnit me)
+        void UltState(BattleUnit me, bool asked)
         {
-            bool ko = me == null || me.Ko, queued = !ko && me.Hero != null && me.Hero.WantUlt, ready = !ko && engine.UltReady(me);
+            bool ko = me == null || me.Ko, queued = !ko && (asked || me.Hero != null && me.Hero.WantUlt), ready = !ko && engine.UltReady(me);
             int ink = me?.Ink ?? 0;
             ultRing.fillAmount = Mathf.MoveTowards(ultRing.fillAmount, Mathf.Clamp01(ink / 6f), Time.unscaledDeltaTime * 2);
             ultRing.color = queued ? Blue : ready ? Gold : Gold.WithAlpha(.8f);

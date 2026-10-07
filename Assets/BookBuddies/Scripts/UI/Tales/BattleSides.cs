@@ -81,7 +81,7 @@ namespace BookBuddies.Tales
             right.anchoredPosition = new Vector2(stage.Width - stage.SideRoom + Margin, top);
             if (Time.unscaledTime < nextAt) return;
             nextAt = Time.unscaledTime + Refresh;
-            var me = engine.Heroes.Count > 0 ? engine.Heroes[0] : null;
+            var me = engine.Me;
             Show(pet, me == null ? null : PetText(me));
             Show(last, LastText());
             Show(order, OrderText());

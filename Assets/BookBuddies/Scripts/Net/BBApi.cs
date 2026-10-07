@@ -18,7 +18,7 @@ namespace BookBuddies.Net
     public static class BBApi
     {
         const int TimeoutSeconds = 20;
-        const int QuickTimeout = 6; // seconds for a look at your account while switching servers
+        public const int QuickTimeout = 6; // seconds for a look at your account while switching servers
 
         public sealed class ApiError : Exception
         {
@@ -198,12 +198,14 @@ namespace BookBuddies.Net
         /// its name and pets (or, when it can't be reached, the buddy and pets this device remembers); with neither, the
         /// egg hatches as usual. The first time in a friend's world (found with WorldAt first), your profile there is made
         /// the same way from the one you're leaving. Then your buddy comes from the new server (kept as it is when that
-        /// can't be reached, or when you leave a world for a server you aren't signed in to).
+        /// can't be reached, or when you leave a world or this PC for a server you aren't signed in to). Leaving a world
+        /// first carries the coins you found there home (CoinBank.Carry).
         /// </summary>
         public static async Task UseServer(string server)
         {
             string from = Settings.Server;
             bool fromWorld = Settings.WorldNameOf(from).Length > 0;
+            if (fromWorld && server.TrimEnd('/') != from) await CoinBank.AtSave(true);
             bool seeded = server == Settings.Local || Settings.WorldNameOf(server).Length > 0;
             var device = seeded ? DeviceAccount() : null; // before the pets list follows the new account
             Settings.Server = server;
@@ -217,7 +219,7 @@ namespace BookBuddies.Net
                 var me = Settings.IsLocal ? await SeededProfile(Settings.OnlineServer, device)
                     : Settings.IsWorld ? await SeededProfile(from, device)
                     : await OnlineProfile();
-                if (Settings.Server != server || (me == null && fromWorld)) return; // home from a world with no account here: your buddy stays
+                if (Settings.Server != server || (me == null && (fromWorld || from == Settings.Local))) return; // no account here: your buddy stays
                 Buddy.Forget();
                 if (me != null) Buddy.Save(me.Str("name"), me.Str("pet"));
             }

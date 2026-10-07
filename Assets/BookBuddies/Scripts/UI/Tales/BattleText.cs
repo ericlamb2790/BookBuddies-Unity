@@ -27,6 +27,7 @@ namespace BookBuddies.Tales
                 case "intro": return ("⚔️", $"Fight starts: {string.Join(", ", engine.Foes.ConvertAll(f => Prose(f.Name)))}", Side.Story);
                 case "skip": return ("💫", $"{who} is too dizzy to move", side);
                 case "dot": return (e.Fx.Exists(f => f.Damage > 0) ? "🩸" : "💚", $"{Bold(who)} {Targets(e, engine)}", side);
+                case "jump": return ("↔️", $"{Bold(who)} jumps to the {Lane(e.Zone?[0] ?? 'c')} lane", Side.Foe);
                 case "slamw": return ("⚠️", $"{Bold(who)} winds up a slam on the {Lane(e.Zone?[0] ?? 'c')} lane", Side.Foe);
                 case "fate" when e.Result == "ally": return ("🤝", Prose(e.Line), Side.Story);
                 case "fate": return ("🎲", $"{e.Name} rolled {e.Roll}{(e.Bonus > 0 ? " + " + e.Bonus : "")}: {Prose(e.Line)}", Side.Story);

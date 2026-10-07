@@ -280,19 +280,21 @@ namespace BookBuddies.Local
         internal void Receive(string id, string raw)
         {
             var pl = players.Find(p => p.Id == id);
-            if (pl == null || raw == null || raw.Length > 4000) return;
+            if (pl == null || raw == null || raw.Length > 15000) return;
             object parsed;
             try { parsed = Json.Parse(raw); }
             catch (Exception) { return; } // not JSON: ignored, like the Worker's JSON.parse failing
             if (!(parsed is Msg m)) return;
             double now = LocalServer.Now;
             string t = m.Str("t");
+            if (raw.Length > 4000 && t != "pb") return; // only a party battle's setup and steps run long
 
             if (t == "ping") { Send(pl, new Msg { ["t"] = "pong", ["c"] = Js.Get(m, "c") is double c ? c : 0, ["now"] = now }); return; }
             if (t == "leave") { Broadcast(new Msg { ["t"] = "leave", ["id"] = pl.Id }, pl); return; }
             if (t == "hi") { Hello(pl, m); return; }
             if (pl.Look.Length == 0) return;
             if (t == "wf") { Foes(pl, m); return; } // the road's foes have their own pace (a few lists a second)
+            if (t == "pb") { LocalParty.Battle(pl.Pid, m); return; } // and so does a party battle (a step or two a second)
 
             pl.Burst.RemoveAll(at => now - at >= 10e3);   // at most 40 messages in 10 seconds
             if (pl.Burst.Count > 40) return;

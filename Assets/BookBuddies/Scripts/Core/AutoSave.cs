@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using BookBuddies.Local;
+using BookBuddies.Net;
 using BookBuddies.Tales;
 using BookBuddies.UI;
 using UnityEngine;
@@ -13,7 +14,8 @@ namespace BookBuddies
     /// keeping (a purchase, gear, a pet, a page turned, arriving somewhere) waits for things to settle, makes the JSON on
     /// the main thread and writes the files on a background thread (a temp file, then swapped in), then a small book
     /// blinks in the corner (SaveIcon). BeforeFight saves everything at once. It also saves when the app is paused or
-    /// loses focus, every few minutes, and when the game quits. Main thread only.
+    /// loses focus, every few minutes, and when the game quits. Away from your online account (offline, or in a friend's
+    /// world) each save also sends your coins and pet changes there (CoinBank.AtSave, PetSync) once it answers. Main thread only.
     /// </summary>
     public static class AutoSave
     {
@@ -40,6 +42,7 @@ namespace BookBuddies
         static void SaveAll()
         {
             Settled();
+            ToAccount();
             try
             {
                 if (HasOfflineFile) LocalServer.SaveNow();
@@ -54,6 +57,7 @@ namespace BookBuddies
         static async void SaveSoon(string why, bool blink)
         {
             Settled();
+            ToAccount();
             try
             {
                 PlayerPrefs.Save();
@@ -62,6 +66,17 @@ namespace BookBuddies
             catch (Exception e) { Debug.LogException(e); return; }
             Report(why);
             if (blink) SaveIcon.Blink();
+        }
+
+        // your coins and pet changes go up to your online account (each waits for it to answer its health check)
+        static void ToAccount()
+        {
+            try
+            {
+                CoinBank.AtSave();
+                _ = PetSync.Push();
+            }
+            catch (Exception e) { Debug.LogException(e); }
         }
 
         static bool HasOfflineFile => !string.IsNullOrEmpty(LocalServer.FilePath);

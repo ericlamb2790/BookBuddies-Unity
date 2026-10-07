@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using BookBuddies.Live;
 using BookBuddies.Pets;
 using BookBuddies.Tales;
+using BookBuddies.UI;
 using BookBuddies.World;
 using UnityEngine;
 
@@ -12,19 +13,21 @@ namespace BookBuddies.Road
     /// else whoever came first; PlazaWorld.FoeLead). That game spawns, moves and fights them as usual, but around
     /// everyone in the room, and sends the list a few times a second ("wf" k "s"). The others draw that list and spawn
     /// nothing: each foe is rebuilt from its seed, so its villain, level and look match. When a foe catches anyone, the
-    /// leader starts one fight for everyone close by ("fight"): each of them battles that same pack with their own pet,
-    /// at the same time. The pack is gone once someone wins ("end"), or rests if everyone lost. Online nothing is
-    /// shared: FoeLead is null and the road works as it always has.
+    /// leader starts one fight for everyone close by ("fight", the one caught first, a bigger pack for a bigger party):
+    /// with the party around it's one battle for all of them (PartyBattle), and the cave guardian first asks the whole
+    /// party. The pack is gone once someone wins ("end"), or rests if everyone lost; a guardian whose ready check was
+    /// called off goes home to rest. Online nothing is shared: FoeLead is null and the road works as it always has.
     /// </summary>
     public sealed partial class RoadFoes
     {
         const float ShareEvery = .2f;   // seconds between the leader's lists
         const float JoinRange = 7;      // tiles: everyone this close to the one caught joins the fight
         const float FightTimeout = 240; // seconds before a shared fight nobody reported back on is let go
+        const float GuardianTimeout = 900; // the guardian's: the party's ready check (a minute or more), then a long boss fight
         const float Catchup = 12;       // how quickly a drawn foe closes on where the leader has it
 
         /// <summary>A fight the leader started for several players: its pack, who's in it, and who's reported back.</summary>
-        sealed class Together { public List<int> Pack = new List<int>(), Who = new List<int>(); public int Ended; public bool Won; public float At; }
+        sealed class Together { public List<int> Pack = new List<int>(), Who = new List<int>(); public int Ended; public bool Won, Off, Guardian; public float At; }
 
         readonly HashSet<int> beaten = new HashSet<int>();  // foes beaten here: kept away until the leader's list drops them
         readonly Dictionary<int, Together> together = new Dictionary<int, Together>(); // the leader's shared fights
@@ -73,38 +76,106 @@ namespace BookBuddies.Road
             return false;
         }
 
-        // a foe caught someone: the pack and everyone close by go into one fight together
+        // a foe caught someone: the pack and everyone close by go into one fight together, the one caught first (their game
+        // runs a party fight), with a bigger pack for a bigger party
         void FightTogether(RoadFoe lead, PetActor caught)
         {
             var me = world.Me;
-            var pack = PackOf(lead, caught.Pos);
-            var t = new Together { At = Time.unscaledTime };
-            var ids = new List<object>();
-            foreach (var o in pack) { o.Fighting = true; o.State = RoadFoe.Mood.Idle; o.Path.Clear(); t.Pack.Add(o.Id); ids.Add((double)o.Id); }
+            var t = new Together { At = Time.unscaledTime, Guardian = lead.Guardian };
+            var near = new List<PetActor>(Players(me));
+            near.Remove(caught);
+            near.Insert(0, caught);
             pets.Clear();
-            foreach (var a in Players(me))
+            foreach (var a in near)
                 if (int.TryParse(a.Id, out int n) && Vector2.Distance(a.Pos, caught.Pos) < JoinRange && (a == me ? fight == null && !Busy : !InFight(a.Id)))
                 {
                     t.Who.Add(n);
                     pets.Add((double)n);
                 }
+            var pack = PackOf(lead, caught.Pos, PartyBattle.Active ? t.Who.Count : 1);
+            var ids = new List<object>();
+            foreach (var o in pack) { o.Fighting = true; o.State = RoadFoe.Mood.Idle; o.Path.Clear(); t.Pack.Add(o.Id); ids.Add((double)o.Id); }
             int id = ++lastFight;
             together[id] = t;
             ShareNow(true);
             world.ShareFoes(new Dictionary<string, object> { ["t"] = "wf", ["k"] = "fight", ["f"] = (double)id, ["pack"] = ids, ["who"] = new List<object>(pets) });
-            if (int.TryParse(me.Id, out int mine) && t.Who.Contains(mine)) Engage(pack, id);
+            var who = t.Who.ConvertAll(n => n.ToString());
+            if (who.Contains(me.Id)) Enter(pack, id, who);
         }
 
-        // someone in a shared fight is done (you, or a message from them): a win clears the pack for everyone
-        void Ended(int id, bool won)
+        // into a shared fight; with the party around, the guardian is fought by whoever the one it caught asks
+        void Enter(List<RoadFoe> pack, int id, List<string> who)
+        {
+            if (who[0] != world.Me.Id && PartyBattle.Active && pack.Exists(o => o.Guardian)) Ended(id, false);
+            else Engage(pack, id, who);
+        }
+
+        // the battle: your own, or with the party around one fight for everyone caught (PartyBattle); the guardian asks
+        // the whole party first
+        void Battle(Fight current)
+        {
+            var setup = Setup(current.Pack);
+            bool party = current.Shared > 0 && PartyBattle.Active;
+            if (party && current.Pack.Exists(o => o.Guardian)) AskParty(current, setup);
+            else if (party && current.Who.Count > 1) PartyBattle.Road(current.Shared, current.Who[0], current.Who, setup, current.Screen, o => Finish(current, o));
+            else
+            {
+                ForPets(setup, 1); // alone, no more foes than you'd meet on your own (a shared pack may be made for a party)
+                BattleScreen.Run(setup, current.Screen, o => Finish(current, o));
+            }
+        }
+
+        // the guardian caught you: the party's ready check, while it waits
+        void AskParty(Fight current, BattleSetup setup)
+        {
+            if (wipe) { wipe.Hide(); wipe = null; }
+            var g = current.Pack[0];
+            var info = new ReadyInfo { Icon = g.V.Def.I, Name = g.V.Name, Title = "Cave guardian", Place = setup.Place, Quote = g.V.Def.Say, Level = g.Lvl };
+            info.Lines.Add($"{g.V.Si ?? "⚔️"} Fights with {g.V.Def.An ?? "a heavy hit"} and {g.V.Sn ?? "a special move"}");
+            info.Lines.Add("💢 Rises once more when beaten, angrier than before");
+            PartyBattle.AskBoss("guardian", setup, info, current.Screen, o =>
+            {
+                if (o == null) CalledOff(current);
+                else Finish(current, o);
+            });
+        }
+
+        // the party's ready check was called off: the guardian goes home to rest, and you get a moment to walk away
+        void CalledOff(Fight current)
+        {
+            if (fight != current) return;
+            fight = null;
+            PlazaInput.Locked = false;
+            grace = clock + 7;
+            Ended(current.Shared, false, true);
+        }
+
+        /// <summary>
+        /// The party's fight with the cave guardian, joined from elsewhere in the caves, is over: HP and ink as it left
+        /// them, then the chest or a faint, as if it had caught you. False outside the caves.
+        /// </summary>
+        public bool GuardianFought(BattleOutcome o)
+        {
+            if (!wild.IsCave) return false;
+            RoadVitals.After(!o.Won, o);
+            var pack = foes.FindAll(f => f.Guardian);
+            if (o.Won) Won(pack, true);
+            else Lost(pack);
+            return true;
+        }
+
+        // someone in a shared fight is done (you, or a message from them): a win clears the pack for everyone; off: the
+        // party's ready check for it was called off
+        void Ended(int id, bool won, bool off = false)
         {
             if (!Leading)
             {
-                world.ShareFoes(new Dictionary<string, object> { ["t"] = "wf", ["k"] = "end", ["f"] = (double)id, ["won"] = won ? 1.0 : 0 });
+                world.ShareFoes(new Dictionary<string, object> { ["t"] = "wf", ["k"] = "end", ["f"] = (double)id, ["won"] = won ? 1.0 : 0, ["off"] = off ? 1.0 : 0 });
                 return;
             }
             if (!together.TryGetValue(id, out var t)) return;
             t.Ended++;
+            t.Off |= off;
             if (won && !t.Won)
             {
                 t.Won = true;
@@ -120,7 +191,8 @@ namespace BookBuddies.Road
             if (t.Ended >= t.Who.Count) Release(id);
         }
 
-        // a shared fight is over for everyone: whatever's left of its pack rests a moment, then roams again
+        // a shared fight is over for everyone: whatever's left of its pack rests a moment, then roams again (called off,
+        // back home first and a longer rest)
         void Release(int id)
         {
             if (!together.TryGetValue(id, out var t)) return;
@@ -129,7 +201,12 @@ namespace BookBuddies.Road
             {
                 var o = foes.Find(x => x.Id == f);
                 if (o == null || fight != null && fight.Pack.Contains(o)) continue;
-                o.Fighting = false; o.State = RoadFoe.Mood.Idle; o.Stun = clock + 3;
+                o.Fighting = false; o.State = RoadFoe.Mood.Idle; o.Stun = clock + (t.Off ? 10 : 3);
+                if (!t.Off) continue;
+                Fx.Poof(o.Pos);
+                o.Path.Clear();
+                o.Pos = new Vector2(o.Home.x + .5f, o.Home.y + .5f);
+                Fx.Poof(o.Pos);
             }
         }
 
@@ -137,7 +214,7 @@ namespace BookBuddies.Road
         void ShareNow(bool now)
         {
             foreach (var kv in new List<KeyValuePair<int, Together>>(together))
-                if (Time.unscaledTime - kv.Value.At > FightTimeout) Release(kv.Key);
+                if (Time.unscaledTime - kv.Value.At > (kv.Value.Guardian ? GuardianTimeout : FightTimeout)) Release(kv.Key);
             if (!now && Time.unscaledTime < shareAt) return;
             shareAt = Time.unscaledTime + ShareEvery;
             var list = new List<object>();
@@ -160,7 +237,7 @@ namespace BookBuddies.Road
             {
                 case "s": if (!Leading && from.Id == world.FoeLead) Take(m); break;
                 case "fight": if (from.Id == world.FoeLead) Join(m); break;
-                case "end": if (Leading) Ended(m.Int("f"), m.Truthy("won")); break;
+                case "end": if (Leading) Ended(m.Int("f"), m.Truthy("won"), m.Truthy("off")); break;
             }
         }
 
@@ -197,16 +274,16 @@ namespace BookBuddies.Road
         void Join(Dictionary<string, object> m)
         {
             var me = world.Me;
-            if (me == null || !int.TryParse(me.Id, out int mine)) return;
-            bool mineToo = false;
-            foreach (var o in m.Arr("who")) if (o is double d && (int)d == mine) mineToo = true;
-            if (!mineToo) return;
+            if (me == null) return;
+            var who = new List<string>();
+            foreach (var o in m.Arr("who")) if (o is double d) who.Add(((int)d).ToString());
+            if (!who.Contains(me.Id)) return;
             if (fight != null || Busy) { Ended(m.Int("f"), false); return; } // can't come right now: counted out
             var pack = new List<RoadFoe>();
             foreach (var o in m.Arr("pack"))
                 if (o is double d) { var f = foes.Find(x => x.Id == (int)d); if (f != null) pack.Add(f); }
             if (pack.Count == 0) { Ended(m.Int("f"), false); return; } // nothing here to fight: count you out
-            Engage(pack, m.Int("f"));
+            Enter(pack, m.Int("f"), who);
         }
 
         // drawing the leader's foes between lists, and the grass rustling under everyone

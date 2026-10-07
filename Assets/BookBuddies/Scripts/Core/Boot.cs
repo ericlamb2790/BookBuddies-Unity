@@ -62,8 +62,9 @@ namespace BookBuddies
 
         IEnumerator Start()
         {
-            // back from a friend's world to your own server, before anything signs in (your buddy comes home meanwhile)
-            var home = Settings.IsWorld ? BBApi.UseServer(Settings.OnlineServer) : Task.CompletedTask;
+            // every launch starts online (the title's light shows the site): back from offline play or a friend's world before
+            // anything signs in (your buddy comes home meanwhile); offline and hosting are picked from Play
+            var home = Settings.IsWorld || Settings.IsLocal ? BBApi.UseServer(Settings.OnlineServer) : Task.CompletedTask;
             GameSettings.Apply();
             Sound.Init();
             UiKit.EnsureEventSystem();
@@ -71,6 +72,7 @@ namespace BookBuddies
             RoadSpots.Register(() => world);
             TownSpots.Register(() => world);
             BossSpots.Register(() => world);
+            PartyBattle.Register(() => world);
             TownShop.Register();
             SpotActions.Register("tales", _ => TalesUi.OpenTales());
             var loading = LoadingScreen.Show(Buddy.ShownLook, "Opening the storybook…");
@@ -344,10 +346,13 @@ namespace BookBuddies
 
         // ---- offline coins ----
 
-        // ends the offline session (if one is open) and banks every finished one in the background
+        // ends the offline session (if one is open) and banks every finished one in the background; in a friend's world
+        // your coins there come home first
         static void BankOfflineCoins()
         {
             CoinBank.EndSession();
+            _ = CoinBank.AtSave(true);
+            _ = PetSync.Push(true);
             _ = CoinBank.SyncAll();
         }
 

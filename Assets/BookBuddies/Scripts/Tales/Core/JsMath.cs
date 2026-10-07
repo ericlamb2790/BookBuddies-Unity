@@ -109,6 +109,15 @@ namespace BookBuddies.Tales
         }
     }
 
+    /// <summary>A shared fight's random numbers: mulberry32, seeded again before each step with the captain's seed.</summary>
+    public sealed class StepRng : IRng
+    {
+        Mulberry32 m;
+        public StepRng(uint seed) { Seed(seed); }
+        public void Seed(uint seed) { m = new Mulberry32(seed); }
+        public double Next() => m.Next();
+    }
+
     /// <summary>The Plaza map generator's rnd(): Park–Miller.</summary>
     public sealed class ParkMiller
     {

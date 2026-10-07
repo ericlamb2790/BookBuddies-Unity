@@ -191,7 +191,7 @@ namespace BookBuddies.Tales
                     for (int j = 0; j < n; j++)
                     {
                         var v = team != null && team.Length > 0 ? team[j % team.Length] : FoeFactory.Plain(rng.Pick(TalesData.Current.Minions));
-                        Foes.Add(FoeFactory.Make(v, f.Lvl, false, true, "fr" + f.Phase + j, 1, rng));
+                        AddFoe(FoeFactory.Make(v, f.Lvl, false, true, "fr" + f.Phase + j, 1, rng));
                     }
                     break;
             }

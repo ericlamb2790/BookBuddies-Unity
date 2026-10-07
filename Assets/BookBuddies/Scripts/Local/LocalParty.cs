@@ -12,7 +12,8 @@ namespace BookBuddies.Local
     /// <summary>
     /// The open world's party: the host (Leader) plus every visitor who has signed in to a request or come into town
     /// since the world opened. A visitor counts as online while they're in town or for 2 minutes after their last
-    /// request, and leaves the party after 10 minutes offline. GET /api/party shows it; "psay" in town is its chat, and
+    /// request, and leaves the party after 10 minutes offline. GET /api/party shows it; "psay" in town is its chat, "pb"
+    /// carries its shared battles (PartyBattle), and
     /// {"t":"party"} tells members' games to fetch it again whenever someone joins, leaves, goes on or offline, or moves
     /// (at most once a second, so someone hopping in and out of town can't set every member's game asking nonstop).
     /// </summary>
@@ -172,6 +173,17 @@ namespace BookBuddies.Local
             chat.Add(new Msg { ["n"] = n, ["from"] = pid, ["name"] = name, ["text"] = text, ["at"] = LocalServer.Now });
             if (chat.Count > ChatKept) chat.RemoveAt(0);
             LocalTowns.Tell(InParty, Json.Write(new Msg { ["t"] = "psay", ["from"] = pid, ["name"] = name, ["text"] = text, ["n"] = n }));
+        }
+
+        /// <summary>
+        /// LocalTown: a member's party battle message ("pb": a ready check, its answers, a fight's steps). It reaches every
+        /// other member in any town, marked with the sender's account id; anyone else's is ignored.
+        /// </summary>
+        internal static void Battle(string pid, Msg m)
+        {
+            if (!Has(pid)) return;
+            m["id"] = pid;
+            LocalTowns.Tell(to => to != pid && InParty(to), Json.Write(m));
         }
 
         // ---- inside ----

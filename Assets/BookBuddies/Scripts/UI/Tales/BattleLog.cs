@@ -7,7 +7,8 @@ namespace BookBuddies.Tales
 {
     /// <summary>
     /// The fight log: every event as a line (the site's flogAdd), kept as the fight goes, shown newest first in a paper
-    /// sheet on the right with round headers and rows tinted by side. The fight waits while it's open; B closes it.
+    /// sheet on the right with round headers and rows tinted by side. A fight of your own waits while it's open (a party
+    /// fight carries on); B closes it.
     /// </summary>
     public sealed class BattleLog : MonoBehaviour
     {
@@ -17,15 +18,17 @@ namespace BookBuddies.Tales
         readonly List<(int round, string icon, string text, BattleText.Side side)> rows = new List<(int, string, string, BattleText.Side)>();
         BattleEngine engine;
         RectTransform sheet;
+        bool shared;
 
         /// <summary>True while the sheet is showing.</summary>
         public bool IsOpen => sheet != null;
 
-        /// <summary>The log for a fight, living on the battle screen's object.</summary>
-        public static BattleLog Create(GameObject host, BattleEngine engine)
+        /// <summary>The log for a fight, living on the battle screen's object (shared: a party fight, which never waits).</summary>
+        public static BattleLog Create(GameObject host, BattleEngine engine, bool shared)
         {
             var log = host.AddComponent<BattleLog>();
             log.engine = engine;
+            log.shared = shared;
             return log;
         }
 
@@ -63,7 +66,7 @@ namespace BookBuddies.Tales
             UiKit.Shadow(card, 18, 30, 10, .35f);
             UiKit.Column(card, 12, new RectOffset(24, 24, 18, 22));
             UiKit.Header(card, "Fight log", Close);
-            UiKit.Label(card, $"Round {Mathf.Max(1, engine.Round)} · newest first. The fight waits while this is open.", UiKit.SmallSize, Palette.InkSoft);
+            UiKit.Label(card, $"Round {Mathf.Max(1, engine.Round)} · newest first.{(shared ? "" : " The fight waits while this is open.")}", UiKit.SmallSize, Palette.InkSoft);
             var list = UiKit.ScrollColumn(card, 6, new RectOffset(0, 6, 0, 0), out _);
             UiKit.Size(list.parent, -1, 0).flexibleHeight = 1;
             Rows(list);

@@ -140,7 +140,7 @@ namespace BookBuddies.UI
             bool signedIn = Settings.SignedIn;
             string name = Buddy.Name.Length > 0 ? Buddy.Name : "a reader";
             if (Settings.IsLocal) OfflineAccount(signedIn, name);
-            else if (Settings.IsWorld) Note($"Visiting {Settings.WorldName} as {name}. Coins you find there stay in that world. Choose “Leave this world” on the title screen to head home.");
+            else if (Settings.IsWorld) Note($"Visiting {Settings.WorldName} as {name}. Coins you find there and changes to your pets come home to your account. Choose “Leave this world” on the title screen to head home.");
             else OnlineAccount(signedIn, name);
 
             // where your buddy lives: the main server, the dev one, an address of your own (typed below) or this PC

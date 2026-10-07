@@ -1,6 +1,7 @@
 // Ports Server/src/wallet.js:1-224 (the ledgers, payload, GET /wallet, POST /wallet/earn and /wallet/spend, priceOf,
 // metaPrice, stockPrice) and db.js:74-76 (etDay). Adds the offline purse's sessions: the coins found offline that
-// Net/CoinBank banks into the online wallet when a session ends (POST /api/wallet/bank on the online Worker).
+// Net/CoinBank banks into the online wallet when a session ends (POST /api/wallet/bank on the online Worker), and
+// POST /wallet/carry, which hands a visitor's sessions in a hosted world to their own game to bank the same way.
 
 using System;
 using System.Collections.Generic;
@@ -201,6 +202,7 @@ namespace BookBuddies.Local
                 Add(me.Coins, "starter", "once", Econ.Starter);
                 return Payload(me);
             }
+            if (path == "/wallet/carry" && method == "POST") return Carry(me, body);
             if (method != "POST" || (path != "/wallet/earn" && path != "/wallet/spend")) throw new LocalProblem("Not found", 404);
             Add(me.Coins, "starter", "once", Econ.Starter);
             var extra = path == "/wallet/earn" ? Earn(me, body) : Spend(me, body);
@@ -391,6 +393,23 @@ namespace BookBuddies.Local
             s.Synced = true;
             Prune(p);
             LocalServer.Store.Touch();
+        }
+
+        /// <summary>
+        /// POST /wallet/carry, from a visitor's game in a hosted world: first what their game banked online from sessions it
+        /// carried before ({settled: [{session, banked}]}, those coins leave this purse, the rest stay), then their open session
+        /// closes, and the reply is the payload plus every closed session still to bank ({sessions: [{session, days, total}]}),
+        /// which their game takes home and banks with its own online sign-in, so coins found here aren't lost with the world.
+        /// </summary>
+        static Dictionary<string, object> Carry(LocalPlayer me, Dictionary<string, object> body)
+        {
+            foreach (var o in body.Arr("settled"))
+                if (o is Dictionary<string, object> d && me.Sessions.Find(x => x.Id == d.Str("session")) is LocalSession s && s.Closed)
+                    Banked(me.Id, s.Id, Math.Max(0, Math.Min(d.Int("banked"), s.Total)));
+            CloseSession(me.Id);
+            var reply = Payload(me);
+            reply["sessions"] = Unsynced(me.Id).Select(s => (object)s.BankBody()).ToList();
+            return reply;
         }
 
         static LocalSession Open(LocalPlayer p) => p.Sessions.Count > 0 && !p.Sessions[p.Sessions.Count - 1].Closed ? p.Sessions[p.Sessions.Count - 1] : null;

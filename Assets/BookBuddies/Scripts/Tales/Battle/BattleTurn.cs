@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace BookBuddies.Tales
 {
-    // One unit's turn: damage over time and regen, stun, status decay, then a move; foes may also wind up or land a zone slam
+    // One unit's turn: damage over time and regen, stun, status decay, then a move; foes may also jump lanes, wind up or land a zone slam
     public sealed partial class BattleEngine
     {
         (string foe, char zone, int round)? slam;
@@ -14,7 +14,9 @@ namespace BookBuddies.Tales
         {
             if (!u.IsFoe) return BaseTurn(u, out _);
             if (slam != null && FoeGone(slam.Value.foe)) slam = null;
+            var jump = u.S("stun") == 0 ? Jump(u) : null;
             var evs = BaseTurn(u, out var action);
+            if (jump != null) evs.Insert(0, jump);
             if (Dead(u) || u.S("stun") != 0 || action == null || action.Kind == "shield") return evs;
             // the site swaps the foe's action event for the slam one although the action still happened; we show both
             if (slam != null && slam.Value.foe == u.Key) evs.Add(GroundSlam(u));
@@ -23,6 +25,32 @@ namespace BookBuddies.Tales
         }
 
         bool FoeGone(string key) { var f = Find(key); return f == null || Dead(f); }
+
+        // foes move too (not the site's): one with no pet in its lane may jump to the lane with the most pets, and now
+        // and then one hops a lane over; a boss holds the center and nobody jumps while a slam is coming. Pets left with
+        // no foe in their lane follow it.
+        BattleEvent Jump(BattleUnit u)
+        {
+            if (u.Boss || slam != null) return null;
+            var pets = LiveHeroes();
+            char from = u.Lane;
+            bool alone = !pets.Exists(h => h.Lane == from);
+            if (pets.Count == 0 || rng.Next() >= (alone ? .2 : .05)) return null;
+            char to = from;
+            if (alone)
+            {
+                int most = 0;
+                foreach (char z in Lanes) { int n = pets.FindAll(h => h.Lane == z).Count; if (n > most) { most = n; to = z; } }
+            }
+            else to = from != 'c' ? 'c' : rng.Next() < .5 ? 'l' : 'r';
+            if (to == from) return null;
+            u.Lane = to;
+            var e = new BattleEvent { Kind = "jump", Actor = u.Key, Name = "Jumps lanes", Icon = "↔️", Foe = true, Zone = to.ToString() };
+            e.Pops.Add(Pop(u.Key, "↔️ Jumps lanes"));
+            if (FoesIn(from) == 0)
+                foreach (var h in pets) if (h.Lane == from) { SetLane(h, to); e.Pops.Add(Pop(h.Key, "🐾 Follows")); }
+            return e;
+        }
 
         // the site's turn(u): returns the events, and the move's own event (or null) as action
         List<BattleEvent> BaseTurn(BattleUnit u, out BattleEvent action)

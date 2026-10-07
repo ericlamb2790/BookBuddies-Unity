@@ -50,6 +50,12 @@ namespace BookBuddies.Tales
 
         internal static T Find<T>() where T : TalesScreen => open.Find(s => s is T) as T;
 
+        /// <summary>Closes every open screen (a party battle is opening for you; a tale waits in the library).</summary>
+        internal static void CloseAll()
+        {
+            foreach (var s in open.ToArray()) s.Close();
+        }
+
         /// <summary>
         /// A shortcut pressed this frame for an open screen. PlazaInput.Down answers only Back while Locked (it guards the
         /// town), so the screen asks with the lock lifted for that one read.

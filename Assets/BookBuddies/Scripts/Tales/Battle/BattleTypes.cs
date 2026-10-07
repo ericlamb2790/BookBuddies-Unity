@@ -113,6 +113,18 @@ namespace BookBuddies.Tales
         public string Sub;                   // rise: what the boss gained ("hits much harder")
     }
 
+    /// <summary>One pet in a shared party fight: its player and the pet as that player's game built it.</summary>
+    public sealed class PartyHero
+    {
+        public string Pid, Owner;            // the player's account id and display name
+        public BattleUnit Unit;              // built by its own game (HeroFactory.Build), key "h:" + Pid
+        public double HpFrac = 1;            // the road's HP fraction for that pet
+        public int Ink;                      // ink carried in
+    }
+
+    /// <summary>A player's input in a shared fight: Act "ult" (the Ultimate), "lane" (move to Lane) or "cheer", for the hero keyed Hero.</summary>
+    public struct BattleInput { public string Hero, Act; public char Lane; }
+
     /// <summary>What Bramble Road hands the battle (the site's sp for wildRun).</summary>
     public sealed class BattleSetup
     {
@@ -129,6 +141,8 @@ namespace BookBuddies.Tales
         public string Look, PetName;         // your buddy (Buddy.Look / Buddy.Name): the engine builds the hero with HeroFactory.Build
         public BattleUnit Hero;              // or a ready-made hero (tests, previews); wins over Look
         public TaleBattle Tale;              // a fight inside a tale (EpicBattle.Setup); null = a wild fight
+        public readonly List<PartyHero> Party = new List<PartyHero>(); // a shared party fight's pets, in the same order in every game; empty: a fight of your own (Look/Hero)
+        public string Me;                    // the Unit key this game plays; null: Party[0]
     }
 
     /// <summary>

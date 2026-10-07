@@ -33,6 +33,18 @@ namespace BookBuddies.UI
         static readonly Dictionary<string, Member> known = new Dictionary<string, Member>();
         static string knownServer;
 
+        /// <summary>Your account id in the party, from the last list (empty while you're in none).</summary>
+        public static string You { get; private set; } = "";
+
+        /// <summary>The party as last fetched, in its order (the leader first): who, their pet, whether they lead, whether they're online and where.</summary>
+        public static List<(string id, string name, string look, bool leader, bool online, string town)> Members()
+        {
+            var list = new List<(string id, string name, string look, bool leader, bool online, string town)>();
+            if (knownServer == Settings.Server)
+                foreach (var m in known.Values) list.Add((m.Id, m.Name, m.Look, m.Leader, m.Online, m.Town));
+            return list;
+        }
+
         PlazaWorld world;
         PlazaNetwork net;
         RectTransform card, list, view;
@@ -40,7 +52,7 @@ namespace BookBuddies.UI
         Text title;
         RectTransform arrow;
         readonly List<Member> members = new List<Member>();
-        string you, shown;
+        string shown;
         bool folded, asking, again;
         float fetchAt, checkAt, top, floor;
         LiveState lastState;
@@ -169,7 +181,7 @@ namespace BookBuddies.UI
         void Show(Dictionary<string, object> party)
         {
             var now = new List<Member>();
-            you = party.Str("you");
+            You = party.Str("you");
             foreach (var o in party.Arr("members"))
                 if (o is Dictionary<string, object> m && m.Str("id").Length > 0)
                     now.Add(new Member
@@ -190,13 +202,13 @@ namespace BookBuddies.UI
             if (first && now.Count > 1) // a banner the first time, so nobody wonders whether the party formed
             {
                 var lead = now.Find(m => m.Leader);
-                world.Announce(lead == null || lead.Id == you ? "🎉 Your party is together" : $"🎉 You’re in {lead.Name}’s party", $"{now.Count} in the party · the party card shows where everyone is");
+                world.Announce(lead == null || lead.Id == You ? "🎉 Your party is together" : $"🎉 You’re in {lead.Name}’s party", $"{now.Count} in the party · the party card shows where everyone is");
             }
             if (!first && now.Count > 0)
             {
                 foreach (var m in now)
                 {
-                    if (m.Id == you) continue;
+                    if (m.Id == You) continue;
                     if (!known.TryGetValue(m.Id, out var was)) world.Announce($"🎉 {m.Name} joined your party", $"{now.Count} in the party");
                     else if (Here(m) && !Here(was)) world.Notify($"🐾 {m.Name} is here");
                 }
@@ -254,9 +266,9 @@ namespace BookBuddies.UI
             UiKit.Row(line, 4);
             OneLine(line, m.Name, UiKit.BodySize - 1, Palette.Ink, UiKit.Bold);
             if (m.Leader) UiKit.Icon(line, "👑", 18);
-            OneLine(words, Where(m), UiKit.SmallSize, Here(m) && m.Id != you ? UiKit.LeafInk : Palette.InkSoft, UiKit.Body);
+            OneLine(words, Where(m), UiKit.SmallSize, Here(m) && m.Id != You ? UiKit.LeafInk : Palette.InkSoft, UiKit.Body);
 
-            if (m.Online && m.Id != you && m.Town.Length > 0 && m.Town != world.Map.Key)
+            if (m.Online && m.Id != You && m.Town.Length > 0 && m.Town != world.Map.Key)
             {
                 var go = UiKit.Primary(row, "Go", () => GoTo(m), null, 44);
                 go.navigation = new Navigation { mode = Navigation.Mode.None };
@@ -272,7 +284,7 @@ namespace BookBuddies.UI
         }
 
         string Where(Member m) =>
-            m.Id == you ? "You" : !m.Online ? "Away" : Here(m) ? "Here" : m.Town.Length == 0 ? "Not in town" : Boot.PlaceName(m.Town);
+            m.Id == You ? "You" : !m.Online ? "Away" : Here(m) ? "Here" : m.Town.Length == 0 ? "Not in town" : Boot.PlaceName(m.Town);
 
         // off to a member's town (by train when it's a town, on foot to the road or the caves)
         void GoTo(Member m)

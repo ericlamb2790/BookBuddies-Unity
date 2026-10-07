@@ -34,11 +34,11 @@ namespace BookBuddies.Tales
             return live.Count == 0 || live.Contains(lane);
         }
 
-        // a pet's lane is kept for its next fight
+        // your pet's lane is kept for its next fight
         void SetLane(BattleUnit hero, char lane)
         {
             hero.Lane = lane;
-            if (save != null && hero == Heroes[0]) save.Me.Lane = lane.ToString();
+            if (save != null && hero == Me) save.Me.Lane = lane.ToString();
         }
 
         // laneInit: new foes take the lane with the fewest live foes from a pool; a boss holds the center

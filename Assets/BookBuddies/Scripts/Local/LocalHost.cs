@@ -22,7 +22,8 @@ namespace BookBuddies.Local
 {
     /// <summary>
     /// Opens this PC's offline world to friends' games. They sign up here (their own account, pets and coins in this
-    /// world), use the same /api routes as the online server, and join the live rooms over a WebSocket. Start, Stop
+    /// world; their games carry those coins home with POST /wallet/carry), use the same /api routes as the online server,
+    /// and join the live rooms over a WebSocket. Start, Stop
     /// and Pump belong to the main thread, and Pump must run every frame while the world is open: requests and town
     /// messages are only ever handled inside it, because LocalServer and LocalTowns aren't thread-safe. Everyone who
     /// visits is in the host's party (LocalParty) while the world is open.
