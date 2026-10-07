@@ -8,16 +8,15 @@ using UnityEngine.UI;
 namespace BookBuddies.Tales
 {
     /// <summary>
-    /// The battle field: the arena sky, drifting motes, three lanes as rows (top, middle, bottom) with pets on the left
-    /// and foes on the right, cover, and every fighter placed so nothing overlaps: foes in a lane share its width
-    /// (more foes, smaller each), a boss holds the middle lane bigger and further back, and nameplates never collide.
+    /// The battle field: the arena sky, drifting motes, three lanes as columns (left, centre, right) with the pet at the
+    /// foot of its column and foes above, cover, and every fighter placed so nothing overlaps: foes in a column share it
+    /// two to a row (more foes, smaller each), a boss takes the top of its column bigger, and nameplates stay inside it.
     /// Positions are reference pixels from the bottom-left of the safe area.
     /// </summary>
     public sealed class BattleStage : MonoBehaviour, IPointerClickHandler
     {
         const string LaneKeys = "lcr";
-        static readonly float[] Depth = { .9f, .95f, 1f }; // the top lane is a little further away
-        const float PlateHeight = 96, MinPlate = 104, MaxPlate = 260;
+        const float PlateHeight = 96, MinPlate = 104, MaxPlate = 260, LabelRoom = 40, Gutter = 10;
         static readonly Color Rose = Palette.Hex("#ff6a5a"), Gold = Palette.Hex("#ffd27a");
 
         /// <summary>Effects go here (same coordinates as the fighters).</summary>
@@ -115,7 +114,11 @@ namespace BookBuddies.Tales
             stripes[i] = s;
             outlines[i] = UiKit.Outline(band, Gold.WithAlpha(0), 18, 2);
             var label = UiKit.Label(band.transform, "", 15, Color.white.WithAlpha(.6f), UiKit.Bold, TextAnchor.MiddleCenter);
-            label.rectTransform.Fill();
+            var lr = label.rectTransform; // the column's head
+            lr.anchorMin = new Vector2(0, 1);
+            lr.anchorMax = lr.pivot = Vector2.one;
+            lr.anchoredPosition = Vector2.zero;
+            lr.sizeDelta = new Vector2(0, LabelRoom);
             label.horizontalOverflow = HorizontalWrapMode.Overflow;
             labels[i] = label;
         }
@@ -181,14 +184,16 @@ namespace BookBuddies.Tales
 
         public IEnumerable<BattleUnitView> Views => views.Values;
 
-        /// <summary>Lane l, c or r as a rectangle on the field.</summary>
+        /// <summary>Lane l, c or r as a rectangle (a column) on the field.</summary>
         public Rect Band(char lane)
         {
             var (top, bottom) = Bounds();
-            float h = (top - bottom) / 3;
+            float w = ColumnWidth;
             int i = Mathf.Max(0, LaneKeys.IndexOf(lane));
-            return new Rect(Width * .02f, top - (i + 1) * h, Width * .96f, h);
+            return new Rect(Width * .02f + i * (w + Gutter), bottom, w, top - bottom);
         }
+
+        float ColumnWidth => (Width * .96f - Gutter * 2) / 3;
 
         (float top, float bottom) Bounds()
         {
@@ -196,13 +201,9 @@ namespace BookBuddies.Tales
             return (h - Mathf.Clamp(h * .11f, 64, 120), Mathf.Clamp(h * .15f, 96, 168));
         }
 
-        /// <summary>The lane under a point on the field (rows; above the top lane counts as top).</summary>
-        public char LaneAt(Vector2 at)
-        {
-            var (top, bottom) = Bounds();
-            int i = Mathf.Clamp((int)((top - at.y) / ((top - bottom) / 3)), 0, 2);
-            return LaneKeys[i];
-        }
+        /// <summary>The lane under a point on the field (columns; past either edge counts as the nearest).</summary>
+        public char LaneAt(Vector2 at) =>
+            LaneKeys[Mathf.Clamp((int)((at.x - Width * .02f) / (ColumnWidth + Gutter)), 0, 2)];
 
         public void OnPointerClick(PointerEventData e)
         {
@@ -239,8 +240,8 @@ namespace BookBuddies.Tales
                 char z = LaneKeys[i];
                 var r = Band(z);
                 var band = bands[i].rectTransform;
-                band.anchoredPosition = new Vector2(r.x, r.y + 4);
-                band.sizeDelta = new Vector2(r.width, r.height - 8);
+                band.anchoredPosition = new Vector2(r.x, r.y);
+                band.sizeDelta = new Vector2(r.width, r.height);
                 bool mine = me != null && !me.Ko && me.Lane == z, hasFoes = FoesIn(z) > 0;
                 bool slammed = slam != null && slam[0] == z, open = slam != null && !slammed && !hasFoes;
                 float pulse = .5f + .5f * Mathf.Sin(Time.time * Mathf.PI / .7f);
@@ -260,50 +261,58 @@ namespace BookBuddies.Tales
             return n;
         }
 
+        // each column: the pet stands at its foot, foes fill the room above in rows of two (a boss gets the top row
+        // alone and half as tall again), and every nameplate sits under its fighter inside the column
         void Layout(bool instant)
         {
             var (top, bottom) = Bounds();
-            float laneH = (top - bottom) / 3, sprite = Mathf.Max(40, laneH - PlateHeight - 12);
-            bool tall = Height > Width;
-            float heroX = Width * (tall ? .2f : .24f), x0 = Width * (tall ? .46f : .53f), x1 = Width * .96f;
+            float colW = ColumnWidth, height = top - bottom;
+            float heroRoom = Mathf.Clamp(height * .36f, PlateHeight + 60, PlateHeight + 250);
+            float heroSize = Mathf.Max(40, Mathf.Min(heroRoom - PlateHeight - 12, colW * .62f, 230));
+            float heroFeet = bottom + PlateHeight + 6;
 
             foreach (var h in engine.Heroes)
             {
-                var v = View(h.Key);
-                int i = LaneKeys.IndexOf(h.Lane);
-                float size = Mathf.Min(sprite * Depth[i], 230, Width * .3f);
-                Put(v, h.Lane, new Vector2(heroX, FeetY(i, top, laneH, sprite, size)), size, Mathf.Clamp(size + 24, MinPlate, MaxPlate), false, instant);
+                var r = Band(h.Lane);
+                Put(View(h.Key), h.Lane, new Vector2(r.center.x, heroFeet), heroSize, Mathf.Clamp(heroSize + 24, MinPlate, Mathf.Min(MaxPlate, colW - 8)), false, instant);
             }
-            if (cover != null) PlaceCover(heroX, top, laneH, sprite);
+            if (cover != null)
+            {
+                float size = heroSize * 1.25f;
+                cover.anchoredPosition = new Vector2(Band(engine.CoverZone[0]).center.x, heroFeet);
+                cover.sizeDelta = new Vector2(size, size);
+            }
 
             var shown = new List<BattleUnitView>();
             foreach (var f in engine.Foes) { var v = View(f.Key); if (v != null && !v.ShownKo) shown.Add(v); }
-            var boss = shown.Find(v => v.Unit.Boss);
-            float split = boss != null ? x0 + (x1 - x0) * .38f : x1;
-            if (boss != null)
+            float foeTop = top - LabelRoom, foeBottom = bottom + heroRoom;
+            foreach (char z in LaneKeys)
             {
-                float size = Mathf.Min(laneH * 1.55f, (x1 - split) * .92f, 340);
-                int bi = LaneKeys.IndexOf(boss.Unit.Lane);
-                Put(boss, boss.Unit.Lane, new Vector2((split + x1) / 2, FeetY(bi, top, laneH, sprite, size)), size, Mathf.Clamp(size * .8f, 150, MaxPlate), false, instant);
-            }
-            for (int i = 0; i < 3; i++)
-            {
-                char z = LaneKeys[i];
-                var row = shown.FindAll(v => v != boss && v.Unit.Lane == z);
-                float slot = (split - x0) / Mathf.Max(1, row.Count);
-                for (int k = 0; k < row.Count; k++)
+                var col = shown.FindAll(v => v.Unit.Lane == z);
+                var boss = col.Find(v => v.Unit.Boss);
+                if (boss != null) col.Remove(boss);
+                int rows = (col.Count + 1) / 2;
+                float unit = (foeTop - foeBottom) / Mathf.Max(1, rows + (boss != null ? 1.5f : 0));
+                float x0 = Band(z).x, y = foeTop;
+                if (boss != null)
                 {
-                    float size = Mathf.Min(sprite * Depth[i], slot * .9f, 220);
+                    float room = unit * (rows > 0 ? 1.5f : 1);
+                    float size = Mathf.Max(40, Mathf.Min(room - PlateHeight - 8, colW * .9f, 340));
+                    y -= room;
+                    Put(boss, z, new Vector2(x0 + colW / 2, y + PlateHeight + 4), size, Mathf.Clamp(size * .8f, 150, Mathf.Min(MaxPlate, colW - 8)), false, instant);
+                }
+                for (int k = 0; k < col.Count; k++)
+                {
+                    int inRow = Mathf.Min(2, col.Count - k / 2 * 2);
+                    if (k % 2 == 0) y -= unit;
+                    float slot = colW / inRow;
+                    float size = Mathf.Max(40, Mathf.Min(unit - PlateHeight - 8, slot * .88f, 220));
                     float plate = Mathf.Min(Mathf.Clamp(size + 20, MinPlate, MaxPlate), slot - 8);
-                    Put(row[k], z, new Vector2(x0 + slot * (k + .5f), FeetY(i, top, laneH, sprite, size)), size, plate, row.Count > 1, instant);
+                    Put(col[k], z, new Vector2(x0 + slot * (k % 2 + .5f), y + PlateHeight + 4), size, plate, inRow > 1, instant);
                 }
             }
             SortByLane();
         }
-
-        // feet in lane i: the nameplate sits inside the lane's bottom edge and the art is centred in the room above it
-        static float FeetY(int i, float top, float laneH, float sprite, float size) =>
-            top - (i + 1) * laneH + PlateHeight + 6 + Mathf.Max(0, sprite - size) / 2;
 
         void Put(BattleUnitView v, char lane, Vector2 feet, float size, float plate, bool dense, bool instant)
         {
@@ -313,15 +322,7 @@ namespace BookBuddies.Tales
             v.Place(feet, size, plate, dense, instant, moved);
         }
 
-        void PlaceCover(float heroX, float top, float laneH, float sprite)
-        {
-            int i = LaneKeys.IndexOf(engine.CoverZone[0]);
-            float size = sprite * Depth[i] * 1.25f;
-            cover.anchoredPosition = new Vector2(heroX, FeetY(i, top, laneH, sprite, sprite * Depth[i]));
-            cover.sizeDelta = new Vector2(size, size);
-        }
-
-        // lower lanes draw over upper ones, so a bigger fighter never hides a nameplate below it
+        // left to right; columns don't overlap, so this only keeps the order steady
         void SortByLane()
         {
             int n = 0;
