@@ -8,8 +8,9 @@ using UnityEngine.UI;
 namespace BookBuddies.UI
 {
     /// <summary>
-    /// The title's "Host or join a world" card. Hosting opens your offline world to other PCs (HostRunner) and shows its
-    /// join code while friends visit. Joining takes a friend's code or address, or a world heard on your network
+    /// The title's "Host or join a world" card. Hosting takes two steps: set your world up (its name, and whether PCs on
+    /// your network see it in their list), then open your offline world to other PCs (HostRunner); while it's open the
+    /// card shows its join code and visitors, and "Enter my world" takes you in. Joining takes a friend's code or address, or a world heard on your network
     /// (LocalBeacon), checks it's there, then switches to it with your buddy and pets (BBApi.UseServer). It all travels
     /// over your own network, or a port the host forwards: nothing goes through bookbuddies.pet.
     /// </summary>
@@ -17,18 +18,19 @@ namespace BookBuddies.UI
     {
         const float LookEvery = .5f;   // seconds between looks at your visitors and the worlds nearby
         const float CopiedFor = 1.5f;  // seconds "Copied!" stays on the copy button
+        static readonly string[] FindNames = { "Your network", "Code only" };
 
         Sheet sheet;
         System.Action joined, changed;
-        RectTransform idle, hosting, nearby;
-        Button openWorld, copy;
-        Text openLabel, hostError, code, copyLabel, visitors, portNote, joinStatus;
-        InputField field;
+        RectTransform idle, setup, hosting, nearby;
+        Button setUp, openWorld, enter, copy;
+        Text openLabel, findNote, hostError, code, copyLabel, visitors, portNote, joinStatus;
+        InputField field, worldName;
         LocalBeacon listener;
         List<string> addresses = new List<string>(); // this PC's, looked up as the card opens and as your world opens
         string nearbyShown;
         float lookAt, copiedAt = -99;
-        bool busy;
+        bool busy, settingUp, listed = true;
 
         /// <summary>
         /// The card, closed. "joined" runs once you've switched to a friend's world (the card closes first); "changed"
@@ -51,13 +53,28 @@ namespace BookBuddies.UI
 
         void Build(RectTransform card)
         {
-            // host: one line on what it does and the button, or the open world's code and visitors
+            // host: what it does, then setting it up and opening it, then the open world's code and visitors
             Heading(card, "Host your world");
             idle = Group(card);
             Line(idle, "Friends play in your offline world on this PC. Your buddy, pets and coins stay yours.");
-            openWorld = UiKit.Primary(idle, "Open my world", Host, "🏡", 52);
+            setUp = UiKit.Primary(idle, "Set up my world", () => SetUp(true), "🏡", 52);
+
+            setup = Group(card);
+            UiKit.Label(setup, "World name", UiKit.SmallSize + 1, Palette.Ink, UiKit.Bold);
+            worldName = UiKit.Input(setup, "Your world’s name");
+            worldName.characterLimit = 40;
+            UiKit.Size(worldName, -1, 52);
+            var who = Row(setup);
+            UiKit.Size(UiKit.Label(who, "Who can find it", UiKit.SmallSize + 1, Palette.Ink, UiKit.Bold), -1, -1, 1);
+            UiKit.Choice(who, FindNames, 0, i => { listed = i == 0; ShowFindNote(); });
+            findNote = Line(setup, "");
+            var go = Row(setup);
+            UiKit.Size(UiKit.Secondary(go, "Back", () => SetUp(false), null, 52), -1, -1, 1);
+            openWorld = UiKit.Primary(go, "Open my world", Host, null, 52);
+            UiKit.Size(openWorld, -1, -1, 2);
             openLabel = openWorld.GetComponentInChildren<Text>();
-            hostError = UiKit.Label(idle, "", UiKit.SmallSize + 1, UiKit.RoseInk, UiKit.Bold);
+            hostError = UiKit.Label(setup, "", UiKit.SmallSize + 1, UiKit.RoseInk, UiKit.Bold);
+            ShowFindNote();
 
             hosting = Group(card);
             var plate = UiKit.Panel(hosting, "join code", Palette.Paper);
@@ -72,6 +89,7 @@ namespace BookBuddies.UI
             visitors = UiKit.Label(row, "", UiKit.BodySize, UiKit.LeafInk, UiKit.Bold, TextAnchor.MiddleRight);
             UiKit.Size(visitors, -1, -1, 1);
             UiKit.Label(hosting, "Friends on your network type this code to join.", UiKit.BodySize, Palette.Ink);
+            enter = UiKit.Primary(hosting, "Enter my world", Enter, "🏡", 52);
             portNote = Line(hosting, "");
             if (Application.platform == RuntimePlatform.WindowsPlayer || Application.platform == RuntimePlatform.WindowsEditor)
                 Line(hosting, "If Windows asks, allow BookBuddies on private networks.");
@@ -100,7 +118,7 @@ namespace BookBuddies.UI
             addresses = LocalHost.Addresses();
             nearbyShown = null;
             lookAt = 0;
-            if (!busy) { Say("", false); hostError.text = ""; }
+            if (!busy) { Say("", false); hostError.text = ""; settingUp = false; }
             ShowHosting(); // before the sheet focuses its first control
         }
 
@@ -116,14 +134,15 @@ namespace BookBuddies.UI
 
         // ---- hosting ----
 
-        // the button to open your world, or its code and visitors while it's open
+        // the first step, the setup, or the open world's code and visitors
         void ShowHosting()
         {
             bool on = LocalHost.Running;
-            UiKit.Show(idle, !on);
+            UiKit.Show(idle, !on && !settingUp);
+            UiKit.Show(setup, !on && settingUp);
             UiKit.Show(hosting, on);
             UiKit.Show(hostError, hostError.text.Length > 0);
-            sheet.First = on ? copy : openWorld;
+            sheet.First = on ? enter : settingUp ? openWorld : setUp;
             if (!on) return;
             // with no network the code would only lead back to this PC
             bool noNetwork = addresses.Count == 0;
@@ -136,7 +155,23 @@ namespace BookBuddies.UI
             portNote.text = $"Playing over the internet? Forward port {LocalHost.Port} on your router to this PC, then share your public address.";
         }
 
-        // your world is your offline one: into offline play if needed, then open it to the PCs on your network
+        // step one: name your world and choose who can find it (or back out)
+        void SetUp(bool show)
+        {
+            settingUp = show;
+            hostError.text = "";
+            if (show && worldName.text.Trim().Length == 0) worldName.text = DefaultName();
+            ShowHosting();
+            if (sheet.IsOpen) VirtualCursor.FocusFirst(show ? openWorld : setUp);
+        }
+
+        void ShowFindNote() => findNote.text = listed
+            ? "It shows in the list on PCs on your network, and your join code works too."
+            : "It stays off other PCs’ lists. Only friends with your join code can find it.";
+
+        static string DefaultName() => Buddy.Name.Length > 0 ? Buddy.Name + "’s world" : "A cozy world";
+
+        // step two: your world is your offline one, so into offline play if needed, then open it to the PCs on your network
         async void Host()
         {
             if (busy) return;
@@ -147,12 +182,20 @@ namespace BookBuddies.UI
             if (!this) return;
             busy = false;
             openLabel.text = "Open my world";
-            string name = Buddy.Name.Length > 0 ? Buddy.Name + "’s world" : "A cozy world";
-            if (!HostRunner.Open(name)) hostError.text = LocalHost.Error ?? "Your world couldn’t open. Try again in a moment.";
+            string name = LocalSafety.CleanText(worldName.text, 40).Trim();
+            if (HostRunner.Open(name.Length > 0 ? name : DefaultName(), listed)) settingUp = false;
+            else hostError.text = LocalHost.Error ?? "Your world couldn’t open. Try again in a moment.";
             addresses = LocalHost.Addresses();
             ShowHosting();
             changed?.Invoke();
-            if (LocalHost.Running && sheet.IsOpen) VirtualCursor.FocusFirst(copy);
+            if (LocalHost.Running && sheet.IsOpen) VirtualCursor.FocusFirst(enter);
+        }
+
+        // in you go: you play in your own world like your visitors, and it stays open while you do
+        void Enter()
+        {
+            sheet.Close();
+            joined?.Invoke();
         }
 
         void Copy()
@@ -169,7 +212,7 @@ namespace BookBuddies.UI
             HostRunner.Close();
             ShowHosting();
             changed?.Invoke();
-            if (sheet.IsOpen) VirtualCursor.FocusFirst(openWorld);
+            if (sheet.IsOpen) VirtualCursor.FocusFirst(setUp);
         }
 
         // ---- joining ----

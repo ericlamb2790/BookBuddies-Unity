@@ -34,7 +34,8 @@ namespace BookBuddies.Local
         readonly UdpClient udp;
         readonly Func<WorldInfo> info; // Announce's
         readonly ManualResetEvent stopping = new ManualResetEvent(false);
-        readonly Dictionary<string, Heard> heard = new Dictionary<string, Heard>(); // Listen's, by server
+        readonly Dictionary<string, Heard> heard = new Dictionary<string, Heard>(); // Listen's, by world id (by server for worlds sending none)
+        readonly string id = Guid.NewGuid().ToString("N").Substring(0, 16); // Announce's: one world heard from several addresses is still one
         volatile bool disposed;
 
         /// <summary>The host's side: broadcasts what "info" says (read on a background thread) every 2 s until disposed.</summary>
@@ -102,7 +103,7 @@ namespace BookBuddies.Local
                     if (world == null) continue;
                     byte[] hello = Encoding.UTF8.GetBytes(Json.Write(new Dictionary<string, object>
                     {
-                        ["bb"] = 1, ["name"] = LocalSafety.CleanText(world.Name, 40), ["port"] = PortOf(world.Server), ["code"] = world.Code ?? "",
+                        ["bb"] = 1, ["id"] = id, ["name"] = LocalSafety.CleanText(world.Name, 40), ["port"] = PortOf(world.Server), ["code"] = world.Code ?? "",
                         ["players"] = world.Players, ["max"] = world.Max,
                     }));
                     foreach (var to in Destinations())
@@ -176,11 +177,17 @@ namespace BookBuddies.Local
                 Name = name.Length > 0 ? name : "A BookBuddies world", Server = "http://" + from + ":" + port, Code = JoinCode.For(from, port),
                 Players = Math.Max(0, Math.Min(999, o.Int("players"))), Max = Math.Max(0, Math.Min(999, o.Int("max"))),
             };
+            // a world on this PC arrives twice, from 127.0.0.1 and from its network address: one entry, at the network address
+            string key = o.Str("id");
+            if (key.Length < 8 || key.Length > 32 || !key.All(Uri.IsHexDigit)) key = world.Server;
+            bool loopback = IPAddress.IsLoopback(from);
             long now = Clock.ElapsedMilliseconds;
             lock (heard)
             {
-                if (heard.TryGetValue(world.Server, out var h))
+                if (heard.TryGetValue(key, out var h))
                 {
+                    if (h.Loopback && !loopback) h.Loopback = false;
+                    else { world.Server = h.World.Server; world.Code = h.World.Code; } // keep the address it's listed under
                     h.World = world;
                     h.Last = now;
                     return;
@@ -190,7 +197,7 @@ namespace BookBuddies.Local
                     foreach (string stale in heard.Where(kv => now - kv.Value.Last > ForgetMs).Select(kv => kv.Key).ToList()) heard.Remove(stale);
                     if (heard.Count >= MaxWorlds) heard.Remove(heard.OrderBy(kv => kv.Value.Last).First().Key);
                 }
-                heard[world.Server] = new Heard { World = world, First = now, Last = now };
+                heard[key] = new Heard { World = world, First = now, Last = now, Loopback = loopback };
             }
         }
 
@@ -198,6 +205,7 @@ namespace BookBuddies.Local
         {
             public WorldInfo World;
             public long First, Last; // when it was first and last heard (Clock ms)
+            public bool Loopback;    // only heard from this PC's own 127.0.0.1 so far
         }
     }
 }

@@ -5,20 +5,21 @@ namespace BookBuddies.Net
 {
     /// <summary>
     /// Keeps your world open while you host it (Local/LocalHost): every frame it answers your visitors and runs the town
-    /// rooms, and every couple of seconds it tells the PCs on your network about the world (LocalBeacon), so it shows in
-    /// their list. Leaving offline play or quitting closes the world. A world only ever opens from the title's Worlds
-    /// card: a new launch never reopens it.
+    /// rooms, and (unless it's code only) every couple of seconds it tells the PCs on your network about the world
+    /// (LocalBeacon), so it shows in their list. Leaving offline play or quitting closes the world. A world only ever
+    /// opens from the title's Worlds card: a new launch never reopens it.
     /// </summary>
     public sealed class HostRunner : MonoBehaviour
     {
         static HostRunner running;
+        static bool listed;
         LocalBeacon beacon;
 
         /// <summary>
-        /// Opens your offline world to other PCs under this name (switch to offline play first). False when it couldn't,
-        /// with LocalHost.Error saying why in plain words.
+        /// Opens your offline world to other PCs under this name (switch to offline play first); "listed" shows it in the
+        /// list on nearby PCs, otherwise friends need the join code. False when it couldn't, with LocalHost.Error saying why.
         /// </summary>
-        public static bool Open(string name)
+        public static bool Open(string name, bool listed = true)
         {
             if (!Settings.IsLocal) return false;
             if (running == null)
@@ -28,6 +29,7 @@ namespace BookBuddies.Net
                 running = go.AddComponent<HostRunner>();
             }
             LocalHost.Name = name;
+            HostRunner.listed = listed;
             return LocalHost.Start();
         }
 
@@ -59,9 +61,10 @@ namespace BookBuddies.Net
 
         void Update()
         {
-            if (!LocalHost.Running) { StopAnnouncing(); return; }
+            if (!LocalHost.Running || !listed) StopAnnouncing();
+            if (!LocalHost.Running) return;
             LocalHost.Pump();
-            if (beacon == null) beacon = LocalBeacon.Announce(LocalHost.Info); // read on the beacon's thread: a fresh copy each time
+            if (beacon == null && listed) beacon = LocalBeacon.Announce(LocalHost.Info); // read on the beacon's thread: a fresh copy each time
         }
 
         void StopAnnouncing()
