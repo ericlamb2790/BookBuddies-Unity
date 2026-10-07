@@ -158,7 +158,7 @@ namespace BookBuddies.Tales
             BattleMoveList owner;
             RectTransform r, fill;
             Image bg, fillImg, ring;
-            Text badge, name;
+            Text badge, title;
             float shown = -1, pop;
             bool ready, over;
 
@@ -187,9 +187,9 @@ namespace BookBuddies.Tales
                 var icon = UiKit.Icon(r, m.Icon ?? (m.Ult ? "✨" : "📖"), 24);
                 icon.raycastTarget = false;
                 icon.rectTransform.Pin(new Vector2(0, .5f), new Vector2(42, 2), new Vector2(24, 24));
-                row.name = UiKit.Label(r, BattleText.Prose(m.Name ?? m.Key), UiKit.SmallSize + 1, Palette.Cream, UiKit.Bold);
-                row.name.raycastTarget = false;
-                Stretch(row.name.rectTransform, 60, 92, 4);
+                row.title = UiKit.Label(r, BattleText.Prose(m.Name ?? m.Key), UiKit.SmallSize + 1, Palette.Cream, UiKit.Bold);
+                row.title.raycastTarget = false;
+                Stretch(row.title.rectTransform, 60, 92, 4);
                 row.badge = UiKit.Label(r, "", UiKit.SmallSize, Dim, UiKit.Bold, TextAnchor.MiddleRight);
                 row.badge.raycastTarget = false;
                 row.badge.rectTransform.anchorMin = new Vector2(1, 0);
@@ -254,7 +254,7 @@ namespace BookBuddies.Tales
                 badge.text = me.Ko ? "napping" : queued ? "next turn" : cd > 0 ? $"{cd} turn{(cd == 1 ? "" : "s")}"
                     : nowReady ? "ready" : $"{me.Ink}/{cost} ink";
                 badge.color = queued || nowReady && Move.Ult ? Gold : nowReady ? Leaf : Dim;
-                name.color = nowReady || queued ? Palette.Cream : Palette.Cream.WithAlpha(.6f);
+                title.color = nowReady || queued ? Palette.Cream : Palette.Cream.WithAlpha(.6f);
 
                 // pop: a quick swell when the move comes ready; flash: gold wash and a punch when the pet uses it
                 pop = Mathf.Max(0, pop - dt / PopTime);
