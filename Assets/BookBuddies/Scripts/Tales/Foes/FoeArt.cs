@@ -27,7 +27,7 @@ namespace BookBuddies.Tales
         /// <summary>The ground shadow the SVG drew (rx 30, ry 5), as radii in box units. Callers draw it, unscaled by Look.Scale.</summary>
         public static readonly Vector2 ShadowSize = new Vector2(.3f, .05f);
 
-        const int TextureSize = 384;          // pixels across the box
+        const int TextureSize = 640;          // pixels across the box (sharp up to a 1440p boss)
         const float EmojiScale = 128f / 104f; // emote PNGs hold a 104px glyph in a 128px square
         const int CacheLimit = 48;
         static readonly Vector2 ShadowDrop = new Vector2(0, -.02f);           // the emoji's drop-shadow(0 2px …)
@@ -281,7 +281,7 @@ namespace BookBuddies.Tales
 #if BB_VECTOR
             try
             {
-                var scene = SVGParser.ImportSVG(new StringReader(svg));
+                var scene = SVGParser.ImportSVG(new StringReader(svg), ViewportOptions.PreserveViewport); // the whole 100×100 box, or the art stretches
                 var options = new VectorUtils.TessellationOptions { StepDistance = .5f, MaxCordDeviation = .1f, MaxTanAngleDeviation = .05f, SamplingStepSize = .01f };
                 var geometry = VectorUtils.TessellateScene(scene.Scene, options);
                 var vector = VectorUtils.BuildSprite(geometry, scene.SceneViewport, 100f, VectorUtils.Alignment.BottomCenter, Vector2.zero, 64, true);

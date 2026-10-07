@@ -16,7 +16,7 @@ namespace BookBuddies.Tales
     public sealed class BattleStage : MonoBehaviour, IPointerClickHandler
     {
         const string LaneKeys = "lcr";
-        const float PlateHeight = 96, MinPlate = 104, MaxPlate = 260, LabelRoom = 40, Gutter = 10;
+        const float PlateHeight = 96, MinPlate = 104, MaxPlate = 300, LabelRoom = 40, Gutter = 12, MaxColumn = .46f; // MaxColumn: of the field's height
         static readonly Color Rose = Palette.Hex("#ff6a5a"), Gold = Palette.Hex("#ffd27a");
 
         /// <summary>Effects go here (same coordinates as the fighters).</summary>
@@ -190,10 +190,12 @@ namespace BookBuddies.Tales
             var (top, bottom) = Bounds();
             float w = ColumnWidth;
             int i = Mathf.Max(0, LaneKeys.IndexOf(lane));
-            return new Rect(Width * .02f + i * (w + Gutter), bottom, w, top - bottom);
+            return new Rect(Left + i * (w + Gutter), bottom, w, top - bottom);
         }
 
-        float ColumnWidth => (Width * .96f - Gutter * 2) / 3;
+        // columns stop growing past MaxColumn of the height, so wide and ultrawide screens centre them over the arena
+        float ColumnWidth => Mathf.Min((Width * .96f - Gutter * 2) / 3, (Bounds().top - Bounds().bottom) * MaxColumn);
+        float Left => (Width - ColumnWidth * 3 - Gutter * 2) / 2;
 
         (float top, float bottom) Bounds()
         {
@@ -203,7 +205,7 @@ namespace BookBuddies.Tales
 
         /// <summary>The lane under a point on the field (columns; past either edge counts as the nearest).</summary>
         public char LaneAt(Vector2 at) =>
-            LaneKeys[Mathf.Clamp((int)((at.x - Width * .02f) / (ColumnWidth + Gutter)), 0, 2)];
+            LaneKeys[Mathf.Clamp(Mathf.FloorToInt((at.x - Left) / (ColumnWidth + Gutter)), 0, 2)];
 
         public void OnPointerClick(PointerEventData e)
         {
@@ -267,14 +269,15 @@ namespace BookBuddies.Tales
         {
             var (top, bottom) = Bounds();
             float colW = ColumnWidth, height = top - bottom;
-            float heroRoom = Mathf.Clamp(height * .36f, PlateHeight + 60, PlateHeight + 250);
-            float heroSize = Mathf.Max(40, Mathf.Min(heroRoom - PlateHeight - 12, colW * .62f, 230));
+            // sizes follow the height, so 1080p, 1440p and ultrawide look alike; pet art stands 1.16 of its width tall
+            float heroSize = Mathf.Max(40, Mathf.Min(height * .24f, colW * .6f, 230));
+            float heroRoom = PlateHeight + 6 + heroSize * 1.2f + 18; // its plate, the art, and a gap under the foes
             float heroFeet = bottom + PlateHeight + 6;
 
             foreach (var h in engine.Heroes)
             {
                 var r = Band(h.Lane);
-                Put(View(h.Key), h.Lane, new Vector2(r.center.x, heroFeet), heroSize, Mathf.Clamp(heroSize + 24, MinPlate, Mathf.Min(MaxPlate, colW - 8)), false, instant);
+                Put(View(h.Key), h.Lane, new Vector2(r.center.x, heroFeet), heroSize, Mathf.Clamp(colW - 24, MinPlate, MaxPlate), false, instant);
             }
             if (cover != null)
             {
@@ -297,17 +300,17 @@ namespace BookBuddies.Tales
                 if (boss != null)
                 {
                     float room = unit * (rows > 0 ? 1.5f : 1);
-                    float size = Mathf.Max(40, Mathf.Min(room - PlateHeight - 8, colW * .9f, 340));
+                    float size = Mathf.Max(40, Mathf.Min(room - PlateHeight - 8, colW * .9f, height * .36f));
                     y -= room;
-                    Put(boss, z, new Vector2(x0 + colW / 2, y + PlateHeight + 4), size, Mathf.Clamp(size * .8f, 150, Mathf.Min(MaxPlate, colW - 8)), false, instant);
+                    Put(boss, z, new Vector2(x0 + colW / 2, y + PlateHeight + 4), size, Mathf.Clamp(colW - 24, 150, MaxPlate), false, instant);
                 }
                 for (int k = 0; k < col.Count; k++)
                 {
                     int inRow = Mathf.Min(2, col.Count - k / 2 * 2);
                     if (k % 2 == 0) y -= unit;
                     float slot = colW / inRow;
-                    float size = Mathf.Max(40, Mathf.Min(unit - PlateHeight - 8, slot * .88f, 220));
-                    float plate = Mathf.Min(Mathf.Clamp(size + 20, MinPlate, MaxPlate), slot - 8);
+                    float size = Mathf.Max(40, Mathf.Min(unit - PlateHeight - 8, slot * .88f, height * .24f));
+                    float plate = Mathf.Min(Mathf.Clamp(slot - 16, MinPlate, MaxPlate), slot - 8); // wide enough for one-line names
                     Put(col[k], z, new Vector2(x0 + slot * (k % 2 + .5f), y + PlateHeight + 4), size, plate, inRow > 1, instant);
                 }
             }
