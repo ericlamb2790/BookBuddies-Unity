@@ -281,7 +281,7 @@ namespace BookBuddies.Tales
 #if BB_VECTOR
             try
             {
-                var scene = SVGParser.ImportSVG(new StringReader(svg), ViewportOptions.PreserveViewport); // the whole 100×100 box, or the art stretches
+                var scene = SVGParser.ImportSVG(new StringReader(svg));
                 var options = new VectorUtils.TessellationOptions { StepDistance = .5f, MaxCordDeviation = .1f, MaxTanAngleDeviation = .05f, SamplingStepSize = .01f };
                 var geometry = VectorUtils.TessellateScene(scene.Scene, options);
                 var vector = VectorUtils.BuildSprite(geometry, scene.SceneViewport, 100f, VectorUtils.Alignment.BottomCenter, Vector2.zero, 64, true);
