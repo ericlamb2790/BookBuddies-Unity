@@ -305,8 +305,8 @@ namespace BookBuddies.Tales
             float d = T(360);
             if (a == null || d < .04f) return 0;
             var tint = kind == "heal" ? Palette.Hex("#7be0a1") : kind == "shield" ? Palette.Hex("#8fd0ff") : kind == "buff" ? Palette.Hex("#ff9ad1") : Gold;
-            float w = a.Width * 1.15f, h = w * .34f;
-            var rune = Picture(field, Art.DashedRing, tint, new Vector2(a.Center.x, a.Center.y - a.Width * .28f - h / 2), new Vector2(w, h));
+            float w = a.Width * 1.05f, h = w * .3f; // a flat ring round the feet, inside the fighter's lane
+            var rune = Picture(field, Art.DashedRing, tint, new Vector2(a.Center.x, a.Feet.y + h * .2f), new Vector2(w, h));
             rune.preserveAspect = false;
             KeyTween.Play(rune, d * 1.6f, BattleEase.Out, 0, true, new Kf(0, 0, 0, 0, .3f, 0), new Kf(.45f, 0, 0, -90, 1.05f), new Kf(1, 0, 0, -180, 1.15f, 0));
             if (kind != null) Sparkle(a, BattleArt.Particle(kind == "heal" ? "plus" : kind == "shield" ? "hex" : "chev"), tint);

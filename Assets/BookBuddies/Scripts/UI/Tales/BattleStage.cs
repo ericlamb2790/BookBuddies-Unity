@@ -17,7 +17,7 @@ namespace BookBuddies.Tales
     {
         const string LaneKeys = "lcr";
         static readonly float[] Depth = { .9f, .95f, 1f }; // the top lane is a little further away
-        const float PlateHeight = 76, MinPlate = 104, MaxPlate = 260;
+        const float PlateHeight = 96, MinPlate = 104, MaxPlate = 260;
         static readonly Color Rose = Palette.Hex("#ff6a5a"), Gold = Palette.Hex("#ffd27a");
 
         /// <summary>Effects go here (same coordinates as the fighters).</summary>
@@ -272,7 +272,7 @@ namespace BookBuddies.Tales
                 var v = View(h.Key);
                 int i = LaneKeys.IndexOf(h.Lane);
                 float size = Mathf.Min(sprite * Depth[i], 230, Width * .3f);
-                Put(v, h.Lane, new Vector2(heroX, top - (i + 1) * laneH + PlateHeight + 8), size, Mathf.Clamp(size + 24, MinPlate, MaxPlate), false, instant);
+                Put(v, h.Lane, new Vector2(heroX, FeetY(i, top, laneH, sprite, size)), size, Mathf.Clamp(size + 24, MinPlate, MaxPlate), false, instant);
             }
             if (cover != null) PlaceCover(heroX, top, laneH, sprite);
 
@@ -284,7 +284,7 @@ namespace BookBuddies.Tales
             {
                 float size = Mathf.Min(laneH * 1.55f, (x1 - split) * .92f, 340);
                 int bi = LaneKeys.IndexOf(boss.Unit.Lane);
-                Put(boss, boss.Unit.Lane, new Vector2((split + x1) / 2, top - (bi + 1) * laneH + PlateHeight + 8), size, Mathf.Clamp(size * .8f, 150, MaxPlate), false, instant);
+                Put(boss, boss.Unit.Lane, new Vector2((split + x1) / 2, FeetY(bi, top, laneH, sprite, size)), size, Mathf.Clamp(size * .8f, 150, MaxPlate), false, instant);
             }
             for (int i = 0; i < 3; i++)
             {
@@ -295,11 +295,15 @@ namespace BookBuddies.Tales
                 {
                     float size = Mathf.Min(sprite * Depth[i], slot * .9f, 220);
                     float plate = Mathf.Min(Mathf.Clamp(size + 20, MinPlate, MaxPlate), slot - 8);
-                    Put(row[k], z, new Vector2(x0 + slot * (k + .5f), top - (i + 1) * laneH + PlateHeight + 8), size, plate, row.Count > 1, instant);
+                    Put(row[k], z, new Vector2(x0 + slot * (k + .5f), FeetY(i, top, laneH, sprite, size)), size, plate, row.Count > 1, instant);
                 }
             }
             SortByLane();
         }
+
+        // feet in lane i: the nameplate sits inside the lane's bottom edge and the art is centred in the room above it
+        static float FeetY(int i, float top, float laneH, float sprite, float size) =>
+            top - (i + 1) * laneH + PlateHeight + 6 + Mathf.Max(0, sprite - size) / 2;
 
         void Put(BattleUnitView v, char lane, Vector2 feet, float size, float plate, bool dense, bool instant)
         {
@@ -313,7 +317,7 @@ namespace BookBuddies.Tales
         {
             int i = LaneKeys.IndexOf(engine.CoverZone[0]);
             float size = sprite * Depth[i] * 1.25f;
-            cover.anchoredPosition = new Vector2(heroX, top - (i + 1) * laneH + PlateHeight + 8);
+            cover.anchoredPosition = new Vector2(heroX, FeetY(i, top, laneH, sprite, sprite * Depth[i]));
             cover.sizeDelta = new Vector2(size, size);
         }
 
