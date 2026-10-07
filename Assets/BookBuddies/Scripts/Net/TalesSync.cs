@@ -54,7 +54,6 @@ namespace BookBuddies.Net
                 var settled = await Decide(TalesSave.Current, reply, acct, TalesSave.Stashed, Asked(ask), TalesSave.Clock());
                 if (settled.Stash) TalesSave.Stash();
                 if (settled.Save.ToText() != TalesSave.Current.ToText()) TalesSave.Replace(settled.Save);
-                if (settled.Steps.Contains("restore")) TalesSave.TakeStash(acct); // its file goes once the save it held is the one in use
                 if (settled.Upload) await Upload(folded: settled.Folded);
             }
             catch (Exception e) { Debug.LogException(e); }

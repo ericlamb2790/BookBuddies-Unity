@@ -20,6 +20,9 @@ namespace BookBuddies.Net
         const float Every = 120;           // seconds between pushes at save points (saves meanwhile fold into the next)
         const string SaveKey = "bb.petsync"; // per online account: {map: {"<server>|<id>": twin id}, was: {"<server>|<id>": {name, look}}, "active|<server>": id}
 
+        /// <summary>A pet away from your online account was matched to its twin there: ("server|id" of the pet, the twin's id).</summary>
+        public static event Action<string, string> TwinFound;
+
         static Task pushing;
         static float pushedAt = -99;
         static bool hurry;
@@ -56,6 +59,39 @@ namespace BookBuddies.Net
             string slot = "active|" + Settings.Server;
             if (s.Str(slot).Length > 0) return;
             s[slot] = MyPets.Active.Id;
+            Save(s);
+        }
+
+        /// <summary>
+        /// The key the Tales save files the pet you're playing under: its id on your online account, which owns the save.
+        /// Away from it, its twin's once matched, else "@server|id" until TwinFound. Null before your egg hatches.
+        /// </summary>
+        public static string TalesKey()
+        {
+            var pet = MyPets.Active;
+            if (pet == null) return null;
+            if (!Away) return pet.Id;
+            string twin = Load().Obj("map").Str(KeyOf(pet.Id));
+            return twin.Length > 0 ? twin : "@" + KeyOf(pet.Id);
+        }
+
+        /// <summary>
+        /// BBApi: your profile on here was just made from your pets on from (seed, as /me has them; made: here's /me/pets).
+        /// Each pet made is matched by look to the one it came from, and so to its twin on your online account.
+        /// </summary>
+        public static void Seeded(string here, string from, Dictionary<string, object> seed, Dictionary<string, object> made)
+        {
+            var s = Load();
+            var map = s.Obj("map");
+            var mine = Pets(seed);
+            foreach (var pet in Pets(made))
+            {
+                var source = mine.Find(p => p.Str("look") == pet.Str("look"));
+                if (source == null) continue;
+                mine.Remove(source);
+                string twin = from == Settings.OnlineServer ? source.Str("id") : map.Str(from + "|" + source.Str("id"));
+                if (twin.Length > 0) map[here + "|" + pet.Str("id")] = twin;
+            }
             Save(s);
         }
 
@@ -162,9 +198,11 @@ namespace BookBuddies.Net
         static void Pushed(string k, string twin, string name, string look)
         {
             var s = Load();
+            bool found = twin != null && s.Obj("map").Str(k) != twin;
             if (twin != null) s.Obj("map")[k] = twin;
             s.Obj("was")[k] = Was(name, look);
             Save(s);
+            if (found) TwinFound?.Invoke(k, twin);
         }
 
         // a rename or reroll the online server refuses (a bad name, say) isn't tried again; anything else waits for the next save

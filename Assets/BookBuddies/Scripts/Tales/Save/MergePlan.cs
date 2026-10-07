@@ -21,9 +21,10 @@ namespace BookBuddies.Tales
     }
 
     /// <summary>
-    /// Everything the join-accounts card decides, read from the POST /merge/preview reply: both sides, the coins, whose
-    /// adventure stays (the most recently played one is preselected), the nest of 6, and the merged save and POST /merge
-    /// body it sends. Pure, so it's tested without Unity.
+    /// Everything the join-accounts card decides, read from the POST /merge/preview reply: both sides, the coins, the
+    /// nest of 6, and the merged save and POST /merge body it sends. Every pet keeps its own adventure, so nothing is
+    /// asked about them; the leading side (Hero: the most recently played) starts the nest and keeps its daily limits.
+    /// Pure, so it's tested without Unity.
     /// </summary>
     public sealed class MergePlan
     {
@@ -33,8 +34,7 @@ namespace BookBuddies.Tales
         public string OtherName;             // switch: the other account's name
         public MergeSide From, Into;
         public int Starter, CoinsMoved, CoinsTotal;
-        public bool AskHero;                 // both sides have a hero
-        public string Hero;                  // "from" | "into": whose hero stays
+        public string Hero;                  // "from" | "into": the leading side
         public List<PetRow> Nest; public PetRow Active;
         public bool AskNest => From.Pets.Count + Into.Pets.Count > NestSize;
         public bool CodeIsLogin => !Into.You; // the typed code is the login afterwards
@@ -50,9 +50,8 @@ namespace BookBuddies.Tales
             var coins = preview.Obj("coins");
             plan.Starter = coins.Int("starter"); plan.CoinsMoved = coins.Int("moves"); plan.CoinsTotal = coins.Int("total");
 
-            // one hero stays: the only one, else the most recently played, else the higher Pet Lv, else into's
-            bool f = from.Save.HasHero, i = into.Save.HasHero;
-            plan.AskHero = f && i;
+            // the side that leads: the only one with a hero, else the most recently played, else the higher Pet Lv, else into
+            bool f = from.Save.AnyHero, i = into.Save.AnyHero;
             plan.Hero = !f ? "into" : !i ? "from"
                 : from.SaveAt != into.SaveAt ? (from.SaveAt > into.SaveAt ? "from" : "into")
                 : from.PetLv > into.PetLv ? "from" : "into";
@@ -70,10 +69,11 @@ namespace BookBuddies.Tales
             foreach (var x in o.Arr("pets"))
                 if (x is Dictionary<string, object> p)
                     s.Pets.Add(new PetRow { Side = side, Id = p.Str("id"), Name = p.Str("name"), Look = p.Str("look"), Active = p.Truthy("active"), Rest = p.Truthy("rest") });
-            if (you) (s.Save, s.SaveAt) = (local ?? new TalesSave(), local?.At ?? 0);
+            if (you) (s.Save, s.SaveAt) = (TalesSave.FromObject(local?.ToObject()), local?.At ?? 0);
             else if (o.Obj("save") is Dictionary<string, object> save) (s.Save, s.SaveAt) = (TalesSave.FromObject(save), o.Num("save_at"));
             else if (s.Website) (s.Save, s.SaveAt) = (SiteImport.FromPetsave(o.Str("petsave", null), s.Id, o.Num("site_at")) ?? new TalesSave(), o.Num("site_at"));
             else s.Save = new TalesSave();
+            if (s.Pets.Find(p => p.Active) is PetRow on) s.Save.UsePet(on.Id); // a save from before pets had their own is the active pet's
             s.PetLv = HeroFactory.Renown(s.Save.Me.Rxp).lvl + 1;
             s.ClassKey = HeroFactory.ClassOf(s.Save);
             return s;
@@ -119,11 +119,28 @@ namespace BookBuddies.Tales
             ? $"Coins join up: {N(CoinsTotal)} in all. The {N(Starter)}-coin welcome gift counts once per person, so {N(CoinsMoved)} of {From.Name}’s {N(From.Coins)} come along."
             : $"Coins join up: {N(From.Coins)} + {N(Into.Coins)} = {N(CoinsTotal)}.";
 
-        /// <summary>The save into keeps: the chosen hero's side merged with the other.</summary>
+        /// <summary>The key from's pets have in the merged save until the reply gives their ids on into's account (Landed).</summary>
+        public const string Moving = "from:";
+
+        /// <summary>The save into keeps: both sides' pets, the leading side's daily limits, playing the active pet.</summary>
         public TalesSave MergedSave(double now)
         {
-            var (keep, other) = Hero == "from" ? (From, Into) : (Into, From);
-            return TalesMerge.Merge(keep.Save, other.Save, Into.Id, now);
+            var from = TalesSave.FromObject(From.Save.ToObject());
+            foreach (string k in from.Pets) from.Rekey(k, Moving + k);
+            var m = Hero == "from" ? TalesMerge.Merge(from, Into.Save, Into.Id, now) : TalesMerge.Merge(Into.Save, from, Into.Id, now);
+            if (Active != null) m.UsePet(Active.Side == "from" ? Moving + Active.Id : Active.Id);
+            return m;
+        }
+
+        /// <summary>The merged save sent (Body's tales.save) with from's pets under their ids on into's account (the reply's moved: [{was, id}]).</summary>
+        public static TalesSave Landed(Dictionary<string, object> sent, List<object> moved)
+        {
+            var s = TalesSave.FromObject(sent);
+            foreach (var o in moved)
+                if (o is Dictionary<string, object> m) s.Rekey(Moving + m.Str("was"), m.Str("id"));
+            foreach (string k in s.Pets)
+                if (k.StartsWith(Moving, StringComparison.Ordinal)) s.Rekey(k, k.Substring(Moving.Length)); // a site with no moved: kept their ids
+            return s;
         }
 
         /// <summary>The POST /merge body: the code, from's id (the retry key), the nest, the active pet and the merged save.</summary>

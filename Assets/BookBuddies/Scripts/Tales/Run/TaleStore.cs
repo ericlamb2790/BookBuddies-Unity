@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 namespace BookBuddies.Tales
 {
     /// <summary>
-    /// The tale files next to the Tales save (lobby.md step 4, storybook.md step 5): tale_run.json holds the one solo tale
-    /// (the site's private small read), tale_daily.json the daily tale ({day, over, score, label, state}), tale_books.json
-    /// the kept storybooks, newest first, at most BookCap. Writes go to a temp file first and the newest wins, also when
+    /// The tale files in the Tales save's folders (lobby.md step 4, storybook.md step 5): each pet's folder has its
+    /// tale_run.json, the one solo tale (the site's private small read), and tale_books.json, its kept storybooks, newest
+    /// first, at most BookCap; the account's has tale_daily.json, the daily tale ({day, over, score, label, state}). Writes go to a temp file first and the newest wins, also when
     /// AutoSave writes on a background thread (FlushAsync). Pure C#.
     /// </summary>
     public static class TaleStore
@@ -17,7 +17,7 @@ namespace BookBuddies.Tales
         public const int BookCap = 40;
         const double SaveDelay = 3; // seconds: saveSoon's debounce
 
-        /// <summary>Where the files go; null = the folder of TalesSave.FilePath.</summary>
+        /// <summary>Where the files go (tests); null = the save's folders: the active pet's, and the account's for the daily tale.</summary>
         public static string Folder;
 
         static TaleRun pending;
@@ -28,7 +28,7 @@ namespace BookBuddies.Tales
 
         static string PathOf(string file)
         {
-            string dir = Folder ?? (string.IsNullOrEmpty(TalesSave.FilePath) ? null : Path.GetDirectoryName(TalesSave.FilePath));
+            string dir = Folder ?? (file == "tale_daily.json" ? TalesSave.AccountFolder : TalesSave.ActivePetFolder);
             return dir == null ? null : Path.Combine(dir, file);
         }
 
@@ -154,7 +154,7 @@ namespace BookBuddies.Tales
 
         static void SaveBooks() => Write("tale_books.json", new List<object>(books));
 
-        /// <summary>Drops what is loaded so the next read comes from disk (tests, a new player).</summary>
+        /// <summary>Drops what is loaded so the next read comes from disk (tests, a new player, another pet).</summary>
         public static void Reload() { books = null; pending = null; }
 
         // ---- files ----

@@ -88,7 +88,7 @@ namespace BookBuddies.UI
 
         /// <summary>
         /// The join-accounts card's live half, and the adventure question's: picks change in place (whose adventure stays,
-        /// like radio buttons; the nest's tiles; the bag line), Merge works through its steps with the answers hidden and B
+        /// like radio buttons; the nest's tiles), Merge works through its steps with the answers hidden and B
         /// waiting, and the card ends All set (with the login code when it changed) or with the problem and Try again, which
         /// sends the same request again. Pictures not drawn yet come one a frame. Reduce motion keeps the glow, the
         /// hourglass and the All set pop still.
@@ -113,18 +113,17 @@ namespace BookBuddies.UI
             string code, chosen;                // chosen: the adventure card's pick
             RectTransform body, sides, hero, status, buttons, hints, problem;
             CanvasGroup picks;
-            Text say, bag, count;
+            Text say, count;
             Image glow, hourglass;
             GridLayoutGroup grid;
             readonly List<Pick> heroes = new List<Pick>(), nest = new List<Pick>();
             readonly Queue<(Image image, string look)> toDraw = new Queue<(Image, string)>();
             double now;
             float popAt = -1;
-            bool narrow, working, joined, finished, nestTouched;
+            bool narrow, working, joined, finished;
 
             static bool IsNarrow => Screen.width / UiKit.ScreenScale() < Narrow;
             int Columns => narrow ? 3 : 5;
-            string Chosen => plan != null ? plan.Hero : chosen;
 
             public void Join(MergePlan p, string typed, System.Action<bool> onDone)
             {
@@ -190,14 +189,11 @@ namespace BookBuddies.UI
                 Sides();
                 Callout(body, "🐾", "Every pet comes along. None are left behind.", UiKit.LeafInk);
                 Callout(body, "🪙", plan.CoinLine, UiKit.EmberInk);
-                Callout(body, "🎒", "", UiKit.SkyInk);
-                bag = body.GetChild(body.childCount - 1).GetComponentInChildren<Text>(); // that callout: it changes with the hero
+                Callout(body, "🎒", "Each pet keeps its own adventure: level, class, gear, bag and road. Keepsakes, classes, library levels and the codex join up.", UiKit.SkyInk);
                 Callout(body, "🗝️", plan.CodeIsLogin
                     ? $"From now on, sign in with {Pretty(code)}. Your old game code opens the same account too."
                     : $"You keep signing in with your own code. {plan.From.Name}’s old code opens this account too.", Palette.Ink);
-                if (plan.AskHero) Heroes();
                 if (plan.AskNest) Nest();
-                Bag();
                 Buttons(("Not now", () => Finish(false), null), ("Merge", Merge, "🤝"));
                 Hints(("A", "Merge"), ("B", "Not now"));
             }
@@ -256,41 +252,6 @@ namespace BookBuddies.UI
 
             static string LookOf(MergeSide side) => (side.Pets.Find(p => p.Active) ?? (side.Pets.Count > 0 ? side.Pets[0] : null))?.Look ?? Buddy.GuestLook;
 
-            // whose adventure stays: a row for each side, picked like radio buttons
-            void Heroes()
-            {
-                Section(body, "📖", "Which adventure stays?",
-                    "Both buddies have been adventuring. The one you pick keeps its level, class, gear and road. The other’s renown is saved for its class, and its gear goes in your bag.");
-                foreach (var (side, key, other) in new[] { (plan.From, "from", plan.Into), (plan.Into, "into", plan.From) })
-                {
-                    string ago = MergePlan.Ago(side.SaveAt, now);
-                    var row = Choice(LookOf(side), null, side.Name, $"Pet Lv {side.PetLv} {Data.Class(side.ClassKey).Name}" + (ago.Length > 0 ? " · played " + ago : ""),
-                        side.SaveAt > other.SaveAt, () => Hero(key));
-                    row.Side = key;
-                    heroes.Add(row);
-                }
-                MarkHeroes();
-            }
-
-            void Hero(string side)
-            {
-                if (plan.Hero == side) return;
-                plan.Hero = side;
-                MarkHeroes();
-                Bag();
-                if (nestTouched) return;
-                plan.DefaultNest(); // the nest (and its active pet) starts from the staying hero's side until the player changes it
-                if (nest.Count > 0) MarkNest();
-            }
-
-            // the bag line: what joins up, and the room left once the joined bag is over full (whose gear stays on decides)
-            void Bag()
-            {
-                int n = plan.MergedSave(now).Bag.Count;
-                bag.text = "Bags, keepsakes, library levels and bought moves all join up."
-                    + (n > Loot.BagSize ? $" Your bag will hold {n} of {Loot.BagSize}. Salvage a few to make room." : "");
-            }
-
             // the nest of 6: a tile per pet, picked ones ticked, the active one starred, the count on the right
             void Nest()
             {
@@ -338,7 +299,6 @@ namespace BookBuddies.UI
             void Toggle(PetRow pet)
             {
                 if (!plan.Toggle(pet)) { Sound.Play("boop"); return; } // the last pet in the nest stays
-                nestTouched = true;
                 MarkNest();
             }
 
@@ -378,18 +338,21 @@ namespace BookBuddies.UI
                 }
                 catch (BBApi.ApiError e) { Failed(e); return; }
                 catch (System.Exception e) { Debug.LogException(e); Failed(null); return; }
-                Joined(reply.Obj("account"));
+                Joined(reply);
                 if (this) AllSet(reply.Obj("account"));
             }
 
-            // this device follows the joined account (its sign-in already does, BBApi.Merge): the merged adventure, its buddy
-            // and pets, a fresh offline profile next time, and its coins
-            void Joined(Dictionary<string, object> account)
+            // this device follows the joined account (its sign-in already does, BBApi.Merge): its buddy and pets, the merged
+            // adventure with from's pets under their ids here (it goes up again with them), a fresh offline profile next
+            // time, and its coins
+            void Joined(Dictionary<string, object> reply)
             {
                 joined = true;
-                TalesSave.Replace(TalesSave.FromObject(request.Obj("tales").Obj("save")));
+                var account = reply.Obj("account");
                 Buddy.Save(account.Str("name"), account.Str("pet"));
                 MyPets.Apply(account);
+                TalesSave.Replace(MergePlan.Landed(request.Obj("tales").Obj("save"), reply.Arr("moved")));
+                _ = TalesSync.Upload();
                 Settings.SignOut(Settings.Local);
                 _ = Wallet.Refresh();
                 _ = CoinBank.Refresh();
@@ -486,7 +449,7 @@ namespace BookBuddies.UI
 
             void MarkHeroes()
             {
-                foreach (var p in heroes) Set(p, p.Side == Chosen);
+                foreach (var p in heroes) Set(p, p.Side == chosen);
             }
 
             // a pick's ring: empty, or amber with a tick when on

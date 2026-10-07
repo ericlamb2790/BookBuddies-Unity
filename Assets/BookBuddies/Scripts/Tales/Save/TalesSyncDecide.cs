@@ -6,8 +6,9 @@ using BookBuddies.Tales;
 namespace BookBuddies.Net
 {
     /// <summary>
-    /// One "Which adventure stays?" question (TownSheets.AskAdventure): two saves that both have hero progress, what each is
-    /// called, when each was last played, and the side picked to start with ("a" or "b"). The answer is the side that stays.
+    /// One "Which adventure stays?" question (TownSheets.AskAdventure): one pet's progress on two sides that both have a hero,
+    /// what each side is called, when each was last played, and the side picked to start with ("a" or "b"). The answer is
+    /// the side that stays.
     /// </summary>
     public sealed class AdventureAsk { public string Lead; public TalesSave A, B; public string NameA, NameB; public double AtA, AtB; public string Preselect; }
 
@@ -31,8 +32,8 @@ namespace BookBuddies.Net
 
         /// <summary>
         /// Settles this device's save (local, unchanged) against GET /me/tales (reply; null when the server has no such route)
-        /// for the signed-in account (acct). stashed(acct) reads that account's save put aside on this device (its file stays
-        /// until the save is in use); ask is the adventure card, asked only when two saves both have hero progress.
+        /// for the signed-in account (acct). stashed(acct) reads that account's save put aside on this device (in its own
+        /// folder); ask is the adventure card, asked only when a pet has hero progress in both saves.
         /// </summary>
         public static async Task<Settled> Decide(TalesSave local, Dictionary<string, object> reply, string acct,
             Func<string, TalesSave> stashed, Func<AdventureAsk, Task<string>> ask, double now)
@@ -49,7 +50,7 @@ namespace BookBuddies.Net
             if (local.Owner == acct) { }
             else if (local.Owner == "")
             {
-                save = local.HasHero ? null : stashed(acct);
+                save = local.AnyHero ? null : stashed(acct);
                 if (save != null) r.Steps.Add("restore");
                 else
                 {
@@ -129,14 +130,18 @@ namespace BookBuddies.Net
             return r;
         }
 
-        // two saves made one: with a hero on each side the player picks the one that stays, else the one with a hero stays;
-        // also gives the name of the side that stayed, for a question after this one
+        // two saves made one, each pet keeping its own progress: when a pet has a hero on both sides the player picks the
+        // side that stays (shown as that pet's), else a stays unless only b has a hero; also gives the name of the side that
+        // stayed, for a question after this one
         static async Task<(TalesSave, string)> Join(TalesSave a, string nameA, TalesSave b, string nameB, string lead, string acct, double now,
             Func<AdventureAsk, Task<string>> ask)
         {
-            bool keepB = b.HasHero && !a.HasHero;
-            if (a.HasHero && b.HasHero)
-                keepB = await ask(new AdventureAsk { Lead = lead, A = a, B = b, NameA = nameA, NameB = nameB, AtA = a.At, AtB = b.At, Preselect = Recent(a, b) }) == "b";
+            bool keepB = b.AnyHero && !a.AnyHero;
+            if (TalesMerge.Clash(a, b) is (TalesSave, TalesSave) clash)
+            {
+                var (pa, pb) = clash;
+                keepB = await ask(new AdventureAsk { Lead = lead, A = pa, B = pb, NameA = nameA, NameB = nameB, AtA = pa.At, AtB = pb.At, Preselect = Recent(pa, pb) }) == "b";
+            }
             return keepB ? (TalesMerge.Merge(b, a, acct, now), nameB) : (TalesMerge.Merge(a, b, acct, now), nameA);
         }
 

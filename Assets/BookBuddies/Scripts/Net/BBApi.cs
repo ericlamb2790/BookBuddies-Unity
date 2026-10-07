@@ -319,8 +319,12 @@ namespace BookBuddies.Net
             }
             var seed = await ProfileOn(from) ?? remembered;
             if (seed == null) return null;
-            try { return await Register(seed.Str("name"), seed.Str("pet"), SeedPets(seed)); }
+            Dictionary<string, object> made;
+            try { made = await Register(seed.Str("name"), seed.Str("pet"), SeedPets(seed)); }
             catch (ApiError) { return null; }
+            try { PetSync.Seeded(Settings.Server, from, seed, await Pets()); } // Tales knows each pet here from the start
+            catch (ApiError) { } // else from their first push
+            return made;
         }
 
         // your account on another server, with that server's sign-in (null when signed out there or it can't be reached)

@@ -45,7 +45,7 @@ namespace BookBuddies
             catch (System.Exception e) { Debug.LogException(e); }
         }
 
-        // the offline world (offline/) and the Tales saves (tale*.json, with their temp and backup files)
+        // the offline world (offline/) and the Tales saves (saves/, and tale*.json from before it)
         static void DeleteSaves()
         {
             string dir = Application.persistentDataPath;
@@ -53,6 +53,8 @@ namespace BookBuddies
             {
                 string offline = Path.Combine(dir, "offline");
                 if (Directory.Exists(offline)) Directory.Delete(offline, true);
+                string saves = Path.Combine(dir, "saves");
+                if (Directory.Exists(saves)) Directory.Delete(saves, true);
                 foreach (string file in Directory.GetFiles(dir, "tale*")) File.Delete(file);
             }
             catch (System.Exception e) { Debug.LogWarning("BookBuddies: couldn't delete every save. " + e.Message); }
