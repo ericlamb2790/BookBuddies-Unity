@@ -236,14 +236,15 @@ namespace BookBuddies.Pets
             stillAt = t;
             idleAt = t + 1.5f + Random.value * 2.5f;
             if (IsMe) { var then = OnArrived; OnArrived = null; then?.Invoke(); }
-            else if (WantSit) { WantSit = false; if (map.SeatAt(Tile.x, Tile.y) != null) Sitting = true; }
+            else if (WantSit) { WantSit = false; if (map?.SeatAt(Tile.x, Tile.y) != null) Sitting = true; }
         }
 
         /// <summary>The website's drawPet(): squash, stretch, tilt and bounce for whatever the pet is doing.</summary>
         void Render(float t)
         {
-            float lift = Sitting ? map.LiftAt(Tile.x, Tile.y) : 0;
-            var seat = Sitting ? map.SeatAt(Tile.x, Tile.y) : null;
+            bool sat = Sitting && map != null; // a pet can outlive its town for a frame while a place is rebuilt
+            float lift = sat ? map.LiftAt(Tile.x, Tile.y) : 0;
+            var seat = sat ? map.SeatAt(Tile.x, Tile.y) : null;
             float ox = 0, oy = 0, rot = 0, sx = 1, sy = 1;
 
             if (Gone)
@@ -327,7 +328,7 @@ namespace BookBuddies.Pets
 
         // ---- anchor points for name tags, bubbles and emotes ----
 
-        float Lift => Sitting ? map.LiftAt(Tile.x, Tile.y) : 0;
+        float Lift => Sitting && map != null ? map.LiftAt(Tile.x, Tile.y) : 0;
         public Vector3 HeadPoint => transform.position + transform.up * (PetSprites.Height - .3f - Lift);
         public Vector3 FeetPoint => transform.position + transform.up * (-.55f - Lift);
     }
