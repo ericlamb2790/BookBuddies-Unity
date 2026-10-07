@@ -40,13 +40,17 @@ namespace BookBuddies.Local
             };
         }
 
-        /// <summary>POST /link/claim {code}: signs in with a recovery code (BB-XXXXX-XXXXX). Wrong guesses are limited per day.</summary>
+        /// <summary>
+        /// POST /link/claim {code}: signs in with a recovery code (BB-XXXXX-XXXXX). The old code of an account that was
+        /// merged away signs in to the account it joined ("merged": true). Wrong guesses are limited per day.
+        /// </summary>
         internal static Dictionary<string, object> SignIn(Dictionary<string, object> body)
         {
-            string key = WrongCodes + DateTimeOffset.FromUnixTimeMilliseconds(LocalServer.Now).UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            if (Db.Meta.Int(key) >= WrongCodesPerDay) throw new LocalProblem("Too many wrong codes today. Try again tomorrow.", 429);
+            string key = Tries(null);
             string code = CleanCode(Js.Get(body, "code"));
-            var player = code == null ? null : Db.Players.Values.FirstOrDefault(p => p.Code == code);
+            var player = code == null ? null : WithCode(code);
+            string joined = player == null ? LocalMerge.AliasOf(code) : null; // a merged-away account's code: the one it joined
+            player ??= LocalServer.Player(joined);
             if (player == null)
             {
                 CountWrongCode(key);
@@ -54,8 +58,20 @@ namespace BookBuddies.Local
             }
             var reply = new Dictionary<string, object> { ["token"] = NewToken(player.Id) };
             foreach (var kv in Account(player)) reply[kv.Key] = kv.Value;
+            if (joined != null) reply["merged"] = true;
             return reply;
         }
+
+        /// <summary>Today's key for wrong recovery codes, which every route that takes a code shares; 429 (with "why") once there are too many.</summary>
+        internal static string Tries(string why)
+        {
+            string key = WrongCodes + DateTimeOffset.FromUnixTimeMilliseconds(LocalServer.Now).UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            if (Db.Meta.Int(key) >= WrongCodesPerDay) throw new LocalProblem("Too many wrong codes today. Try again tomorrow.", 429, why);
+            return key;
+        }
+
+        /// <summary>The player whose own recovery code this is (as CleanCode gives it); null when none.</summary>
+        internal static LocalPlayer WithCode(string code) => Db.Players.Values.FirstOrDefault(p => p.Code == code);
 
         /// <summary>The player a token belongs to; 401 like the Worker when it's missing or unknown.</summary>
         internal static LocalPlayer SignedIn(string token)
@@ -86,10 +102,15 @@ namespace BookBuddies.Local
             return Account(me);
         }
 
-        /// <summary>POST /me/delete: the account and everything kept with it (pets, both ledgers, the fair's counters, sessions).</summary>
+        /// <summary>
+        /// POST /me/delete: the account and everything kept with it (pets, both ledgers, the fair's counters, sessions, the
+        /// old codes of accounts merged into it). A website account is deleted on the website only.
+        /// </summary>
         internal static Dictionary<string, object> DeleteMe(LocalPlayer me)
         {
+            if (me.Website) throw new LocalProblem("This is your bookbuddies.pet account. To delete it, use the website.", 403);
             foreach (string hash in Db.Tokens.Where(t => t.Value == me.Id).Select(t => t.Key).ToList()) Db.Tokens.Remove(hash);
+            Db.Merges.RemoveAll(m => m.Into == me.Id);
             Db.Players.Remove(me.Id);
             Db.Touch();
             return new Dictionary<string, object> { ["ok"] = true };
@@ -135,7 +156,8 @@ namespace BookBuddies.Local
             return name;
         }
 
-        static void CountWrongCode(string key)
+        /// <summary>Counts one wrong recovery code under Tries' key (and forgets other days').</summary>
+        internal static void CountWrongCode(string key)
         {
             int n = Db.Meta.Int(key);
             foreach (string old in Db.Meta.Keys.Where(k => k.StartsWith(WrongCodes, StringComparison.Ordinal)).ToList()) Db.Meta.Remove(old);
@@ -153,7 +175,8 @@ namespace BookBuddies.Local
 
         static string NewRecoveryCode() => "BB" + new string(RandomBytes(10).Select(b => CodeAlphabet[b % CodeAlphabet.Length]).ToArray());
 
-        static string CleanCode(object c)
+        /// <summary>A typed recovery code as stored ("BB" and 10 letters and digits), or null when it isn't one.</summary>
+        internal static string CleanCode(object c)
         {
             string s = new string((Js.Truthy(c) ? Js.Str(c) : "").ToUpperInvariant().Where(x => (x >= 'A' && x <= 'Z') || (x >= '0' && x <= '9')).ToArray());
             return s.Length == 12 && s.StartsWith("BB", StringComparison.Ordinal) ? s : null;

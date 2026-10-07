@@ -1,5 +1,6 @@
 // The offline server's tables as one JSON document: Server/src/db.js:27-52 (players, tokens, pets, coin_tx, fair_tx,
-// econ_state, limits and meta) plus the offline coin sessions (LocalWallet). Each player's rows live under the player.
+// econ_state, limits and meta) plus the offline coin sessions (LocalWallet) and the site's game_merges (LocalMerge). Each
+// player's rows live under the player.
 // Written atomically: a temp file, then a replace (Tales/Save/TalesSave.cs saves the same way).
 
 using System;
@@ -31,6 +32,20 @@ namespace BookBuddies.Local
         public FairState Fair;
         /// <summary>Stretches of offline play for coin banking, oldest first; at most the last one is open.</summary>
         public readonly List<LocalSession> Sessions = new List<LocalSession>();
+        /// <summary>The game save the game uploaded (players.game_tales, JSON text; null before the first) and its "at" (ms).</summary>
+        public string Tales;
+        public long TalesAt;
+        /// <summary>
+        /// Test stand-ins for the site, never set by the offline game: the website's pet save (null: none), a website
+        /// sign-in (reading, or Google or Apple), when the pet save last synced (players.updated_at, ms), and a bot or
+        /// sample reader, which can't be merged.
+        /// </summary>
+        public string Petsave;
+        public bool Site, Locked;
+        public long Updated;
+
+        /// <summary>A website account (gameOnly() is false): it has a pet save or a website sign-in.</summary>
+        public bool Website => Petsave != null || Site;
     }
 
     /// <summary>One of a player's pets: its look is pet look JSON, and exactly one pet is active.</summary>
@@ -38,7 +53,8 @@ namespace BookBuddies.Local
     {
         /// <summary>"p1", "p2"… or "p" and 10 hex digits; the pet's name; its look JSON.</summary>
         public string Id, Name, Look;
-        public bool Active;
+        /// <summary>Active: the one shown everywhere, always in the nest. Rest: napping at the Pet Inn, outside the nest of 6.</summary>
+        public bool Active, Rest;
         /// <summary>When it hatched (ms since 1970): the list is oldest first.</summary>
         public long Born;
     }
@@ -53,6 +69,25 @@ namespace BookBuddies.Local
         public long At;
     }
 
+    /// <summary>An account merged into another (game_merges): its old code opens Into, and nothing it had is lost.</summary>
+    public sealed class LocalMergeRow
+    {
+        /// <summary>The merged-away id, the id it joined, and its old recovery code (stored like LocalPlayer.Code).</summary>
+        public string From, Into, Code;
+        /// <summary>When it merged (ms since 1970).</summary>
+        public long At;
+        /// <summary>Its pets by their ids in Into: {ids, active}.</summary>
+        public Dictionary<string, object> Pets;
+        /// <summary>The done reply's "moved" ([{was, id}]) and "coins_moved", so a retry gets the same answer.</summary>
+        public List<object> Moved;
+        public int CoinsMoved;
+        /// <summary>Its game save at the merge (JSON text, or null) and that save's "at".</summary>
+        public string Tales;
+        public long TalesAt;
+        /// <summary>A game has taken that save into Into's (or there was none to take).</summary>
+        public bool Folded;
+    }
+
     /// <summary>The Book Fair counters (econ_state): pinballs, wheel tickets, prism drops, pity, fishing, upgrades, free capsule day.</summary>
     public sealed class FairState
     {
@@ -63,7 +98,7 @@ namespace BookBuddies.Local
     }
 
     /// <summary>
-    /// Everything the offline server keeps, as one versioned JSON document ({"v":1, players, tokens, meta}).
+    /// Everything the offline server keeps, as one versioned JSON document ({"v":1, players, tokens, meta, merges}).
     /// Every change calls Touch, so a save knows there is something to write.
     /// </summary>
     public sealed class LocalStore
@@ -76,6 +111,8 @@ namespace BookBuddies.Local
         public readonly Dictionary<string, string> Tokens = new Dictionary<string, string>();
         /// <summary>Small server-wide values (today's wrong recovery codes).</summary>
         public readonly Dictionary<string, object> Meta = new Dictionary<string, object>();
+        /// <summary>Accounts merged into others, oldest first.</summary>
+        public readonly List<LocalMergeRow> Merges = new List<LocalMergeRow>();
 
         /// <summary>The file this store was read from and saves to (null: memory only).</summary>
         public string Source { get; private set; }
@@ -122,7 +159,12 @@ namespace BookBuddies.Local
             foreach (var p in Players.Values) players[p.Id] = Write(p);
             var tokens = new Dictionary<string, object>();
             foreach (var t in Tokens) tokens[t.Key] = t.Value;
-            return Json.Write(new Dictionary<string, object> { ["v"] = Version, ["players"] = players, ["tokens"] = tokens, ["meta"] = Meta });
+            var merges = Merges.ConvertAll(m => (object)new Dictionary<string, object>
+            {
+                ["from"] = m.From, ["into"] = m.Into, ["code"] = m.Code, ["at"] = m.At, ["pets"] = m.Pets, ["moved"] = m.Moved,
+                ["coins"] = m.CoinsMoved, ["tales"] = m.Tales, ["tales_at"] = m.TalesAt, ["folded"] = m.Folded,
+            });
+            return Json.Write(new Dictionary<string, object> { ["v"] = Version, ["players"] = players, ["tokens"] = tokens, ["meta"] = Meta, ["merges"] = merges });
         }
 
         /// <summary>Writes "text" to a temp file, flushes it to disk, then swaps it in for the save.</summary>
@@ -172,6 +214,14 @@ namespace BookBuddies.Local
                     if (kv.Value is string pid && s.Players.ContainsKey(pid)) s.Tokens[kv.Key] = pid;
             var meta = o.Obj("meta");
             if (meta != null) foreach (var kv in meta) s.Meta[kv.Key] = kv.Value;
+            foreach (var x in o.Arr("merges"))
+                if (x is Dictionary<string, object> m && s.Players.ContainsKey(m.Str("into")))
+                    s.Merges.Add(new LocalMergeRow
+                    {
+                        From = m.Str("from"), Into = m.Str("into"), Code = m.Str("code"), At = (long)m.Num("at"),
+                        Pets = m.Obj("pets") ?? new Dictionary<string, object>(), Moved = m.Arr("moved"), CoinsMoved = m.Int("coins"),
+                        Tales = m.Str("tales", null), TalesAt = (long)m.Num("tales_at"), Folded = m.Truthy("folded"),
+                    });
             return s;
         }
 
@@ -181,10 +231,12 @@ namespace BookBuddies.Local
             {
                 Id = id, Name = o.Str("name"), Pet = o.Str("pet"), Code = o.Str("code"), Admin = o.Truthy("admin"),
                 MuteUntil = (long)o.Num("mute"), BanUntil = (long)o.Num("ban"), Created = (long)o.Num("created"), LastSeen = (long)o.Num("seen"),
+                Tales = o.Str("tales", null), TalesAt = (long)o.Num("tales_at"), Petsave = o.Str("petsave", null), Site = o.Truthy("site"),
+                Locked = o.Truthy("locked"), Updated = (long)o.Num("updated"),
             };
             foreach (var x in o.Arr("pets"))
                 if (x is Dictionary<string, object> q)
-                    p.Pets.Add(new LocalPet { Id = q.Str("id"), Name = q.Str("name"), Look = q.Str("look"), Active = q.Truthy("active"), Born = (long)q.Num("born") });
+                    p.Pets.Add(new LocalPet { Id = q.Str("id"), Name = q.Str("name"), Look = q.Str("look"), Active = q.Truthy("active"), Rest = q.Truthy("rest"), Born = (long)q.Num("born") });
             ReadRows(o.Arr("coins"), p.Coins);
             ReadRows(o.Arr("tickets"), p.Tickets);
             var f = o.Obj("fair");
@@ -215,9 +267,10 @@ namespace BookBuddies.Local
             {
                 ["name"] = p.Name, ["pet"] = p.Pet, ["code"] = p.Code, ["admin"] = p.Admin,
                 ["mute"] = p.MuteUntil, ["ban"] = p.BanUntil, ["created"] = p.Created, ["seen"] = p.LastSeen,
+                ["tales"] = p.Tales, ["tales_at"] = p.TalesAt, ["petsave"] = p.Petsave, ["site"] = p.Site, ["locked"] = p.Locked, ["updated"] = p.Updated,
                 ["pets"] = p.Pets.ConvertAll(q => (object)new Dictionary<string, object>
                 {
-                    ["id"] = q.Id, ["name"] = q.Name, ["look"] = q.Look, ["active"] = q.Active, ["born"] = q.Born,
+                    ["id"] = q.Id, ["name"] = q.Name, ["look"] = q.Look, ["active"] = q.Active, ["rest"] = q.Rest, ["born"] = q.Born,
                 }),
                 ["coins"] = WriteRows(p.Coins),
                 ["tickets"] = WriteRows(p.Tickets),

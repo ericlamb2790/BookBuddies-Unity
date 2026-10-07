@@ -1,6 +1,7 @@
 // Ports Server/src/index.js:18-55 (the routes and the replies to a refusal or a crash) and db.js:97-106 (the towns and
 // rooms). The game's offline server: BBApi.Send hands it the same requests it would send the Worker. Admin (/admin/*)
-// and Tales (/quest/*, /notes) stay online, so offline they answer 404 like any unknown route.
+// and Tales (/quest/*, /notes) stay online, so offline they answer 404 like any unknown route. The site's merge and
+// game-save routes (LocalMerge) are here too, as the tests' stand-in for bookbuddies.pet.
 
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,8 @@ namespace BookBuddies.Local
     /// <summary>
     /// The Unity Worker's account, pet, wallet and town-ticket routes, answered on this PC from one JSON file
     /// (LocalStore). Replies, status codes and messages match the online server's. Pure C#: Boot sets FilePath.
-    /// GET /party is offline only: the party in a hosted world (LocalParty).
+    /// GET /party is offline only: the party in a hosted world (LocalParty). Joining accounts and the game save upload
+    /// (LocalMerge) follow the site's routes.
     /// </summary>
     public static class LocalServer
     {
@@ -68,7 +70,7 @@ namespace BookBuddies.Local
             string path = q < 0 ? pathAndQuery : pathAndQuery.Substring(0, q), query = q < 0 ? "" : pathAndQuery.Substring(q + 1);
             if (path.StartsWith("/api", StringComparison.Ordinal)) path = path.Substring(4);
 
-            if (path == "/health") return new Dictionary<string, object> { ["ok"] = true, ["server"] = "bookbuddies-unity", ["version"] = Version, ["accounts"] = true };
+            if (path == "/health") return new Dictionary<string, object> { ["ok"] = true, ["server"] = "bookbuddies-unity", ["version"] = Version, ["accounts"] = true, ["merge"] = 1 };
             if (path == "/register" && method == "POST") return LocalAccounts.Register(body);
             if (path == "/link/claim" && method == "POST") return LocalAccounts.SignIn(body);
 
@@ -78,6 +80,10 @@ namespace BookBuddies.Local
             if (path == "/me/recovery" && method == "GET") return LocalAccounts.Recovery(me);
             if (path == "/me/delete" && method == "POST") return LocalAccounts.DeleteMe(me);
             if (path == "/me/pets" || path.StartsWith("/me/pets/", StringComparison.Ordinal)) return LocalPets.Route(method, path, body, me);
+            if (path == "/me/tales" && method == "GET") return LocalMerge.GetTales(me);
+            if (path == "/me/tales" && method == "PUT") return LocalMerge.PutTales(body, me);
+            if (path == "/merge/preview" && method == "POST") return LocalMerge.Preview(body, me);
+            if (path == "/merge" && method == "POST") return LocalMerge.Merge(body, me);
             if (path == "/plaza/world/ticket" && method == "GET") return LocalAccounts.TownTicket(me, query);
             if (path == "/party" && method == "GET") return LocalParty.Get(me);
             if (path == "/wallet" || path.StartsWith("/wallet/", StringComparison.Ordinal)) return LocalWallet.Route(method, path, body, me);

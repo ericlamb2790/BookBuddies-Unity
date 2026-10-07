@@ -10,8 +10,9 @@ namespace BookBuddies.UI
 {
     /// <summary>
     /// Your pets, like the site's pets tab: a card for each (picture, name, body and evolution form) with "Make active",
-    /// a mystery egg that hatches a surprise pet (up to six), then a DNA reroll (it asks first) and a rename box for the
-    /// active pet, who is your buddy in town, in Tales and on the title screen. Pictures come from PetSprites' cache;
+    /// a mystery egg that hatches a surprise pet (up to six), the Pet Inn where pets past the nest of six nap (after joining
+    /// accounts), then a DNA reroll (it asks first) and a rename box for the active pet, who is your buddy in town, in Tales
+    /// and on the title screen. Pictures come from PetSprites' cache;
     /// any it hasn't drawn yet are drawn one per frame, so the screen opens without a stall.
     /// </summary>
     public sealed class PetsScreen : TalesScreen
@@ -86,11 +87,27 @@ namespace BookBuddies.UI
             var active = MyPets.Active;
             foreach (var pet in pets) PetCard(pet, pet == active);
             if (pets.Count < MyPets.Max) EggCard();
+            if (MyPets.Resting.Count > 0) Inn(pets.Count >= MyPets.Max);
             if (active != null) { DnaBox(active); RenameBox(active); }
             count.text = $"{pets.Count} of {MyPets.Max}";
         }
 
+        // a nest pet: Make active, and Rest while others nap at the Pet Inn (the active one stays)
         void PetCard(MyPets.Pet pet, bool active)
+        {
+            var row = PetLine(pet, active);
+            if (active)
+            {
+                UiKit.Icon(row, "⭐", 26);
+                UiKit.Badge(row, "Active", UiKit.EmberInk);
+                return;
+            }
+            UiKit.Secondary(row, "Make active", () => _ = Run(() => MyPets.MakeActive(pet), $"{pet.Name} is your buddy now"), null, 44);
+            if (MyPets.Resting.Count > 0) UiKit.Secondary(row, "Rest", () => _ = Run(() => MyPets.Rest(pet), $"{pet.Name} is napping at the Pet Inn"), "💤", 44);
+        }
+
+        // a pet's picture, name, body and evolution form, in a row of the list
+        RectTransform PetLine(MyPets.Pet pet, bool active)
         {
             var look = PetLook.Parse(pet.Look, Parts) ?? new PetLook();
             var row = Row(pet.Name, active);
@@ -101,12 +118,19 @@ namespace BookBuddies.UI
             IconLine(words, body.icon, look.Shiny ? body.name + " · Shiny" : body.name);
             string form = look.Stage == 0 ? "Still an egg" : $"Form {look.Evo} of 3 · {Parts.Evolution.NameOf(look.Shape, look.Evo, Parts)}";
             UiKit.Label(words, form, UiKit.SmallSize, UiKit.EmberInk, UiKit.Bold);
-            if (active)
-            {
-                UiKit.Icon(row, "⭐", 26);
-                UiKit.Badge(row, "Active", UiKit.EmberInk);
-            }
-            else UiKit.Secondary(row, "Make active", () => _ = Run(() => MyPets.MakeActive(pet), $"{pet.Name} is your buddy now"), null, 44);
+            return row;
+        }
+
+        // pets past the nest of six (after joining accounts) nap here, each one coming home when the nest has room
+        void Inn(bool full)
+        {
+            var box = Box("Pet Inn");
+            IconLine(box, "🛌", "Resting at the Pet Inn", UiKit.BodySize + 1, Palette.Ink, UiKit.Bold);
+            UiKit.Label(box, "Pets who don’t fit in your nest of 6 nap here. Nobody is ever left behind.", UiKit.SmallSize + 1, Palette.InkSoft);
+            if (full) UiKit.Label(box, "Your nest is full. Let a pet rest first.", UiKit.SmallSize + 1, UiKit.EmberInk, UiKit.Bold);
+            foreach (var pet in MyPets.Resting)
+                UiKit.Secondary(PetLine(pet, false), "Bring home", () => _ = Run(() => MyPets.Wake(pet), $"{pet.Name} is home in your nest"), "🏡", 44)
+                    .interactable = !full;
         }
 
         void EggCard()

@@ -29,12 +29,16 @@ namespace BookBuddies.Tales
     /// the shops sold you (library upgrades, unlocked classes, keepsakes; the server's ledger keeps those too, see
     /// Economy/Shop.TakeOwned).
     /// Saved as JSON next to the game's other data (TalesSave.FilePath); AutoSave also flushes it at good moments.
+    /// Each save belongs to one account (Owner): another account's save waits beside it as tales.&lt;id&gt;.json, and
+    /// tales.bak.json keeps the one from before the last replace.
     /// Pure C#: Unity sets FilePath at startup.
     /// </summary>
     public sealed class TalesSave
     {
         public const int Version = 1;
         public static string FilePath;
+        /// <summary>Now in ms, for At (tests move it).</summary>
+        public static Func<double> Clock = () => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         static TalesSave current;
         public static TalesSave Current => current ?? (current = Load());
         public static event Action Changed;
@@ -43,6 +47,10 @@ namespace BookBuddies.Tales
         static long snapshots, written;   // snapshots made, and the newest one on disk
         static volatile string writtenText; // what the last write put in the file
 
+        public string Owner = "";                            // the account this save belongs to; "" = not tied to one yet
+        public double At;                                    // when the content last changed (ms)
+        public double SiteIn;                                // the site_at of the website save taken in (0 = never)
+        string stamped;                                      // the content At dates; a loaded or replaced save starts with its own
         public string Personality;                           // the site's pers; picked once for a Unity-hatched buddy
         public readonly PetProfile Me = new PetProfile();
         public readonly List<string> Bag = new List<string>(); // item strings, newest last (LT_BAG cap)
@@ -66,12 +74,15 @@ namespace BookBuddies.Tales
         public readonly List<string> Keepsakes = new List<string>();        // town keepsakes bought (decor ids)
         public readonly HashSet<string> Unseen = new HashSet<string>();     // unlocks not looked at yet ("move:<cls>:<k>", "cls:<k>")
 
+        /// <summary>The buddy has been adventuring: renown, a chosen class, a tale or gear on.</summary>
+        public bool HasHero => Me.Rxp > 0 || Me.Cls != null || Me.Stat("tales") > 0 || Me.Gear.Count > 0;
+
         public void Touch() { Save(); Changed?.Invoke(); }
 
         public void Save()
         {
             if (string.IsNullOrEmpty(FilePath)) return;
-            Write(FilePath, ToText(), ++snapshots);
+            Write(FilePath, Stamped(), ++snapshots);
         }
 
         /// <summary>Writes the loaded profile now if it changed since it was last written (nothing before it's loaded).</summary>
@@ -84,7 +95,7 @@ namespace BookBuddies.Tales
         static Action Snapshot()
         {
             if (current == null || string.IsNullOrEmpty(FilePath)) return null;
-            string path = FilePath, text = current.ToText();
+            string path = FilePath, text = current.Stamped();
             if (text == writtenText) return null;
             long n = ++snapshots;
             return () => Write(path, text, n);
@@ -120,11 +131,77 @@ namespace BookBuddies.Tales
             }
         }
 
-        string ToText()
+        /// <summary>Makes s the save and writes it; the file it replaces is kept as tales.bak.json.</summary>
+        public static void Replace(TalesSave s)
+        {
+            Flush();
+            if (!string.IsNullOrEmpty(FilePath))
+                lock (writing)
+                {
+                    try { if (File.Exists(FilePath)) File.Copy(FilePath, Beside("bak"), true); }
+                    catch (Exception) { /* the backup is only for support */ }
+                }
+            current = s;
+            s.stamped = Content(s);
+            s.Save();
+            Changed?.Invoke();
+        }
+
+        /// <summary>Puts the save aside as tales.&lt;Owner&gt;.json (an unowned one only goes to the backup) and starts an empty one.</summary>
+        public static void Stash()
+        {
+            var s = Current;
+            if (s.Owner != "" && !string.IsNullOrEmpty(FilePath))
+                lock (writing)
+                {
+                    try { WriteAtomic(Beside(s.Owner), s.Stamped()); }
+                    catch (Exception) { /* it's still in the backup */ }
+                }
+            Replace(new TalesSave());
+        }
+
+        /// <summary>An account's save put aside on this device, left where it is; null when there's none.</summary>
+        public static TalesSave Stashed(string owner) =>
+            string.IsNullOrEmpty(FilePath) || string.IsNullOrEmpty(owner) ? null : Read(Beside(owner));
+
+        /// <summary>Takes back an account's save put aside on this device (the file goes); null when there's none.</summary>
+        public static TalesSave TakeStash(string owner)
+        {
+            var s = Stashed(owner);
+            if (s != null)
+                try { File.Delete(Beside(owner)); } catch (Exception) { }
+            return s;
+        }
+
+        // tales.<name>.json next to tales.json
+        static string Beside(string name) => Path.Combine(Path.GetDirectoryName(FilePath), "tales." + name + ".json");
+
+        // what At dates: everything but at, and the owner (claiming a save isn't playing it)
+        static string Content(TalesSave s)
+        {
+            var o = s.ToObject(false);
+            o.Remove("owner");
+            return Json.Write(o);
+        }
+
+        // the text to write, with At moved to now when the content changed since it was last stamped
+        string Stamped()
+        {
+            string content = Content(this);
+            if (content != stamped) { stamped = content; At = Clock(); }
+            return ToText();
+        }
+
+        /// <summary>The save as tales.json holds it (and as the server stores it).</summary>
+        public string ToText() => Json.Write(ToObject());
+
+        /// <summary>The save as a JSON object; without at when withAt is false.</summary>
+        public Dictionary<string, object> ToObject(bool withAt = true)
         {
             var o = new Dictionary<string, object>
             {
-                ["v"] = (double)Version, ["pers"] = Personality, ["bag"] = Strs(Bag), ["fresh"] = Strs(Fresh), ["dust"] = (double)Dust,
+                ["v"] = (double)Version, ["owner"] = Owner, ["at"] = At, ["siteIn"] = SiteIn,
+                ["pers"] = Personality, ["bag"] = Strs(Bag), ["fresh"] = Strs(Fresh), ["dust"] = (double)Dust,
                 ["seen"] = Strs(Seen), ["met"] = Strs(Met), ["hp"] = HpFrac, ["ink"] = InkSaved, ["vt"] = VitalsAt, ["link"] = (double)Link,
                 ["lair"] = LairAt, ["chest"] = ChestReady, ["rd"] = Texts(RoadDays), ["fd"] = FindDay, ["fn"] = (double)FindCount,
                 ["towns"] = Strs(TownsSeen), ["gyms"] = Nums(Gyms), ["stone"] = new Dictionary<string, object> { ["home"] = HomeStone, ["last"] = LastStone, ["rt"] = RecallAt },
@@ -135,16 +212,39 @@ namespace BookBuddies.Tales
                     ["gear"] = Texts(Me.Gear), ["order"] = Me.Order == null ? null : Strs(Me.Order), ["ua"] = Me.AutoUlt, ["lane"] = Me.Lane,
                 },
             };
-            return Json.Write(o);
+            if (!withAt) o.Remove("at");
+            return o;
         }
 
+        /// <summary>Reads tales.json (an empty save when there's none); what it read counts as written.</summary>
         public static TalesSave Load()
         {
+            var s = (string.IsNullOrEmpty(FilePath) ? null : Read(FilePath)) ?? new TalesSave();
+            s.stamped = Content(s);
+            return s;
+        }
+
+        // a save file, or null when it's missing or unreadable; one from before accounts is dated by its write time
+        static TalesSave Read(string path)
+        {
+            try
+            {
+                if (!File.Exists(path)) return null;
+                var o = Json.ParseObject(File.ReadAllText(path));
+                if (o == null) return null;
+                var s = FromObject(o);
+                if (!o.ContainsKey("at")) s.At = new DateTimeOffset(File.GetLastWriteTimeUtc(path)).ToUnixTimeMilliseconds();
+                return s;
+            }
+            catch (Exception) { return null; }
+        }
+
+        /// <summary>A save from its JSON object (ToObject's shape); an empty save for null.</summary>
+        public static TalesSave FromObject(Dictionary<string, object> o)
+        {
             var s = new TalesSave();
-            if (string.IsNullOrEmpty(FilePath) || !File.Exists(FilePath)) return s;
-            Dictionary<string, object> o;
-            try { o = Json.ParseObject(File.ReadAllText(FilePath)); } catch (Exception) { return s; }
             if (o == null) return s;
+            s.Owner = o.Str("owner"); s.At = o.Num("at"); s.SiteIn = o.Num("siteIn");
             s.Personality = o.Str("pers", null);
             foreach (var x in o.Arr("bag")) if (x is string b) s.Bag.Add(b);
             foreach (var x in o.Arr("fresh")) if (x is string b) s.Fresh.Add(b);

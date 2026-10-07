@@ -15,7 +15,8 @@ namespace BookBuddies
     /// the main thread and writes the files on a background thread (a temp file, then swapped in), then a small book
     /// blinks in the corner (SaveIcon). BeforeFight saves everything at once. It also saves when the app is paused or
     /// loses focus, every few minutes, and when the game quits. Away from your online account (offline, or in a friend's
-    /// world) each save also sends your coins and pet changes there (CoinBank.AtSave, PetSync) once it answers. Main thread only.
+    /// world) each save also sends your coins and pet changes there (CoinBank.AtSave, PetSync) once it answers, and your Tales
+    /// save goes up to it wherever you play (TalesSync). Main thread only.
     /// </summary>
     public static class AutoSave
     {
@@ -38,8 +39,9 @@ namespace BookBuddies
         /// <summary>Saves everything right now, before a fight starts, so a fight can't lose coins or gear.</summary>
         public static void BeforeFight() => SaveAll();
 
-        // everything at once, on this thread (a fight is starting, the app is being paused or closed)
-        static void SaveAll()
+        // everything at once, on this thread (a fight is starting, the app is being paused or closed); leaving: the Tales
+        // save goes up at once too (a fight waits for its turn, at most once a minute)
+        static void SaveAll(bool leaving = false)
         {
             Settled();
             ToAccount();
@@ -49,6 +51,7 @@ namespace BookBuddies
                 TalesSave.Flush();
                 TaleStore.Flush();
                 PlayerPrefs.Save();
+                if (leaving) TalesSync.Push(true);
             }
             catch (Exception e) { Debug.LogException(e); }
         }
@@ -68,13 +71,15 @@ namespace BookBuddies
             if (blink) SaveIcon.Blink();
         }
 
-        // your coins and pet changes go up to your online account (each waits for it to answer its health check)
+        // your coins, pet changes and Tales save go up to your online account (the first two wait for it to answer its health
+        // check; the save goes at most once a minute)
         static void ToAccount()
         {
             try
             {
                 CoinBank.AtSave();
                 _ = PetSync.Push();
+                TalesSync.Push();
             }
             catch (Exception e) { Debug.LogException(e); }
         }
@@ -119,7 +124,7 @@ namespace BookBuddies
             // a paused app (a phone put away) may never come back, so this one is written before it returns
             void OnApplicationPause(bool paused)
             {
-                if (paused) SaveAll();
+                if (paused) SaveAll(true);
             }
 
             void OnApplicationFocus(bool focused)
@@ -127,7 +132,7 @@ namespace BookBuddies
                 if (!focused) SaveSoon("focus lost", false);
             }
 
-            void OnApplicationQuit() => SaveAll();
+            void OnApplicationQuit() => SaveAll(true);
         }
     }
 }

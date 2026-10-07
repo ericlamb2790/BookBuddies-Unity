@@ -18,17 +18,28 @@ namespace BookBuddies.Net
     public static class BBApi
     {
         const int TimeoutSeconds = 20;
-        public const int QuickTimeout = 6; // seconds for a look at your account while switching servers
+        public const int QuickTimeout = 6; // seconds for a look at your account while switching servers or entering town
+        const int MergeTimeout = 30;       // joining accounts moves a lot in one go
 
         public sealed class ApiError : Exception
         {
             public readonly long Status;
-            public ApiError(string message, long status) : base(message) { Status = status; }
+            /// <summary>
+            /// The reply's "why", a short word to branch on ("code", "stale", "taken"…). Empty when it had none: a 404 with
+            /// no "why" is a route the server doesn't have yet, never a wrong code.
+            /// </summary>
+            public readonly string Why;
+            public ApiError(string message, long status, string why = "") : base(message) { Status = status; Why = why ?? ""; }
         }
 
+        /// <summary>What a server can do, from its /health: hatch new pets (Accounts) and join accounts (Merge).</summary>
+        public sealed class ServerFeatures { public bool Accounts, Merge; }
+
+        static readonly Dictionary<string, ServerFeatures> features = new Dictionary<string, ServerFeatures>();
+
         /// <summary>
-        /// Signs in with a recovery code (BB-XXXXX-XXXXX, from the website's profile) or a 6-letter link code.
-        /// Saves the token and returns the account.
+        /// Signs in with a recovery code (BB-XXXXX-XXXXX, from hatching or the website's profile). The old code of a buddy
+        /// that joined another account signs in to that one ("merged"). Saves the token and returns the account.
         /// </summary>
         public static async Task<Dictionary<string, object>> SignIn(string code)
         {
@@ -57,12 +68,21 @@ namespace BookBuddies.Net
 
         /// <summary>
         /// Whether the server can hatch new pets (the Unity Worker can; the website's Worker signs in existing
-        /// readers only). Throws when the server can't be reached.
+        /// readers only). Asks it every time, so it also tells whether it's there. Throws when the server can't be reached.
         /// </summary>
-        public static async Task<bool> CanHatch()
+        public static async Task<bool> CanHatch() => (await Features(Settings.Server, true)).Accounts;
+
+        /// <summary>
+        /// What a server (an address, or Settings.Local) can do, asked once per run unless fresh: a server that refuses its
+        /// health check can do neither, and is asked again next time. Throws when the server can't be reached.
+        /// </summary>
+        public static async Task<ServerFeatures> Features(string server, bool fresh = false)
         {
-            try { return (await Send("GET", "/health", null, false)).Truthy("accounts"); }
-            catch (ApiError e) when (e.Status >= 400) { return false; }
+            if (!fresh && features.TryGetValue(server, out var known)) return known;
+            Dictionary<string, object> health;
+            try { health = server == Settings.Local ? await SendLocal("GET", "/health", null, null) : await SendTo(server, null, "GET", "/health", null); }
+            catch (ApiError e) when (e.Status >= 400) { return new ServerFeatures(); }
+            return features[server] = new ServerFeatures { Accounts = health.Truthy("accounts"), Merge = health.Truthy("merge") };
         }
 
         /// <summary>Whether a server answers its health check, within a few seconds. Never throws.</summary>
@@ -118,6 +138,13 @@ namespace BookBuddies.Net
         public static Task<Dictionary<string, object>> SetActivePet(string id) =>
             Send("POST", $"/me/pets/{Uri.EscapeDataString(id)}/active", new Dictionary<string, object>(), true);
 
+        /// <summary>
+        /// Lets a nest pet nap at the Pet Inn (rest) or brings a resting one home (not rest). The active pet and the last
+        /// one in the nest can't rest, and nobody comes home to a full nest (409, "why" active, last or full).
+        /// </summary>
+        public static Task<Dictionary<string, object>> RestPet(string id, bool rest) =>
+            Send("POST", $"/me/pets/{Uri.EscapeDataString(id)}/rest", new Dictionary<string, object> { ["rest"] = rest }, true);
+
         /// <summary>Your recovery code again, as "code" (Unity server only).</summary>
         public static Task<Dictionary<string, object>> Recovery() => Send("GET", "/me/recovery", null, true);
 
@@ -160,6 +187,41 @@ namespace BookBuddies.Net
 
         /// <summary>A purchase the server prices: {kind: "shop", item, ref, amount} or {kind: "fair", n, ref}. Adds "paid".</summary>
         public static Task<Dictionary<string, object>> WalletSpend(Dictionary<string, object> body) => Send("POST", "/wallet/spend", body, true);
+
+        // ---- joining accounts and the game save (always the online server, with its sign-in, whichever is in use) ----
+
+        /// <summary>
+        /// What joining with a recovery code would do (POST /merge/preview): "mode" is same, switch (with "other": two
+        /// bookbuddies.pet accounts can't merge) or merge (with "you", "from", "into", "coins" and "limits"). Changes
+        /// nothing and signs in to nothing.
+        /// </summary>
+        public static Task<Dictionary<string, object>> MergePreview(string code) =>
+            SendOnline("POST", "/merge/preview", new Dictionary<string, object> { ["code"] = code.Trim() });
+
+        /// <summary>
+        /// Joins the accounts (POST /merge {code, from, nest?, active?, tales?}); the same body again is safe and answers
+        /// "again". This device's sign-in belongs to the joined account afterwards, so its "account" is remembered.
+        /// </summary>
+        public static async Task<Dictionary<string, object>> Merge(Dictionary<string, object> body)
+        {
+            string server = Settings.OnlineServer;
+            var reply = await SendOnline("POST", "/merge", body, MergeTimeout);
+            if (Settings.Server == server && reply.Obj("account") is Dictionary<string, object> account) Remember(account, Settings.Token);
+            return reply;
+        }
+
+        /// <summary>
+        /// Your game save on the server and what settling it needs (GET /me/tales): "at", "save", "petsave" (only while
+        /// there's no save), "site_at", "pets", "active", "owned" and "merges". Quick, as entering town waits for it.
+        /// </summary>
+        public static Task<Dictionary<string, object>> Tales() => SendOnline("GET", "/me/tales", null, QuickTimeout);
+
+        // a request to the online server with its sign-in
+        static Task<Dictionary<string, object>> SendOnline(string method, string path, Dictionary<string, object> body, int seconds = TimeoutSeconds)
+        {
+            string server = Settings.OnlineServer;
+            return SendTo(server, Settings.TokenFor(server), method, path, body, seconds);
+        }
 
         // ---- admin tools (the server answers 403 unless you're a town admin) ----
 
@@ -306,7 +368,7 @@ namespace BookBuddies.Net
             {
                 if (p.Status == 401 && token != null) Settings.SignOut(Settings.Local);
                 if (p.InnerException != null) Debug.LogException(p.InnerException); // the offline server tripped: worth a look
-                throw new ApiError(p.Message, p.Status);
+                throw new ApiError(p.Message, p.Status, p.Why);
             }
         }
 
@@ -330,7 +392,7 @@ namespace BookBuddies.Net
                 if (status == 0) throw new ApiError("Can’t reach " + Settings.HostOf(server) + ". Check your connection and try again.", 0);
                 if (status == 401 && !string.IsNullOrEmpty(token)) Settings.SignOut(server);
                 if (status == 403 && path.StartsWith("/admin") && server == Settings.Server) Settings.IsAdmin = false;
-                throw new ApiError(reply.Str("error", error ?? "Something went wrong"), status);
+                throw new ApiError(reply.Str("error", error ?? "Something went wrong"), status, reply.Str("why"));
             }
             return reply ?? new Dictionary<string, object>();
         }

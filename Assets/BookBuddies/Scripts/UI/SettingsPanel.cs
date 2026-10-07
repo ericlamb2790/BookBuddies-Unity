@@ -142,6 +142,7 @@ namespace BookBuddies.UI
             if (Settings.IsLocal) OfflineAccount(signedIn, name);
             else if (Settings.IsWorld) Note($"Visiting {Settings.WorldName} as {name}. Coins you find there and changes to your pets come home to your account. Choose “Leave this world” on the title screen to head home.");
             else OnlineAccount(signedIn, name);
+            if (Settings.IsLocal || Settings.IsWorld) Note("To join accounts, go back online.");
 
             // where your buddy lives: the main server, the dev one, an address of your own (typed below) or this PC
             InputField address = null;
@@ -177,15 +178,39 @@ namespace BookBuddies.UI
             });
             code = Note("");
             UiKit.Show(code, false);
+            JoinRow();
             if (Settings.IsAdmin)
                 Row("Admin tools", "Find players, mute, send home, give breaks.", r => UiKit.Secondary(r, "Open", () => AdminPanel.Open(), "🛡️"));
-            Row("Sign out", "Your buddy stays safe on the server.", r => UiKit.ConfirmButton(r, "Sign out", "Tap again to sign out", () =>
-            {
-                Settings.SignOut();
-                Buddy.Forget();
-                AccountChanged();
-            }));
+            Row("Sign out", "Your buddy stays safe on the server.", r => UiKit.ConfirmButton(r, "Sign out", "Tap again to sign out", SignOut));
             Row("Delete account", "Removes your buddy and coins for good. A bookbuddies.pet account can only be deleted on the website.", r => UiKit.ConfirmButton(r, "Delete", "Tap again to delete forever", DeleteAccount));
+        }
+
+        // Join accounts, where the online server can join them (it's asked once a run): the row waits hidden until it says so
+        async void JoinRow()
+        {
+            int from = content.childCount;
+            Row("Join accounts", "Got a code from bookbuddies.pet or another device? Bring this buddy, its pets and coins together with it.",
+                r => UiKit.Secondary(r, "Use a code", () => { Close(); SignInScreen.Show(null, ok => { if (ok) accountChanged?.Invoke(); }, true); }));
+            var parts = new Component[content.childCount - from];
+            for (int i = 0; i < parts.Length; i++) UiKit.Show(parts[i] = content.GetChild(from + i), false);
+            bool merge;
+            try { merge = (await BBApi.Features(Settings.OnlineServer)).Merge; }
+            catch (System.Exception) { return; }
+            foreach (var part in parts) if (part) UiKit.Show(part, merge);
+        }
+
+        // your adventure goes up and aside first (it comes back when you sign in here again; the panel waits meanwhile), then
+        // your buddy leaves this device
+        async void SignOut()
+        {
+            if (switching) return;
+            switching = true;
+            Note("Saving your adventure…");
+            await TalesSync.SignedOut();
+            switching = false;
+            Settings.SignOut();
+            Buddy.Forget();
+            AccountChanged();
         }
 
         // offline there's no recovery code and nothing to sign out of: the profile lives in a file on this PC
@@ -236,6 +261,7 @@ namespace BookBuddies.UI
 
         async void ShowRecovery(Text code, Button button)
         {
+            TalesSync.Push(true); // the code brings your adventure along too, so it's on the server first
             button.interactable = false;
             string text;
             try

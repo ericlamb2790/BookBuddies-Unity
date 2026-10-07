@@ -185,12 +185,15 @@ namespace BookBuddies.Local
             };
         }
 
-        // what was bought for keeps (keepsakes, class unlocks, library levels, moves) and the last two days' stock pieces
-        static List<object> Owned(LocalPlayer p, string yesterday)
+        /// <summary>
+        /// What was bought for keeps (keepsakes, class unlocks, library levels, moves) and the stock pieces bought since
+        /// "yesterday" (none when it is null).
+        /// </summary>
+        internal static List<object> Owned(LocalPlayer p, string yesterday)
         {
             bool Keeps(LedgerRow r) => r.Kind == "shop" && (r.Ref.StartsWith("decor:", StringComparison.Ordinal) || r.Ref.StartsWith("unlock:", StringComparison.Ordinal) ||
                 r.Ref.StartsWith("meta:", StringComparison.Ordinal) || r.Ref.StartsWith("move:", StringComparison.Ordinal) ||
-                (r.Ref.StartsWith("stock:", StringComparison.Ordinal) && string.CompareOrdinal(r.Day, yesterday) >= 0));
+                (yesterday != null && r.Ref.StartsWith("stock:", StringComparison.Ordinal) && string.CompareOrdinal(r.Day, yesterday) >= 0));
             return p.Coins.Where(Keeps).Select(r => r.Ref).OrderBy(r => r, StringComparer.Ordinal).Cast<object>().ToList();
         }
 

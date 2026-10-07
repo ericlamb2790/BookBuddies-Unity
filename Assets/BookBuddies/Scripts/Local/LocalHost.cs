@@ -297,7 +297,7 @@ namespace BookBuddies.Local
             }
             catch (LocalProblem p)
             {
-                reply.TrySetResult((p.Status, Problem(p.Message)));
+                reply.TrySetResult((p.Status, Problem(p.Message, p.Why)));
                 if (p.InnerException != null) Report(p.InnerException);
             }
             catch (Exception e) { Fail(e, reply); }
@@ -338,7 +338,13 @@ namespace BookBuddies.Local
             if (reply.ContainsKey("pass")) reply["pass"] = r.Passes.Issue(reply.Str("pass"), expires, true);
         }
 
-        static string Problem(string message) => Json.Write(new Dictionary<string, object> { ["error"] = message });
+        // a refusal's reply: {error}, and {why} when it has one
+        static string Problem(string message, string why = null)
+        {
+            var o = new Dictionary<string, object> { ["error"] = message };
+            if (why != null) o["why"] = why;
+            return Json.Write(o);
+        }
 
         // ---- the background tasks' part ----
 
@@ -382,7 +388,7 @@ namespace BookBuddies.Local
                 if (q.Path == LivePath) await Visit(r, c, q).ConfigureAwait(false);
                 else await Respond(c, await Answer(r, q).ConfigureAwait(false)).ConfigureAwait(false);
             }
-            catch (LocalProblem p) { await Respond(c, (p.Status, Problem(p.Message))).ConfigureAwait(false); }
+            catch (LocalProblem p) { await Respond(c, (p.Status, Problem(p.Message, p.Why))).ConfigureAwait(false); }
             catch (Exception) { } // they hung up, took too long, or the world closed
             finally
             {

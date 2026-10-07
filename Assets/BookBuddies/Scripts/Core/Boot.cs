@@ -153,6 +153,14 @@ namespace BookBuddies
                     name = me.Result.Str("name", name);
                     if (me.Result.Str("pet").Length > 0) look = me.Result.Str("pet");
                     Buddy.Save(name, look);
+                    if (!Settings.IsLocal && !Settings.IsWorld)
+                    {
+                        // the game save settles with the account's, over the loading screen while the adventure card asks; a
+                        // slow server leaves it for the next entry
+                        loading.Stage("Finding your adventure…");
+                        var settle = TalesSync.Settle(TownSheets.AskAdventure);
+                        for (float t = 0; !settle.IsCompleted && (TalesSync.Asking || t < 8); t += Time.unscaledDeltaTime) yield return null;
+                    }
                 }
                 // no connection: use the buddy saved last time, and the town keeps trying to connect
             }

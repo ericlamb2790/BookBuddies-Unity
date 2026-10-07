@@ -1,5 +1,6 @@
 // Ports Server/src/pets.js:1-116: MAX_PETS, cleanPet, GET/POST /me/pets, PATCH /me/pets/<id>, POST /me/pets/<id>/active,
-// petList, activeLook, firstPet and petName. The active pet's look is also the player's "pet", as on the Worker.
+// petList, activeLook, firstPet and petName. The active pet's look is also the player's "pet", as on the Worker. Adds the
+// site's resting pets (SITE-CONTRACT §2.3): POST /me/pets/<id>/rest, and "resting" in every list.
 
 using System;
 using System.Collections.Generic;
@@ -9,7 +10,10 @@ using System.Text.RegularExpressions;
 
 namespace BookBuddies.Local
 {
-    /// <summary>A player's pets, up to six: each has an id, a name and a look, and one of them is active.</summary>
+    /// <summary>
+    /// A player's pets: a nest of up to six, and any more resting at the Pet Inn (after joining accounts). Each has an id,
+    /// a name and a look, and one in the nest is active.
+    /// </summary>
     public static class LocalPets
     {
         /// <summary>A full nest.</summary>
@@ -21,7 +25,7 @@ namespace BookBuddies.Local
         static readonly Regex PartId = new Regex("^[a-z0-9_]{1,16}\\z");
         static readonly Regex Mood = new Regex("^[a-z]{1,12}\\z");
         static readonly Regex NameJunk = new Regex(@"[<>""&\x00-\x1f]");
-        static readonly Regex PetPath = new Regex("^/me/pets/([a-z0-9]{1,24})(/active)?\\z");
+        static readonly Regex PetPath = new Regex("^/me/pets/([a-z0-9]{1,24})(/active|/rest)?\\z");
 
         /// <summary>
         /// A pet look as tidy JSON text (known keys and simple ids only, at most 500 characters), or null when it can't be
@@ -81,7 +85,7 @@ namespace BookBuddies.Local
             return sb.ToString();
         }
 
-        /// <summary>GET, POST /me/pets, PATCH /me/pets/&lt;id&gt; and POST /me/pets/&lt;id&gt;/active. Every reply is the whole list.</summary>
+        /// <summary>GET, POST /me/pets, PATCH /me/pets/&lt;id&gt; and POST /me/pets/&lt;id&gt;/active and /rest. Every reply is the whole list.</summary>
         internal static Dictionary<string, object> Route(string method, string path, Dictionary<string, object> body, LocalPlayer me)
         {
             if (path == "/me/pets" && method == "GET") return Reply(me);
@@ -90,21 +94,25 @@ namespace BookBuddies.Local
             if (!m.Success || method != (m.Groups[2].Success ? "POST" : "PATCH")) throw new LocalProblem("Not found", 404);
             FirstPet(me);
             var pet = me.Pets.Find(x => x.Id == m.Groups[1].Value) ?? throw new LocalProblem("That pet isn’t one of yours.", 404);
-            return m.Groups[2].Success ? MakeActive(me, pet) : Change(body, me, pet);
+            return m.Groups[2].Value == "/rest" ? Rest(body, me, pet) : m.Groups[2].Success ? MakeActive(me, pet) : Change(body, me, pet);
         }
 
-        /// <summary>The player's pets, oldest first, and the active one's id: {pets: [{id, name, look}], active}.</summary>
+        /// <summary>
+        /// The player's pets, oldest first, and the active one's id: {pets: [{id, name, look}], resting: [{id, name, look}],
+        /// active}. "pets" is the nest; the active pet is always one of them.
+        /// </summary>
         internal static Dictionary<string, object> List(LocalPlayer me)
         {
             FirstPet(me);
             var pets = new List<object>();
+            var resting = new List<object>();
             string active = "";
             foreach (var p in Sorted(me))
             {
-                pets.Add(new Dictionary<string, object> { ["id"] = p.Id, ["name"] = p.Name, ["look"] = p.Look });
-                if (p.Active && active.Length == 0) active = p.Id;
+                (p.Rest ? resting : pets).Add(new Dictionary<string, object> { ["id"] = p.Id, ["name"] = p.Name, ["look"] = p.Look });
+                if (p.Active && !p.Rest && active.Length == 0) active = p.Id;
             }
-            return new Dictionary<string, object> { ["pets"] = pets, ["active"] = active };
+            return new Dictionary<string, object> { ["pets"] = pets, ["resting"] = resting, ["active"] = active };
         }
 
         /// <summary>Keeps the active pet's look in step when PATCH /me changes the player's "pet".</summary>
@@ -137,16 +145,16 @@ namespace BookBuddies.Local
             return active.Look;
         }
 
-        // oldest first (born, then id)
-        static List<LocalPet> Sorted(LocalPlayer me)
+        /// <summary>The player's pets oldest first (born, then id), nest and resting together.</summary>
+        internal static List<LocalPet> Sorted(LocalPlayer me)
         {
             var list = new List<LocalPet>(me.Pets);
             list.Sort((a, b) => a.Born != b.Born ? a.Born.CompareTo(b.Born) : string.CompareOrdinal(a.Id, b.Id));
             return list;
         }
 
-        // the pet you hatched with becomes the first on the list (once; nothing happens when the list has pets already)
-        static void FirstPet(LocalPlayer me)
+        /// <summary>The pet you hatched with becomes the first on the list (once; nothing happens when the list has pets already).</summary>
+        internal static void FirstPet(LocalPlayer me)
         {
             if (string.IsNullOrEmpty(me.Pet) || me.Pets.Count > 0) return;
             me.Pets.Add(new LocalPet { Id = "p1", Name = me.Name, Look = me.Pet, Active = true, Born = me.Created != 0 ? me.Created : LocalServer.Now });
@@ -159,7 +167,7 @@ namespace BookBuddies.Local
             string name = PetName(Js.Get(body, "name"));
             string look = CleanPet(Js.Get(body, "look")) ?? throw new LocalProblem("That pet look couldn’t be read.");
             FirstPet(me);
-            if (me.Pets.Count >= MaxPets) throw new LocalProblem($"You have {MaxPets} pets already. That’s a full nest!");
+            if (me.Pets.Count(p => !p.Rest) >= MaxPets) throw new LocalProblem($"You have {MaxPets} pets already. That’s a full nest!");
             // born a millisecond after the last pet at least, so the list keeps the hatching order
             long born = me.Pets.Count == 0 ? LocalServer.Now : Math.Max(LocalServer.Now, me.Pets.Max(p => p.Born) + 1);
             foreach (var p in me.Pets) p.Active = false;
@@ -183,8 +191,23 @@ namespace BookBuddies.Local
 
         static Dictionary<string, object> MakeActive(LocalPlayer me, LocalPet pet)
         {
+            if (pet.Rest) throw new LocalProblem($"Bring {pet.Name} home first.", 409, "resting");
             foreach (var p in me.Pets) p.Active = p == pet;
             me.Pet = pet.Look;
+            LocalServer.Store.Touch();
+            return Reply(me);
+        }
+
+        // {rest: true} naps a nest pet at the Pet Inn (never the last one in the nest or the active one); {rest: false}
+        // brings it home when the nest has room
+        static Dictionary<string, object> Rest(Dictionary<string, object> body, LocalPlayer me, LocalPet pet)
+        {
+            bool rest = Js.Truthy(Js.Get(body, "rest"));
+            int nest = me.Pets.Count(p => !p.Rest);
+            if (rest && !pet.Rest && nest <= 1) throw new LocalProblem("Keep at least one pet in your nest.", 409, "last");
+            if (rest && pet.Active) throw new LocalProblem("Your buddy can’t rest while it’s your active pet.", 409, "active");
+            if (!rest && pet.Rest && nest >= MaxPets) throw new LocalProblem("Your nest is full. Let a pet rest first.", 409, "full");
+            pet.Rest = rest;
             LocalServer.Store.Touch();
             return Reply(me);
         }
