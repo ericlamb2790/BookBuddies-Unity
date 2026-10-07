@@ -5,6 +5,7 @@
 import { textProblem, cleanText } from './safety.js';
 import { blockedWords, forgetRooms, Problem, json, readJson } from './db.js';
 import { adminSetCoins, deleteWalletRows } from './wallet.js';
+import { deleteQuestRows } from './quest.js';
 
 const FOREVER = 8.64e15;              // a break "for good" lasts until the last date JavaScript can hold
 const MAX_MUTE_MINUTES = 30 * 24 * 60;
@@ -112,6 +113,7 @@ const ACTIONS = {
     await env.DB.batch([
       env.DB.prepare('DELETE FROM tokens WHERE player_id = ?1').bind(p.id),
       ...deleteWalletRows(env, p.id),
+      ...deleteQuestRows(env, p.id),
       env.DB.prepare('DELETE FROM pets WHERE player_id = ?1').bind(p.id),
       env.DB.prepare('DELETE FROM players WHERE id = ?1').bind(p.id),
     ]);

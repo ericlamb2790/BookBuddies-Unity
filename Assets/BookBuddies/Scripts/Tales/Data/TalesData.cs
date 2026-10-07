@@ -52,6 +52,7 @@ namespace BookBuddies.Tales
     public sealed class FoeDef
     {
         public string N, I, C, An, Sp, Sn, Si, Rg, Sh, Mv, Say;
+        public string Lair, Want;         // TQ_DARK only: the lair's name and what the villain wants (the saga's lines)
         public int G, Index;
         public double? Hp, Atk;
         public bool Dodge, IsBoss, IsDark;
@@ -110,6 +111,13 @@ namespace BookBuddies.Tales
         public readonly Dictionary<string, int> TownGenre = new Dictionary<string, int>();
         public readonly Dictionary<string, TownInfo> Towns = new Dictionary<string, TownInfo>();
         public readonly Dictionary<string, List<(string emoji, string kind, int count)>> LifeSets = new Dictionary<string, List<(string, string, int)>>();
+
+        public readonly List<(string key, string name, string icon, string desc)> Boons = new List<(string, string, string, string)>(); // TQ_BOONS, in order
+        public string[] TaleNamesA = new string[0], TaleNamesB = new string[0];   // TQ_TN_A/B: tqTaleName's words
+        public readonly List<(string from, string to)> Covers = new List<(string, string)>(); // TQ_COVERS: storybook cover gradients by genre
+        public readonly List<Voice> Voices = new List<Voice>();                   // TQ_VOICE: the storybook's 4 narrators
+        public readonly List<Scene> Scenes = new List<Scene>();                   // TQ_SCN: the 6 storybook backdrops
+        public readonly List<Pace> Paces = new List<Pace>();                      // TQ_PACE in TQ_PACES order (relaxed, steady, quick)
 
         public ClassDef Class(string key) => key != null && Classes.TryGetValue(key, out var c) ? c : Classes["sleuth"];
         public string GenreLabel(int g) => Genres[((g % 6) + 6) % 6].label;
@@ -199,7 +207,30 @@ namespace BookBuddies.Tales
                 foreach (List<object> e in (List<object>)kv.Value) list.Add(((string)e[0], (string)e[1], (int)(double)e[2]));
                 d.LifeSets[kv.Key] = list;
             }
+            ReadTales(j, d);
             return d;
+        }
+
+        // the tale shell and storybook tables (lobby.md §3, storybook.md §3)
+        static void ReadTales(Dictionary<string, object> j, TalesData d)
+        {
+            foreach (Dictionary<string, object> b in j.Arr("TQ_BOONS")) d.Boons.Add((b.Str("k"), b.Str("n"), b.Str("i"), b.Str("d")));
+            d.TaleNamesA = Strings(j.Arr("TQ_TN_A")); d.TaleNamesB = Strings(j.Arr("TQ_TN_B"));
+            foreach (List<object> c in j.Arr("TQ_COVERS")) d.Covers.Add(((string)c[0], (string)c[1]));
+            foreach (Dictionary<string, object> v in j.Arr("TQ_VOICE"))
+                d.Voices.Add(new Voice { K = v.Str("k"), Open = Strings(v.Arr("open")), Turn = Strings(v.Arr("turn")), Twist = Strings(v.Arr("twist")), Ch = Strings(v.Arr("ch")), Close = Strings(v.Arr("close")) });
+            foreach (List<object> sc in j.Arr("TQ_SCN"))
+            {
+                var stops = new (string color, double at)[4];
+                for (int i = 0; i < 4; i++) { var st = (List<object>)sc[i]; stops[i] = ((string)st[0], (double)st[1]); }
+                d.Scenes.Add(new Scene { Stops = stops, Gx = (double)sc[4], Gy = (double)sc[5], Glow = (string)sc[6] });
+            }
+            var paces = j.Obj("TQ_PACE");
+            foreach (var k in Strings(j.Arr("TQ_PACES")))
+            {
+                var p = paces.Obj(k);
+                if (p != null) d.Paces.Add(new Pace { Key = k, N = p.Str("n"), I = p.Str("i"), Rd = p.Num("rd"), Ms = p.Num("ms"), F = p.Num("f", 1) });
+            }
         }
 
         static void ReadFoes(List<object> from, List<FoeDef> to, bool boss, bool dark)
@@ -210,6 +241,7 @@ namespace BookBuddies.Tales
                 {
                     Index = to.Count, N = o.Str("n"), I = o.Str("i"), C = o.Str("c", null), G = o.Int("g"), An = o.Str("an"), Sp = o.Str("sp"), Sn = o.Str("sn"), Si = o.Str("si"),
                     Rg = o.Str("rg", null), Sh = o.Str("sh", "blob"), Mv = o.Str("mv", null), Say = o.Str("say", null), Says = Strings(o.Arr("says")),
+                    Lair = o.Str("lair", null), Want = o.Str("want", null),
                     Hp = o.Has("hp") ? o.Num("hp") : (double?)null, Atk = o.Has("atk") ? o.Num("atk") : (double?)null, Dodge = o.Truthy("dodge"), IsBoss = boss, IsDark = dark,
                 });
         }
@@ -252,6 +284,28 @@ namespace BookBuddies.Tales
             if (!(o.TryGetValue("o", out var outfit) && outfit is Dictionary<string, object>)) o["o"] = new Dictionary<string, object>();
             return Json.Write(o);
         }
+    }
+
+    /// <summary>A storybook narrator (TQ_VOICE): openings ("{n}" = the cast), page turns, twist lines, chapter names, closings.</summary>
+    public sealed class Voice
+    {
+        public string K;
+        public string[] Open = new string[0], Turn = new string[0], Twist = new string[0], Ch = new string[0], Close = new string[0];
+    }
+
+    /// <summary>A storybook backdrop (TQ_SCN): 4 top-to-bottom gradient stops, a glow at (Gx, Gy) as fractions of the picture, its colour.</summary>
+    public sealed class Scene
+    {
+        public (string color, double at)[] Stops;
+        public double Gx, Gy;
+        public string Glow;
+    }
+
+    /// <summary>A storybook reading pace (TQ_PACE): ms per word revealed (Rd), ms per word read (Ms), cover/end time factor (F).</summary>
+    public sealed class Pace
+    {
+        public string Key, N, I;
+        public double Rd, Ms, F = 1;
     }
 
     /// <summary>A storybook friend (TQ_NPC). Look is pet look JSON, so it draws with the pet system; Count is how many come.</summary>

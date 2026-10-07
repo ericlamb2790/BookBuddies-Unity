@@ -102,7 +102,7 @@ namespace BookBuddies.Tales
                 case "ink": foreach (var h in hs) h.Ink = Math.Min(6, h.Ink + 2); e.Pops.Add(Pop(null, "💧 +2 ink for everyone")); break;
                 case "bless": foreach (var h in hs) { AddShield(h, JsMath.Round(h.Max * .12), e); h.Ink = Math.Min(6, h.Ink + 1); } break;
                 case "revive": foreach (var h in Heroes) if (h.Ko) Revive(h, .4, e); else HealBy(h, .12, e); break;
-                case "gold": foreach (var f in fs) e.Fx.Add(NpcHit(f, .6)); e.Pops.Add(Pop(null, "💧 +20 ink drops")); break;
+                case "gold": gold += 20; foreach (var f in fs) e.Fx.Add(NpcHit(f, .6)); e.Pops.Add(Pop(null, "💧 +20 ink drops")); break;
             }
         }
 

@@ -54,6 +54,7 @@ namespace BookBuddies
             TownSpots.Register(() => world);
             BossSpots.Register(() => world);
             TownShop.Register();
+            SpotActions.Register("tales", _ => TalesUi.OpenTales());
             var loading = LoadingScreen.Show(Buddy.ShownLook, "Opening the storybook…");
             Sound.Music("home");
             yield return null;

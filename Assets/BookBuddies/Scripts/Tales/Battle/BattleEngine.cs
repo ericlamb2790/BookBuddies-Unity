@@ -25,8 +25,11 @@ namespace BookBuddies.Tales
     /// </list>
     /// A Fx entry is a hit when Damage &gt; 0, Absorbed &gt; 0 or Miss; Small marks splash and gear damage. Hp, Max and Shield are the unit's values right after it.
     /// Pops are short callouts: (unit key, or null for the whole arena, text).
-    /// The library's Second Wind (defeat's meta revive) is a heal event: every pet back up at half HP, once a battle.
-    /// Not in the wild: twists, hazards, boons, intro banter, gold.
+    /// The library's Second Wind (defeat's meta revive) is a heal event: every pet back up at half HP, once a battle (once a tale in a tale).
+    /// With Setup.Tale the fight follows the tale's rules (BattleTale.cs): the run hero's level and boons, ready-made foes,
+    /// starting ink clamped to 0..6, a friend at the intro (a fate event with Result "ally" and no roll), and the run's ink
+    /// drops won or stolen mid-fight (Outcome.Gold).
+    /// Not yet: twists, hazards, tactic changes, intro banter.
     /// </remarks>
     public sealed partial class BattleEngine
     {
@@ -37,7 +40,7 @@ namespace BookBuddies.Tales
         public BattleOutcome Outcome { get; private set; }
         /// <summary>Lane a pending slam will hit, or null.</summary>
         public string SlamZone => slam == null ? null : slam.Value.zone.ToString();
-        /// <summary>The battle level (the road's, 1 to 12). The hero fights at tale level min(6, Lvl).</summary>
+        /// <summary>The battle level: the road's (1 to 12; the hero fights at tale level min(6, Lvl)), or a tale's chapter.</summary>
         public readonly int Lvl;
 
         readonly IRng rng;
@@ -45,29 +48,35 @@ namespace BookBuddies.Tales
         readonly List<string> queue = new List<string>();
         readonly Dictionary<BattleUnit, int> buffs = new Dictionary<BattleUnit, int>();
         bool intro, mid, cheered, revived;
-        int nextFate = 2, nat20s, helpers;
+        int nextFate = 2, nat20s, helpers, crits, heals;
         (string name, string move, double d)? best;
+        (string n, string ab)? ult;
+        readonly List<string> naps = new List<string>();
 
         public BattleEngine(BattleSetup setup, IRng rng = null)
         {
             Setup = setup;
             this.rng = rng ?? SystemRng.Shared;
-            Lvl = JsMath.Clamp(setup.Lvl == 0 ? 2 : setup.Lvl, 1, 12);
+            var tale = setup.Tale;
+            Lvl = tale != null ? Math.Max(1, tale.Ch) : JsMath.Clamp(setup.Lvl == 0 ? 2 : setup.Lvl, 1, 12);
+            int heroLvl = tale != null ? Math.Max(1, tale.HeroLvl) : Math.Min(6, Lvl);
             var hero = setup.Hero;
             if (hero == null)
             {
                 save = TalesSave.Current;
-                hero = HeroFactory.Build(setup.Look, string.IsNullOrEmpty(setup.PetName) ? "Your pet" : setup.PetName, Math.Min(6, Lvl));
+                hero = HeroFactory.Build(setup.Look, string.IsNullOrEmpty(setup.PetName) ? "Your pet" : setup.PetName, heroLvl);
             }
-            HeroFactory.SetLevel(hero, Math.Min(6, Lvl));
+            HeroFactory.SetLevel(hero, heroLvl, tale?.Boons);
             hero.Ko = false;
             hero.Hp = Math.Max(1, Math.Min(hero.Max, JsMath.Round(setup.HpFrac * hero.Max)));
             Heroes.Add(hero);
-            for (int i = 0; i < setup.Foes.Count; i++)
-            {
-                var f = setup.Foes[i];
-                Foes.Add(FoeFactory.Make(f.v, Lvl, f.boss, f.elite, "f" + i, setup.Mul, this.rng));
-            }
+            if (tale != null) Foes.AddRange(tale.ReadyFoes);
+            else
+                for (int i = 0; i < setup.Foes.Count; i++)
+                {
+                    var f = setup.Foes[i];
+                    Foes.Add(FoeFactory.Make(f.v, Lvl, f.boss, f.elite, "f" + i, setup.Mul, this.rng));
+                }
             foreach (var h in Heroes) StartHero(h);
             LaneInit();
             LaneFix();
@@ -83,6 +92,7 @@ namespace BookBuddies.Tales
             {
                 intro = true;
                 Emit(evs, IntroEvent());
+                if (Setup.Tale?.Ally != null) AllyArrives(evs, Setup.Tale.Ally);
                 return evs;
             }
             while (evs.Count == 0 && !Over) Step(evs);
@@ -155,23 +165,25 @@ namespace BookBuddies.Tales
         }
 
         // startBattle and gearStart: fresh statuses and the gear shield. Ink is the ink carried in from the road plus gear ink and
-        // the library's Inkwell (deliberate fix: the site's startBattle reset the carried ink to 1 right after wildRun copied it in)
+        // the library's Inkwell (deliberate fix: the site's startBattle reset the carried ink to 1 right after wildRun copied it in);
+        // a tale starts from its own formula (TaleInk) and keeps the statuses its setup gave (epStartBattle's bless and Glass Slipper shields)
         void StartHero(BattleUnit h)
         {
             var info = h.Hero;
-            h.St.Clear();
+            if (Setup.Tale == null) h.St.Clear();
             info.PlotUsed = false;
             info.WantUlt = false;
             info.Dark = 0;
             info.PhoenixUsed = false;
-            h.Ink = Math.Min(6, Setup.Ink + info.GearInk + info.MetaInk);
+            h.Ink = Math.Min(6, (Setup.Tale != null ? TaleInk(info) : Setup.Ink + info.MetaInk) + info.GearInk);
             if (info.Sh != 0) h.St["shield"] = h.S("shield") + JsMath.Round(h.Max * info.Sh / 100);
         }
 
-        // defeat with the library's Second Wind: the party is back up at half HP with fresh statuses, once. True if it happened.
+        // defeat with the library's Second Wind: the party is back up at half HP with fresh statuses, once (a tale's once is spent
+        // when Tale.Revived). True if it happened.
         bool SecondWind(List<BattleEvent> evs)
         {
-            if (revived || !Heroes.Exists(h => h.Hero.MetaRev)) return false;
+            if (revived || Setup.Tale?.Revived == true || !Heroes.Exists(h => h.Hero.MetaRev)) return false;
             revived = true;
             var e = new BattleEvent { Kind = "heal", Actor = Heroes[0].Key, Name = "Second Wind", Icon = "🪽" };
             foreach (var h in Heroes) { h.St.Clear(); Revive(h, .5, e); }
@@ -202,8 +214,11 @@ namespace BookBuddies.Tales
             {
                 Won = won, HpFrac = hero.Max <= 0 ? 0 : Math.Max(0, JsMath.Round(hero.Hp)) / hero.Max, Ink = hero.Ink, Rounds = Round,
                 BestMove = best?.move, BestHit = best?.d ?? 0, Hero = hero, Lvl = Lvl, Nat20s = nat20s, Helpers = helpers,
+                Revived = revived, Ult = ult, Crits = crits, Heals = heals, Gold = gold,
             };
             foreach (var f in Foes) if (Dead(f)) Outcome.Defeated.Add(f);
+            Outcome.Naps.AddRange(naps);
+            Outcome.HelperKeys.AddRange(usedNpcs);
         }
 
         // the site's emit: lanes settle before every event

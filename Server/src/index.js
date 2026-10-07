@@ -1,4 +1,4 @@
-// BookBuddies Unity server: accounts, pets, the wallet and the live town, on one Cloudflare Worker.
+// BookBuddies Unity server: accounts, pets, the wallet, the live town and Tales of Pages, on one Cloudflare Worker.
 // D1 keeps players and sign-ins; each live town room is a Durable Object (see town.js).
 // The routes and messages match the website's, so the Unity game can talk to either server.
 
@@ -7,6 +7,7 @@ import { ensureSchema, blockedWords, countToday, bumpToday, TOWNS, ROOMS, noteRo
 import { adminRoute, breakMessage } from './admin.js';
 import { cleanPet, petsRoute, petList, activeLook } from './pets.js';
 import { walletRoute, balance, deleteWalletRows } from './wallet.js';
+import { questRoute, openRun, deleteQuestRows } from './quest.js';
 export { TownRoom } from './town.js';
 
 const VERSION = '0.3';
@@ -19,6 +20,7 @@ export default {
     if (request.method === 'OPTIONS') return cors(new Response(null, { status: 204 }), env);
     const url = new URL(request.url);
     if (url.pathname === '/api/world/live') return joinTown(request, env, url);
+    if (url.pathname === '/api/quest/live') return joinTale(request, env, url);
     try {
       await ensureSchema(env);
       return cors(await route(request, env, url), env);
@@ -47,6 +49,8 @@ async function route(request, env, url) {
   if (path === '/plaza/world/ticket' && method === 'GET') return townTicket(env, me, url);
   if (path === '/wallet' || path.startsWith('/wallet/')) return walletRoute(request, env, path, me);
   if (path.startsWith('/admin/')) return adminRoute(request, env, path, url, me);
+  if (path === '/quest/ticket' && method === 'GET') return taleTicket(env, me, url);
+  if (path.startsWith('/quest/') || path === '/notes' || path === '/notes/read') return questRoute(request, env, path, url, me);
   throw new Problem('Not found', 404);
 }
 
@@ -112,6 +116,7 @@ async function deleteMe(env, me) {
   await env.DB.batch([
     env.DB.prepare('DELETE FROM tokens WHERE player_id = ?1').bind(me.id),
     ...deleteWalletRows(env, me.id),
+    ...deleteQuestRows(env, me.id),
     env.DB.prepare('DELETE FROM pets WHERE player_id = ?1').bind(me.id),
     forgetRooms(env, me.id),
     env.DB.prepare('DELETE FROM players WHERE id = ?1').bind(me.id),
@@ -165,14 +170,38 @@ async function joinTown(request, env, url) {
   if (request.headers.get('Upgrade') !== 'websocket') return new Response('Expected a WebSocket', { status: 426 });
   await ensureSchema(env);
   const who = await checkTicket(env, url.searchParams.get('ticket'));
-  if (!who) return new Response('Bad or old ticket', { status: 401 });
+  if (!who || who.room.startsWith('qs:')) return new Response('Bad or old ticket', { status: 401 });
   let room = who.room;
   if (room.endsWith(':*')) room = `${room.slice(0, -2)}:${Math.max(1, Math.min(ROOMS, parseInt(url.searchParams.get('s'), 10) || 1))}`;
   await noteRoom(env, who.pid, room);
   const headers = new Headers(request.headers);
   headers.set('x-bb-pid', who.pid);
   headers.set('x-bb-name', encodeURIComponent(who.name));
+  headers.delete('x-bb-kind');
   return env.TOWNS.get(env.TOWNS.idFromName(room)).fetch(new Request(request.url, { headers }));
+}
+
+// ---------- a shared tale's live party (quest.js, tales_room.js) ----------
+
+/** A 60-second ticket into a shared tale's party room "qs:<id>" for anyone who may open the tale; {live: false} otherwise. */
+async function taleTicket(env, me, url) {
+  const q = me.ban_until > Date.now() ? null : await openRun(env, me, url.searchParams.get('id'));
+  if (!q) return json({ live: false });
+  const ticket = await sign(env, `${me.id}|${Date.now() + 60e3}|${encodeURIComponent(me.name)}|qs:${q.id}`);
+  return json({ live: true, ticket, me: me.id });
+}
+
+/** Opens the WebSocket into the tale's party room named on the ticket (a TownRoom that hands it to tales_room.js). */
+async function joinTale(request, env, url) {
+  if (request.headers.get('Upgrade') !== 'websocket') return new Response('Expected a WebSocket', { status: 426 });
+  await ensureSchema(env);
+  const who = await checkTicket(env, url.searchParams.get('ticket'));
+  if (!who || !who.room.startsWith('qs:')) return new Response('Bad or old ticket', { status: 401 });
+  const headers = new Headers(request.headers);
+  headers.set('x-bb-pid', who.pid);
+  headers.set('x-bb-name', encodeURIComponent(who.name));
+  headers.set('x-bb-kind', 'quest');
+  return env.TOWNS.get(env.TOWNS.idFromName(who.room)).fetch(new Request(request.url, { headers }));
 }
 
 async function sign(env, body) {

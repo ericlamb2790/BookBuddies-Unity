@@ -4,11 +4,13 @@
 // Pawtopia villagers wander between the same spots the website uses.
 // The road and the caves are quieter: just the readers (their foes live on each player's own device).
 // The admin tools reach a room through POST https://room/admin (kick, mute, unmute).
+// A shared Tale's live party is a room of this class too: tales_room.js runs it.
 
 import { textProblem, cleanText, personalDetails } from './safety.js';
 import { ensureSchema, blockedWords, GENRE_TOWNS } from './db.js';
 import { credit, balance, todayCount, etDay } from './wallet.js';
 import ECONOMY from './economy.json';
+import { questJoin } from './tales_room.js';
 
 const CAP = 300;
 // each place's size in tiles (the site's road rooms were stuck at 64×46 and pinned anyone past x 63 to the edge);
@@ -76,6 +78,7 @@ export class TownRoom {
 
   async fetch(request) {
     if (new URL(request.url).pathname === '/admin' && request.method === 'POST') return this.admin(request);
+    if (request.headers.get('x-bb-kind') === 'quest') return questJoin(this, request);
     await ensureSchema(this.env);
     const pid = request.headers.get('x-bb-pid') || '';
     const me = pid && await this.env.DB.prepare('SELECT name, is_admin, mute_until, ban_until FROM players WHERE id = ?1').bind(pid).first();
@@ -97,7 +100,7 @@ export class TownRoom {
     const id = (++this.seq).toString(36);
     const last = this.lastSpot.get(pid) || { x: -1, y: -1 };
     const pl = { id, pid, ws, name: String(me.name).slice(0, 20), look: '', x: last.x, y: last.y, tx: last.x, ty: last.y, sit: 0,
-      admin: me.is_admin ? 1 : 0, mute: me.mute_until || 0, saidAt: 0, cuteAt: 0, burst: [] };
+      admin: me.is_admin ? 1 : 0, mute: me.mute_until || 0, saidAt: 0, cuteAt: 0, taleAt: 0, burst: [] };
     this.players.set(id, pl);
     ws.addEventListener('message', (e) => this.onMessage(pl, e.data).catch(() => {}));
     const bye = () => this.leave(pl);
@@ -224,6 +227,7 @@ export class TownRoom {
       case 'act': return this.act(pl, m, now);
       case 'say': return this.say(pl, m, now);
       case 'claim': return this.claim(pl, m);
+      case 'tale': return this.invite(pl, m, now);
     }
   }
 
@@ -277,6 +281,15 @@ export class TownRoom {
       if (!(await credit(this.env, pl.pid, 'find', `${etDay()}:${it.id}:${Math.floor(it.exp)}`, coins))) coins = 0;
     }
     this.send(pl, { t: 'got', k: it.k, coins, bal: await balance(this.env, pl.pid) });
+  }
+
+  /** "Invite to my tale": {t:'tale', to: conn id, id, title} reaches only that player as {t:'tale', from, id, title}; one every 10 s. */
+  async invite(pl, m, now) {
+    const to = this.players.get(String(m.to || '')), id = String(m.id || ''), title = cleanText(m.title, 60);
+    if (!to || to === pl || !/^[\w-]{8}$/.test(id) || now - pl.taleAt < 10e3 || this.isMuted(pl, now)) return;
+    if (textProblem(title, await blockedWords(this.env))) return this.error(pl, 'Please keep it kind. That word or phrase isn’t allowed on BookBuddies.');
+    pl.taleAt = now;
+    this.send(to, { t: 'tale', from: pl.name, id, title });
   }
 
   isMuted(pl, now) {

@@ -22,9 +22,20 @@ namespace BookBuddies.Tales
         public static BattleUnit Build(string lookJson, string petName, int lvl)
         {
             var save = TalesSave.Current;
+            var hero = Build(SeedOf(save, lookJson, petName), lvl);
+            var info = hero.Hero;
+            info.Order = save.Me.Order == null ? null : new List<string>(save.Me.Order);
+            info.AutoUlt = save.Me.AutoUlt;
+            if (save.Me.Lane == "l" || save.Me.Lane == "r") hero.Lane = save.Me.Lane[0];
+            return hero;
+        }
+
+        /// <summary>Your buddy as a hero seed (tqPetHero's snapshot): class, look, renown, gear, kit and library upgrades from the save.</summary>
+        public static HeroSeed SeedOf(TalesSave save, string lookJson, string petName)
+        {
             var look = Json.ParseObject(string.IsNullOrEmpty(lookJson) ? "{}" : lookJson) ?? new Dictionary<string, object>();
             string cls = ClassOf(save, lookJson);
-            var seed = new HeroSeed
+            return new HeroSeed
             {
                 Cls = cls, Personality = save.Personality, Look = lookJson, Name = petName,
                 Hue = look.Num("h"), Stage = JsMath.Clamp(look.Int("s"), 0, 5), Rank = Math.Max(0, look.Int("r")), Shiny = look.Truthy("sy"),
@@ -32,12 +43,6 @@ namespace BookBuddies.Tales
                 Kit = KitOf(save, cls), Own = Owned(save, cls),
                 MetaVit = Library(save, "vit"), MetaAtk = Library(save, "atk"), MetaInk = Library(save, "ink"), MetaRev = Library(save, "rev") > 0,
             };
-            var hero = Build(seed, lvl);
-            var info = hero.Hero;
-            info.Order = save.Me.Order == null ? null : new List<string>(save.Me.Order);
-            info.AutoUlt = save.Me.AutoUlt;
-            if (save.Me.Lane == "l" || save.Me.Lane == "r") hero.Lane = save.Me.Lane[0];
-            return hero;
         }
 
         /// <summary>A hero from a seed at tale level lvl: base stats, nature, spark, mood and gear (lootHero), then tqStats.</summary>
@@ -64,16 +69,48 @@ namespace BookBuddies.Tales
         }
 
         /// <summary>tqStats with no boons: hp, atk and def grow 8% per tale level, speed doesn't.</summary>
-        public static void SetLevel(BattleUnit hero, int lvl)
+        public static void SetLevel(BattleUnit hero, int lvl) => SetLevel(hero, lvl, null);
+
+        /// <summary>
+        /// tqStats with a tale's boons (one key per stack): thick +20% HP, quill +15% attack, hardcover +25% defence and
+        /// speed +25% speed per stack, and hero ×1.1 to all four however many stacks.
+        /// </summary>
+        public static void SetLevel(BattleUnit hero, int lvl, IList<string> boons)
         {
             var h = hero.Hero;
             h.Lvl = lvl;
             hero.Lvl = lvl;
-            double lv = 1 + .08 * (lvl - 1);
-            hero.Max = JsMath.Round(h.BaseHp * lv);
-            hero.Atk = JsMath.Round(h.BaseAtk * lv);
-            hero.Def = JsMath.Round(h.BaseDef * lv);
-            hero.Spd = h.BaseSpd;
+            int Has(string k) { int n = 0; if (boons != null) foreach (var b in boons) if (b == k) n++; return n; }
+            double lv = 1 + .08 * (lvl - 1), all = Has("hero") > 0 ? 1.1 : 1;
+            hero.Max = JsMath.Round(h.BaseHp * lv * (1 + .2 * Has("thick")) * all);
+            hero.Atk = JsMath.Round(h.BaseAtk * lv * (1 + .15 * Has("quill")) * all);
+            hero.Def = JsMath.Round(h.BaseDef * lv * (1 + .25 * Has("hardcover")) * all);
+            hero.Spd = JsMath.Round(h.BaseSpd * (1 + .25 * Has("speed")) * all);
+        }
+
+        /// <summary>
+        /// tqLearn after a tale level-up: the run hero learns owned moves it hasn't equipped (regular ones first, at random)
+        /// until it knows min(owned, max(5, kit) + lvl/2). Returns the new moves' names.
+        /// </summary>
+        public static List<string> TaleLearn(TaleHero hero, IRng rng = null)
+        {
+            rng = rng ?? SystemRng.Shared;
+            var s = hero.Seed;
+            string cls = TalesData.Current.Class(s.Cls).Key;
+            var own = new List<MoveDef>();
+            foreach (var k in s.Own ?? BaseOwn(cls)) { var m = Move(cls, k); if (m != null) own.Add(m); }
+            int k0 = Math.Max(5, (s.Kit ?? KitOf(cls, Renown(s.Rxp).lvl, null, null)).Count);
+            var learned = new List<string>();
+            while (hero.Kn.Count < Math.Min(own.Count, k0 + Math.Max(1, hero.Lvl) / 2))
+            {
+                var left = own.FindAll(a => !hero.Kn.Contains(a.Key));
+                if (left.Count == 0) break;
+                var pool = left.Exists(a => !a.Ult) ? left.FindAll(a => !a.Ult) : left;
+                var pick = pool[(int)Math.Floor(rng.Next() * pool.Count)];
+                hero.Kn.Add(pick.Key);
+                learned.Add(MoveName(cls, TalesData.GenreOfHue(s.Hue), hero.Lvl, NameSeed, pick.Key));
+            }
+            return learned;
         }
 
         /// <summary>Stats shown on cards (tqStats with no boons at level 1): hp, atk, def, spd and power.</summary>

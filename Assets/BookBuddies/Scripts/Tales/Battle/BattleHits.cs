@@ -6,20 +6,21 @@ namespace BookBuddies.Tales
     // Damage (dmg), single hits (hitOne) and what equipped gear does when a pet hits or gets hit
     public sealed partial class BattleEngine
     {
-        // attack × move power × defence, genre ring, statuses, perks, cover and the enrage timer; also the crit chance
+        // attack × move power × defence, genre ring, statuses, boons, perks, cover and the enrage timer; also the crit chance
         double BaseDamage(BattleUnit a, BattleUnit d, double mult, double moveCc, out double eff, out double cc)
         {
             mult *= LiteraryMul(a);
             double x = a.Atk * mult * Math.Max(.14, 100 / (100 + d.Def * 4));
-            eff = (a.Gen + 1) % 6 == d.Gen ? 1.5 : (d.Gen + 1) % 6 == a.Gen ? .75 : 1;
+            eff = (a.Gen + 1) % 6 == d.Gen ? GenreEdge(a) : (d.Gen + 1) % 6 == a.Gen ? .75 : 1;
             x *= eff;
             if (d.S("expose") != 0) x *= 1.35;
             if (a.S("pow") != 0) x *= 1.25;
+            x *= Cliffhanger(a, d);
             double ex = Perk(a, "execute");
             if (ex != 0 && d.IsFoe && d.Hp < d.Max * .35) x *= 1 + ex / 100;
             x *= CoverMul(a, d);
             if (a.IsFoe && Round > 12) x *= 1 + .1 * (Round - 12);
-            cc = Math.Min(.9, (a.IsFoe ? .06 : .1) + moveCc + (a.IsFoe ? 0 : (a.Hero?.Cc ?? 0) / 100));
+            cc = Math.Min(.9, (a.IsFoe ? .06 : .1) + DogEar(a) + moveCc + (a.IsFoe ? 0 : (a.Hero?.Cc ?? 0) / 100));
             return x;
         }
 
@@ -62,7 +63,7 @@ namespace BookBuddies.Tales
             return (Math.Max(ab != 0 ? 0 : 1, JsMath.Round(x)), crit, eff, JsMath.Round(ab));
         }
 
-        // hitOne: dodges and misses, the hit, KOs (a pet's phoenix feather first), then gear effects. Returns the damage.
+        // hitOne: dodges and misses, the hit, KOs (a pet's phoenix feather, then plot armor), gear effects, then the footnote. Returns the damage.
         double HitOne(BattleUnit a, BattleUnit t, double mult, BattleEvent e, bool noFoot = false, double moveCc = 0)
         {
             if (Dead(t) || GearDodge(a, t, e)) return 0;
@@ -76,13 +77,15 @@ namespace BookBuddies.Tales
             var r = Damage(a, t, mult, moveCc);
             t.Hp -= r.x;
             var f = new BattleHit { Unit = t.Key, Damage = r.x, Crit = r.crit, Effect = r.eff, Absorbed = r.ab };
-            if (t.Hp <= 0) Fall(t, f);
+            if (t.Hp <= 0) { Fall(t, f); if (t.IsFoe && !a.IsFoe) Sequel(); }
             f.Hp = Math.Max(0, JsMath.Round(t.Hp));
             f.Max = t.Max;
             f.Shield = JsMath.Round(t.S("shield"));
             e.Fx.Add(f);
             GearHit(a, t, r.x, r.crit, e);
             if (!a.IsFoe && (best == null || r.x > best.Value.d)) best = (a.Name, e.Name, r.x);
+            if (!a.IsFoe && r.crit) crits++;
+            if (!noFoot) Footnote(a, t, mult, e);
             return r.x;
         }
 
@@ -90,7 +93,7 @@ namespace BookBuddies.Tales
         bool Misses(BattleUnit a, BattleUnit t) =>
             (t.IsFoe && t.Foe.Def.Dodge && rng.Next() < .2) || (!t.IsFoe && t.S("dodge") != 0 && rng.Next() < .45) || BushMiss(a, t);
 
-        // a pet at 0 HP rises once with the phoenix perk, otherwise naps; a foe is out
+        // a pet at 0 HP rises once with the phoenix perk, else hangs on with plot armor, otherwise naps; a foe is out
         void Fall(BattleUnit t, BattleHit f)
         {
             double phoenix = Perk(t, "phoenix");
@@ -101,9 +104,10 @@ namespace BookBuddies.Tales
                 f.Pop = "🪶 Back on their feet!";
                 return;
             }
+            if (PlotArmor(t, f)) return;
             t.Hp = 0;
             f.Ko = true;
-            if (!t.IsFoe) { t.Ko = true; t.St.Clear(); }
+            if (!t.IsFoe) Nap(t);
         }
 
         double Perk(BattleUnit u, string perk) => u.IsFoe || u.Hero?.Gear == null ? 0 : u.Hero.Gear.Perk(perk);

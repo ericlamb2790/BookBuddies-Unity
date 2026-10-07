@@ -98,7 +98,7 @@ namespace BookBuddies.Road
             var w = World;
             if (w == null) return;
             w.Me.ShowEmote("📜");
-            w.Notify("📜 The Tales lobby opens in a later version");
+            TalesUi.OpenTales();
         }
 
         static void Camp(TownMap.Spot spot)

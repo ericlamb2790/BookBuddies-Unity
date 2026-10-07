@@ -44,7 +44,7 @@ namespace BookBuddies.Tales
 
         // foes: moves off cooldown; pets: known moves they have the ink for
         List<MoveDef> Usable(BattleUnit u) =>
-            u.IsFoe ? u.Moves.FindAll(m => !(u.Cds.TryGetValue(m.Key, out var cd) && cd > 0)) : u.Moves.FindAll(m => m.Cost <= u.Ink);
+            u.IsFoe ? u.Moves.FindAll(m => !(u.Cds.TryGetValue(m.Key, out var cd) && cd > 0)) : u.Moves.FindAll(m => CostOf(u, m) <= u.Ink);
 
         // tacChoose: "My order" takes the first listed move worth using; with auto-ult off the pet picks the best regular move
         Choice TacticsChoice(BattleUnit u)
@@ -98,7 +98,7 @@ namespace BookBuddies.Tales
             int dk = u.Hero.Dark;
             if (dk < 3 || rng.Next() >= (dk - 2) * .18) return null;
             var foes = Opp(u);
-            var list = u.Moves.FindAll(a => a["p"] != 0 && !a.Ult && a.Cost <= u.Ink);
+            var list = u.Moves.FindAll(a => a["p"] != 0 && !a.Ult && CostOf(u, a) <= u.Ink);
             if (foes.Count == 0 || list.Count == 0) return null;
             double Weight(MoveDef a) => a["p"] * (a["n"] != 0 ? a["n"] : 1);
             var pick = list[0];

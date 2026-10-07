@@ -130,11 +130,11 @@ namespace BookBuddies.Tales
             return s;
         }
 
-        static List<object> Strs(IEnumerable<string> a) { var l = new List<object>(); foreach (var x in a) l.Add(x); return l; }
+        internal static List<object> Strs(IEnumerable<string> a) { var l = new List<object>(); foreach (var x in a) l.Add(x); return l; }
         static Dictionary<string, object> Lists(Dictionary<string, List<string>> d) { var o = new Dictionary<string, object>(); foreach (var kv in d) o[kv.Key] = Strs(kv.Value); return o; }
-        static Dictionary<string, object> Nums(Dictionary<string, double> d) { var o = new Dictionary<string, object>(); foreach (var kv in d) o[kv.Key] = kv.Value; return o; }
+        internal static Dictionary<string, object> Nums(Dictionary<string, double> d) { var o = new Dictionary<string, object>(); foreach (var kv in d) o[kv.Key] = kv.Value; return o; }
         static Dictionary<string, object> Ints(Dictionary<string, int> d) { var o = new Dictionary<string, object>(); foreach (var kv in d) o[kv.Key] = (double)kv.Value; return o; }
-        static Dictionary<string, object> Texts(Dictionary<string, string> d) { var o = new Dictionary<string, object>(); foreach (var kv in d) o[kv.Key] = kv.Value; return o; }
+        internal static Dictionary<string, object> Texts(Dictionary<string, string> d) { var o = new Dictionary<string, object>(); foreach (var kv in d) o[kv.Key] = kv.Value; return o; }
         static void ReadLists(Dictionary<string, object> from, Dictionary<string, List<string>> to)
         {
             if (from == null) return;

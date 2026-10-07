@@ -59,6 +59,13 @@ namespace BookBuddies.Tales
             return line;
         }
 
+        /// <summary>tqTrack's win inside a tale: renown 8 for a boss, 4 for an elite, 2 for a fight, and a boss counts in life.bosses.</summary>
+        public static string GainTaleWin(TalesSave save, string kind, BattleOutcome outcome)
+        {
+            if (kind == TaleBattle.Boss) save.Me.Count("bosses");
+            return GainRenown(save, kind == TaleBattle.Boss ? 8 : kind == TaleBattle.Elite ? 4 : 2, "wins", outcome);
+        }
+
         static string AddRenown(TalesSave save, int rx, BattleOutcome outcome)
         {
             int before = Renown(save.Me.Rxp).lvl;

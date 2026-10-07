@@ -48,16 +48,17 @@ namespace BookBuddies.Tales
         {
             if (!u.IsFoe)
             {
-                u.Ink = Math.Max(0, u.Ink - ab.Cost);
+                u.Ink = Math.Max(0, u.Ink - CostOf(u, ab));
                 u.Hero.WantUlt = false;
             }
             else if (ab["cd"] != 0) u.Cds[ab.Key] = (int)ab["cd"] + 1;
         }
 
-        // fin: an ult empties the ink well; any other move refills 1 ink (2 on a crit)
-        static BattleEvent Fin(BattleUnit u, BattleEvent e)
+        // fin: an ult empties the ink well (the fight's first one is kept for the storybook); any other move refills 1 ink (2 on a crit)
+        BattleEvent Fin(BattleUnit u, BattleEvent e)
         {
             if (!u.IsFoe) u.Ink = e.Ult ? 0 : Math.Min(6, u.Ink + 1 + (e.Fx.Exists(f => f.Crit) ? 1 : 0));
+            if (!u.IsFoe && e.Ult && ult == null) ult = (u.Name, e.Name);
             if (e.Anim == "arc") e.Projectile = ProjectileFor(e.Name, u.IsFoe);
             return e;
         }
@@ -117,6 +118,7 @@ namespace BookBuddies.Tales
                 foreach (var h in Heroes) h.Ink = Math.Max(0, h.Ink + (int)ab["inkAll"]);
                 e.Pops.Add(Pop(null, ab["inkAll"] < 0 ? "♟️ Every pet loses 1 ink" : "💧 +1 ink for everyone"));
             }
+            if (ab["steal"] != 0) Steal(u, (int)ab["steal"], e);
         }
 
         // n hits at random foes, one after another; bleed and poison stick to whoever they hit (the site dropped them)
@@ -185,6 +187,7 @@ namespace BookBuddies.Tales
                 var f = Snap(t);
                 f.Heal = JsMath.Round(t.Hp - b);
                 e.Fx.Add(f);
+                if (!u.IsFoe) heals += (int)f.Heal;
             }
         }
 

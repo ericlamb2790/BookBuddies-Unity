@@ -128,10 +128,11 @@ namespace BookBuddies.Tales
 
         /// <summary>
         /// playFate: the d20 tumbles in, flickers and lands on the roll; then the callout, or a storybook friend slides in
-        /// and does its thing (apply plays each of its hits).
+        /// and does its thing (apply plays each of its hits). A tale's ally (Result "ally") comes in with no die.
         /// </summary>
         public IEnumerator Fate(BattleEvent e, Action<BattleHit> apply)
         {
+            if (e.Result == "ally") { yield return Friend(e, apply); yield break; }
             float size = BattleArt.DieSize * 1.3f;
             var group = UiKit.Node("fate", field);
             group.anchorMin = group.anchorMax = Vector2.zero;

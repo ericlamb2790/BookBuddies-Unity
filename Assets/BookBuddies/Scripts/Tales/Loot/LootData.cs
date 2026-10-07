@@ -45,6 +45,8 @@ namespace BookBuddies.Tales
         public readonly Dictionary<string, string> Towns = new Dictionary<string, string>(); // town or genre key -> theme
         public string[] GenreThemes = new string[0];                                          // foe genre 0-5 -> theme (LT_GENTH)
         public int BagSize = 60;
+        // LT_DROP (optional, set from the Game Data window): how often wild foes drop gear and how often a drop is a signature
+        public double DropRate = .26, DropPerHp = .12, DropMax = .45, EliteRate = .65, SigChance = .06, BossSigChance = .05;
 
         /// <summary>The base item for a {theme}{slot}{index} key part, or null.</summary>
         public BaseItem BaseAt(string theme, string slot, int index) =>
@@ -103,6 +105,12 @@ namespace BookBuddies.Tales
             foreach (var kv in j.Obj("LT_TOWN")) d.Towns[kv.Key] = (string)kv.Value;
             d.GenreThemes = TalesData.Strings(j.Arr("LT_GENTH"));
             d.BagSize = j.Int("LT_BAG", 60);
+            var drop = j.Obj("LT_DROP");
+            if (drop != null)
+            {
+                d.DropRate = drop.Num("rate", d.DropRate); d.DropPerHp = drop.Num("perHp", d.DropPerHp); d.DropMax = drop.Num("max", d.DropMax);
+                d.EliteRate = drop.Num("elite", d.EliteRate); d.SigChance = drop.Num("sig", d.SigChance); d.BossSigChance = drop.Num("bossSig", d.BossSigChance);
+            }
             return d;
         }
     }

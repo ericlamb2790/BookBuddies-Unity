@@ -24,6 +24,9 @@ namespace BookBuddies.Tales
         /// <summary>The hero card: class, Pet Lv, stats and tactics, and its shop tabs ("moves", "class", "library").</summary>
         public static void OpenHero(string tab = null) => HeroCard.Open(tab);
 
+        /// <summary>The Tales of Pages library: the small read and your storybooks (Tale Hall, trailheads, the menu).</summary>
+        public static void OpenTales() => TalesLobby.Open();
+
         /// <summary>A short "you found…" reveal for new items (stash, shrine, chest), then optional bag button.</summary>
         public static void Reveal(IList<string> items, string title, System.Action closed = null) => RevealScreen.Open(items, title, closed);
 

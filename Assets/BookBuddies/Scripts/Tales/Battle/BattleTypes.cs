@@ -75,6 +75,7 @@ namespace BookBuddies.Tales
         public HeroInfo Hero;               // heroes only
         public FoeVariant Foe;              // foes only
         public string BaseName;             // foes: name before "Second Edition"
+        public List<(double at, string m)> Tactics; // tale foes (the site's phs): at HP ≤ Max·at, switch to m (summon enrage shield heal), in order; null = none
         public double S(string k) => St.TryGetValue(k, out var v) ? v : 0;
         public bool Alive => !Ko && Hp > 0;
         public double HpFrac => Max <= 0 ? 0 : Hp / Max;
@@ -121,11 +122,32 @@ namespace BookBuddies.Tales
         public bool BookBoss;                // a town's Book Boss (the site's bb): the top bar says so
         public readonly List<(FoeVariant v, bool boss, bool elite)> Foes = new List<(FoeVariant, bool, bool)>();
         public double HpFrac = 1;
-        public int Ink;
+        public int Ink;                      // ink carried in from the road; in a tale, the dungeon's extra starting ink (may be < 0)
         public int Tier = 1;
         public bool Cave;
         public string Look, PetName;         // your buddy (Buddy.Look / Buddy.Name): the engine builds the hero with HeroFactory.Build
         public BattleUnit Hero;              // or a ready-made hero (tests, previews); wins over Look
+        public TaleBattle Tale;              // a fight inside a tale (EpicBattle.Setup); null = a wild fight
+    }
+
+    /// <summary>
+    /// The tale rules for one fight (epStartBattle): who and what the dungeon put in it. With it the engine uses HeroLvl
+    /// uncapped, ReadyFoes as built, clamps ink to 0..6 and allows Second Wind only while !Revived.
+    /// </summary>
+    public sealed class TaleBattle
+    {
+        public const string Fight = "fight", Elite = "elite", Boss = "boss";
+        public string Kind = Fight;          // fight, elite or boss: renown 2/4/8, drops and xp (B.kind)
+        public int HeroLvl = 1;              // the run hero's tale level (no 6 cap, no 12 clamp)
+        public readonly List<string> Boons = new List<string>(); // boon keys, one per stack (S.boons)
+        public string Hazard;                // TQ_HZ key of the land's hazard; null = none or warded (stage 2)
+        public string Twist;                 // TQ_TWIST key (tqTwist, already applied to ReadyFoes); null = none (stage 2)
+        public string Ally;                  // TQ_NPC key that joins at the intro (E.ally); null = none
+        public bool Revived;                 // Second Wind already used this tale (S.revived): no revive in this fight
+        public int Ch = 1;                   // the run's chapter (loot item level, story entries)
+        public int Sc;                       // the land's scene 0-5 (arena and storybook backdrop)
+        public int Gold;                     // the run's ink drops going in (S.gold): all a foe's steal can take
+        public readonly List<BattleUnit> ReadyFoes = new List<BattleUnit>(); // foes built by EpicBattle (variants, mods, Tactics)
     }
 
     /// <summary>How a fight ended, for rewards and the road.</summary>
@@ -136,10 +158,16 @@ namespace BookBuddies.Tales
         public int Ink, Rounds;
         public readonly List<BattleUnit> Defeated = new List<BattleUnit>();
         public string BestMove; public double BestHit;
-        public readonly List<string> Drops = new List<string>(); // item strings, filled by Loot.ForWin
+        public readonly List<string> Drops = new List<string>(); // item strings, filled by Loot.ForWin or Loot.ForTale
         public int RenownGained; public bool LevelUp, Evolved; public string LevelNote;
         public BattleUnit Hero;              // your buddy as the fight left it
         public int Lvl;                      // the battle level (life.best)
         public int Nat20s, Helpers;          // fate rolls this fight, for life stats
+        public bool Revived;                 // Second Wind brought the party back in this fight (tale: once per tale)
+        public (string n, string ab)? Ult;   // the first hero ult: pet name and move name (storybook)
+        public int Crits, Heals;             // hero crits and HP healed by heroes this fight (run stats)
+        public readonly List<string> Naps = new List<string>();       // names of heroes knocked out (storybook)
+        public readonly List<string> HelperKeys = new List<string>(); // TQ_NPC keys of storybook friends who helped
+        public int Gold;                     // tale: ink drops won (a gold friend's +20) less those a foe stole in this fight
     }
 }

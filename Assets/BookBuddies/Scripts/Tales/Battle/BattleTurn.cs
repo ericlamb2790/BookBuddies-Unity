@@ -48,7 +48,7 @@ namespace BookBuddies.Tales
             return evs;
         }
 
-        // bleed 6% and poison 5% of max, regen 6%, then gear regen; a pet that drops to 0 here naps (no phoenix)
+        // bleed 6% and poison 5% of max, regen 6%, the nap boon, then gear regen; a pet that drops to 0 here naps (no phoenix)
         BattleEvent TickStatuses(BattleUnit u)
         {
             var dot = new BattleEvent { Kind = "dot", Actor = u.Key, Foe = u.IsFoe };
@@ -61,6 +61,7 @@ namespace BookBuddies.Tales
                 u.St["regen"]--;
                 if (u.Hp > b) dot.Fx.Add(new BattleHit { Unit = u.Key, Heal = JsMath.Round(u.Hp - b) });
             }
+            NapBoon(u, dot);
             double rg = u.Hero?.Rg ?? 0;
             if (rg != 0 && u.Hp > 0 && u.Hp < u.Max)
             {
@@ -71,7 +72,7 @@ namespace BookBuddies.Tales
             if (u.Hp <= 0)
             {
                 u.Hp = 0;
-                if (!u.IsFoe) { u.Ko = true; u.St.Clear(); }
+                if (!u.IsFoe) Nap(u);
                 dot.Fx.Add(new BattleHit { Unit = u.Key, Ko = true });
             }
             foreach (var f in dot.Fx) { f.Hp = Math.Max(0, JsMath.Round(u.Hp)); f.Max = u.Max; }

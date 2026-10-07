@@ -9,7 +9,8 @@ using UnityEngine.UI;
 namespace BookBuddies.Tales
 {
     /// <summary>
-    /// The full-screen wild battle. It opens as a circle growing from where the pet met the foe, plays BattleEngine's
+    /// The full-screen battle, wild or inside a tale (Setup.Tale: it draws over the tale and its subtitle is Setup.Place,
+    /// "Act II · land"). It opens as a circle growing from where the pet met the foe, plays BattleEngine's
     /// steps through the stage (BattleStage, BattleUnitView), the effects (BattleFx) and the director (BattleDirector),
     /// and takes the player's say: lanes, the Ultimate, cheers, speed (1×, 2×, 4×, remembered), the bag and the fight log
     /// (both pause the fight between events). At the end it grants renown and loot, shows the end card (which carries
@@ -46,8 +47,8 @@ namespace BookBuddies.Tales
         BattleUnit Hero => engine.Heroes.Count > 0 ? engine.Heroes[0] : null;
         string HeroName => BattleText.Prose(Hero?.Name ?? TalesUi.PetName);
 
-        // the fight waits between events while a sheet, the bag or anything else is over it
-        bool Paused => !ReferenceEquals(UiStack.Top, this) || TalesUi.AnyOpen;
+        // the fight waits between events while a sheet, the bag or anything else is over it (a tale's own screen is under it)
+        bool Paused => !ReferenceEquals(UiStack.Top, this) || TalesUi.AnyOpen && engine.Setup.Tale == null;
 
         /// <summary>
         /// Starts a fight from the road; from is the screen point the battle opens from. done gets the outcome once, after
@@ -62,8 +63,15 @@ namespace BookBuddies.Tales
             try { engine = new BattleEngine(setup); }
             catch (Exception e) { Debug.LogException(e); done?.Invoke(Unstarted(setup)); return; }
             UiKit.EnsureEventSystem();
-            var canvas = UiKit.MakeCanvas("Battle", CanvasOrder);
+            var canvas = UiKit.MakeCanvas("Battle", OrderFor(setup));
             canvas.gameObject.AddComponent<BattleScreen>().Begin(engine, from, done);
+        }
+
+        // a tale's fight goes just over the tale screen, so a bag opened from it still comes on top
+        static int OrderFor(BattleSetup setup)
+        {
+            var tale = setup.Tale != null && TaleScreen.Body ? TaleScreen.Body.GetComponentInParent<Canvas>() : null;
+            return tale ? tale.rootCanvas.sortingOrder + 1 : CanvasOrder;
         }
 
         static BattleOutcome Unstarted(BattleSetup s) => new BattleOutcome { HpFrac = s.HpFrac, Ink = s.Ink };
@@ -175,19 +183,26 @@ namespace BookBuddies.Tales
             BattleReward.Show(top, o, sound, () => Close(o, null), item => Close(o, item), engine.Setup.BookBoss);
         }
 
-        // renown and loot before the card shows them (a ready-made test hero earns nothing); the save also keeps the lane picked
+        // renown and loot before the card shows them (a ready-made test hero earns nothing outside a tale); the save also keeps
+        // the lane picked. A tale's win pays by its kind: loot by kind and renown 8/4/2 (tqTrack)
         void Grant(BattleOutcome o)
         {
-            if (engine.Setup.Hero != null) return;
+            var tale = engine.Setup.Tale;
+            if (engine.Setup.Hero != null && tale == null) return;
             var save = TalesSave.Current;
             try
             {
-                if (o.Won)
+                if (!o.Won) HeroFactory.GainRenown(save, 0, "falls", o);
+                else if (tale != null)
+                {
+                    Loot.ForTale(o, tale.Kind, tale.Ch, save);
+                    HeroFactory.GainTaleWin(save, tale.Kind, o);
+                }
+                else
                 {
                     HeroFactory.GainRenown(save, 2, "wins", o);
                     Loot.ForWin(o, engine.Setup, save);
                 }
-                else HeroFactory.GainRenown(save, 0, "falls", o);
             }
             catch (Exception x) { Debug.LogException(x); }
             save.Touch();

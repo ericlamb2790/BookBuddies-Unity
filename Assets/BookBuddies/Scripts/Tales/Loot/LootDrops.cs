@@ -25,7 +25,7 @@ namespace BookBuddies.Tales
         public double Rate, SignatureChance;
     }
 
-    // Drops: lootRoll, ltDropFrom (wild wins), the road's stash, shrine and guardian chest, and lootAdd
+    // Drops: lootRoll, ltDropFrom (wild and tale wins), the road's stash, shrine and guardian chest, and lootAdd
     public static partial class Loot
     {
         static readonly double[] Weights = { 50, 30, 14, 5, 1 };
@@ -193,43 +193,63 @@ namespace BookBuddies.Tales
         /// </summary>
         public static void ForWin(BattleOutcome outcome, BattleSetup setup, TalesSave save, IRng rng = null)
         {
-            rng = rng ?? SystemRng.Shared;
             save = save ?? TalesSave.Current;
             var foes = new List<FoeVariant>();
             if (setup != null) foreach (var f in setup.Foes) if (f.v?.Def != null) foes.Add(f.v);
             if (foes.Count == 0 && outcome != null) foreach (var u in outcome.Defeated) if (u.Foe?.Def != null) foes.Add(u.Foe);
+            DropFrom(TaleBattle.Fight, JsMath.Clamp(setup?.Lvl ?? 1, 1, 12), false, foes, outcome, save, Shiny(setup?.Look), rng);
+        }
+
+        /// <summary>
+        /// After a tale win (lootTaleDrop): the lead foe's table rolls by the fight's kind (a boss always, plus 40% a second;
+        /// an elite at least 65% with twice the signature chance), at item level 2 + ch·3 + PetLv/2 + 5.
+        /// </summary>
+        public static void ForTale(BattleOutcome outcome, string kind, int ch, TalesSave save, IRng rng = null)
+        {
+            save = save ?? TalesSave.Current;
+            var foes = new List<FoeVariant>();
+            foreach (var u in outcome.Defeated) if (u.Foe?.Def != null) foes.Add(u.Foe);
+            DropFrom(kind, ch, true, foes, outcome, save, Shiny(outcome.Hero?.Hero?.Look), rng);
+        }
+
+        // ltDropFrom: every foe joins the bestiary, then the lead foe's table rolls; drops go in the bag and outcome.Drops
+        static void DropFrom(string kind, int ch, bool epic, List<FoeVariant> foes, BattleOutcome outcome, TalesSave save, bool shiny, IRng rng)
+        {
+            rng = rng ?? SystemRng.Shared;
             if (foes.Count == 0) return;
             foreach (var v in foes) if (!save.Met.Contains(v.Def.N)) save.Met.Add(v.Def.N);
 
             var lead = foes.Find(IsVillain) ?? foes.Find(v => v.Dn != null && v.Dn != v.Def.N) ?? foes[0];
             var T = FoeTable(lead);
             int rn = HeroFactory.Renown(save.Me.Rxp).lvl;
-            double luck = Luck(save, Shiny(setup?.Look));
-            double il = 2 + JsMath.Clamp(setup?.Lvl ?? 1, 1, 12) * 3 + rn * .5;
+            double luck = Luck(save, shiny);
+            double il = 2 + ch * 3 + rn * .5 + (epic ? 5 : 0);
             string who = lead.Dn ?? lead.Def.N;
+            bool boss = kind == TaleBattle.Boss, elite = kind == TaleBattle.Elite;
 
             void Drop()
             {
-                bool sig = rng.Next() < T.SignatureChance * (1 + luck / 100);
-                string s = sig ? SignatureItem(T, il, luck, rng)
-                    : RollItem("fight", il, rng.Next() < .75 ? T.Theme : null, rng.Next() < .7 ? T.Slots[(int)Math.Floor(rng.Next() * 2)] : null, luck, rng);
+                bool sig = rng.Next() < T.SignatureChance * (elite && !T.Boss ? 2 : 1) * (1 + luck / 100);
+                string s = sig ? SignatureItem(T, kind, il, luck, rng)
+                    : RollItem(kind, il, rng.Next() < .75 ? T.Theme : null, rng.Next() < .7 ? T.Slots[(int)Math.Floor(rng.Next() * 2)] : null, luck, rng);
                 var d = Add(save, s, who, sig);
                 if (d != null) outcome?.Drops.Add(s);
             }
-            if (rng.Next() < T.Rate) Drop();
-            if (foes.Count > 1 && rng.Next() < .12 * (foes.Count - 1)) Drop();
+            if (rng.Next() < (boss ? 1 : elite ? Math.Max(Data.EliteRate, T.Rate + .3) : T.Rate)) Drop();
+            if (boss && rng.Next() < .4) Drop();
+            if (!boss && foes.Count > 1 && rng.Next() < .12 * (foes.Count - 1)) Drop();
             save.Touch();
         }
 
         // a legendary signature drops as itself; a crafted one keeps the roll's tier (at least Uncommon) unless it rolled a legendary
-        static string SignatureItem(FoeLoot T, double il, double luck, IRng rng)
+        static string SignatureItem(FoeLoot T, string src, double il, double luck, IRng rng)
         {
             if (T.Signature.StartsWith("L"))
             {
                 string seed = Seed(rng);
                 return $"{T.Signature}~4~{JsMath.RoundI(il)}~{seed}~{(rng.Next() < .06 ? 1 : 0)}";
             }
-            var p = RollItem("fight", il, T.Theme, T.Signature.Substring(1, 1), luck, rng).Split('~');
+            var p = RollItem(src, il, T.Theme, T.Signature.Substring(1, 1), luck, rng).Split('~');
             if (!p[0].StartsWith("L")) { p[1] = Math.Max(1, int.Parse(p[1], CultureInfo.InvariantCulture)).ToString(CultureInfo.InvariantCulture); p[0] = T.Signature; }
             return string.Join("~", p);
         }
@@ -267,7 +287,7 @@ namespace BookBuddies.Tales
             return foeTables[n] = new FoeLoot
             {
                 Theme = th, Slots = new[] { s1, s2 }, Signature = sig, Boss = boss,
-                Rate = boss ? 1 : Math.Min(.45, .26 + .12 * (hp - .8)), SignatureChance = boss ? .05 : .06,
+                Rate = boss ? 1 : Math.Min(d.DropMax, d.DropRate + d.DropPerHp * (hp - .8)), SignatureChance = boss ? d.BossSigChance : d.SigChance,
             };
         }
 

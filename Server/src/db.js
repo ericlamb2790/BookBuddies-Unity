@@ -50,6 +50,23 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS rooms_seen (player_id TEXT NOT NULL, room TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (player_id, room))`,
   `CREATE TABLE IF NOT EXISTS econ_state (player_id TEXT PRIMARY KEY REFERENCES players(id) ON DELETE CASCADE, pity INTEGER NOT NULL,
      balls INTEGER NOT NULL, tix INTEGER NOT NULL, drops INTEGER NOT NULL, fish_at INTEGER NOT NULL, ups TEXT NOT NULL, freecap TEXT)`,
+  // Tales of Pages (quest.js): shared co-op tales, the Bramble Road raid and its hits, notes to players, the daily tale's board
+  `CREATE TABLE IF NOT EXISTS quest_runs (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, title TEXT, chapter INTEGER NOT NULL DEFAULT 1, party TEXT,
+     state TEXT, visibility TEXT NOT NULL DEFAULT 'link', over INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL,
+     updated_at INTEGER NOT NULL, online INTEGER NOT NULL DEFAULT 0, pets TEXT, srev INTEGER NOT NULL DEFAULT 0, last_by TEXT, kind TEXT)`,
+  `CREATE INDEX IF NOT EXISTS quest_runs_owner_idx ON quest_runs (owner_id, updated_at)`,
+  `CREATE TABLE IF NOT EXISTS quest_raids (id TEXT PRIMARY KEY, club TEXT NOT NULL, n INTEGER NOT NULL, boss INTEGER NOT NULL, lvl INTEGER NOT NULL,
+     hp INTEGER NOT NULL, max INTEGER NOT NULL, started_at INTEGER NOT NULL, ends_at INTEGER NOT NULL, done_at INTEGER)`,
+  `CREATE INDEX IF NOT EXISTS quest_raids_club_idx ON quest_raids (club, started_at)`,
+  `CREATE TABLE IF NOT EXISTS quest_raid_hits (raid_id TEXT NOT NULL, player_id TEXT NOT NULL, dmg INTEGER NOT NULL DEFAULT 0,
+     tries INTEGER NOT NULL DEFAULT 0, day TEXT, pet TEXT, last_at INTEGER, PRIMARY KEY (raid_id, player_id))`,
+  `CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY AUTOINCREMENT, to_id TEXT NOT NULL, from_id TEXT NOT NULL, kind TEXT NOT NULL,
+     game TEXT, day TEXT NOT NULL, created_at INTEGER NOT NULL, read INTEGER NOT NULL DEFAULT 0)`,
+  `CREATE INDEX IF NOT EXISTS notes_to_idx ON notes (to_id, read)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS notes_once_idx ON notes (from_id, to_id, kind, day, game)`,
+  `CREATE TABLE IF NOT EXISTS quest_daily (day TEXT NOT NULL, player_id TEXT NOT NULL, score INTEGER NOT NULL DEFAULT 0, label TEXT, pet TEXT,
+     look TEXT, state TEXT, over INTEGER NOT NULL DEFAULT 0, at INTEGER NOT NULL, PRIMARY KEY (day, player_id))`,
+  `CREATE INDEX IF NOT EXISTS quest_daily_board_idx ON quest_daily (day, score)`,
 ];
 
 export const today = () => new Date().toISOString().slice(0, 10);

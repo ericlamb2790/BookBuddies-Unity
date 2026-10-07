@@ -345,6 +345,7 @@ namespace BookBuddies.UI
             UiKit.Row(more, 10).childForceExpandWidth = true;
             BigTile(more, "🐾", "Pets", "Switch, hatch or reroll", () => { s.Close(); PetsScreen.Open(world.Me); });
             BigTile(more, "🪙", "Coins", "Daily gift and more", () => { s.Close(); coins(); });
+            BigTile(s.Card, "📖", "Tales", "Small reads and your storybooks", () => { s.Close(); TalesUi.OpenTales(); });
 
             s.First = UiKit.Primary(s.Card, "Back to town", s.Close, null, 52);
             UiKit.Secondary(s.Card, "Towns on Bramble Road", () => { s.Close(); TownSheets.Route(world); }, "🛤️");

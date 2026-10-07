@@ -7,6 +7,8 @@ This is a **new, separate Worker** for the Unity game. It has its own **D1 datab
 | Accounts, sign-in, recovery codes | `src/index.js` |
 | Admin tools for accounts | `src/admin.js` |
 | Live town rooms (one Durable Object per copy of Pawtopia) | `src/town.js` |
+| Tales of Pages: shared tales, the Bramble Road raid, notes, the daily board | `src/quest.js` |
+| A shared tale's live party room (a `TownRoom` named `qs:<id>`) | `src/tales_room.js` |
 | Tables and daily limits (D1) | `src/db.js`, also as plain SQL in `schema.sql` |
 | Kind-chat filter (the website's word lists) | `src/safety.js` |
 | Cloudflare settings | `wrangler.toml` |
@@ -110,6 +112,11 @@ The routes and live messages match the website's, so the game works with this se
 | Buy something | `POST /api/wallet/spend {kind: 'shop', item, ref}` → `paid`; the server prices `item` from `src/economy.json` (`decor:<id>`, `move:<class>:<move>`, `unlock:<class>`, `meta:<upgrade>:<level>`, `stock:<day>:<town>:<i>` with `amount`, `satchel:<town>`). `{kind: 'fair', n}` trades coins for 1, 5, 12 or 30 Book Fair tickets. |
 | Live ticket | `GET /api/plaza/world/ticket?s=1-6&town=pawtopia` (or a town on Bramble Road such as `romance`, a road link `road1` … `road17`, or `caves`) → a 60-second ticket and a 15-minute pass |
 | Live town | WebSocket `/api/world/live?ticket=…` into the Durable Object `<town>:<room>` |
+| Tales: shared tales | `POST /api/quest/save` (→ `{ok, id, srev}`, or `cap`, `stale`, `closed`), `GET /api/quest/lobby` (`live`, `mine`), `GET /api/quest/get?id=`, `POST /api/quest/leave {id}` |
+| Tales: live party | `GET /api/quest/ticket?id=` → a 60-second ticket, then WebSocket `/api/quest/live?ticket=…` into `qs:<id>` |
+| Tales: Bramble Road raid | `GET /api/quest/raid`, `POST /api/quest/raid/hit {id, dmg, pet}` (3 a day), `POST /api/quest/raid/claim {id}` (coins once it falls) |
+| Tales: daily board | `GET /api/quest/daily?day=`, `POST /api/quest/daily/save {day, score, label, pet, look, state, over}` |
+| Notes (tale news, raid won) | `GET /api/notes` (unread), `POST /api/notes/read {ids}` |
 | Admin: find players | `GET /api/admin/players?q=part of a name` (`&exact=1` for the whole name) |
 | Admin: one player and their history | `GET /api/admin/players/<id>` |
 | Admin: change a player | `POST /api/admin/players/<id>/<action>`: `mute {minutes}`, `unmute`, `ban {hours}` or `ban {permanent: true}`, `unban`, `kick`, `rename {name}`, `coins {coins}`, `admin {on}`, `delete` |

@@ -170,7 +170,8 @@ namespace BookBuddies.Tales
             Layout();
             var me = Hero;
             var setup = engine.Setup;
-            subtitle.text = paused ? "Paused" : $"{(setup.BookBoss ? "Book Boss" : setup.Guardian ? "Guardian battle" : "Wild battle")} · {BattleText.Prose(setup.Place)}";
+            subtitle.text = paused ? "Paused" : setup.Tale != null ? BattleText.Prose(setup.Place)
+                : $"{(setup.BookBoss ? "Book Boss" : setup.Guardian ? "Guardian battle" : "Wild battle")} · {BattleText.Prose(setup.Place)}";
             subtitle.color = paused ? Gold : Palette.Cream.WithAlpha(.75f);
             speedText.text = speed + "×";
             cheerButton.interactable = !cheerCooling;
