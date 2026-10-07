@@ -48,12 +48,13 @@ namespace BookBuddies.Tales
             return evs;
         }
 
-        // bleed 6% and poison 5% of max, regen 6%, the nap boon, then gear regen; a pet that drops to 0 here naps (no phoenix)
+        // bleed 6% and poison 5% of max, Ink Rain, regen 6%, the nap boon, then gear regen; a pet that drops to 0 here naps (no phoenix)
         BattleEvent TickStatuses(BattleUnit u)
         {
             var dot = new BattleEvent { Kind = "dot", Actor = u.Key, Foe = u.IsFoe };
             if (u.S("bleed") != 0) Lose(u, dot, .06, "bleed", "🩸");
             if (u.S("poison") != 0) Lose(u, dot, .05, "poison", "🧪");
+            Rain(u, dot);
             if (u.S("regen") != 0 && u.Hp > 0)
             {
                 double b = u.Hp;

@@ -6,13 +6,14 @@ namespace BookBuddies.Tales
     // Damage (dmg), single hits (hitOne) and what equipped gear does when a pet hits or gets hit
     public sealed partial class BattleEngine
     {
-        // attack × move power × defence, genre ring, statuses, boons, perks, cover and the enrage timer; also the crit chance
+        // attack × move power × defence, genre ring, the land's hazard, statuses, boons, perks, cover and the enrage timer; also the crit chance
         double BaseDamage(BattleUnit a, BattleUnit d, double mult, double moveCc, out double eff, out double cc)
         {
             mult *= LiteraryMul(a);
             double x = a.Atk * mult * Math.Max(.14, 100 / (100 + d.Def * 4));
             eff = (a.Gen + 1) % 6 == d.Gen ? GenreEdge(a) : (d.Gen + 1) % 6 == a.Gen ? .75 : 1;
             x *= eff;
+            x *= HazardMul(a, d);
             if (d.S("expose") != 0) x *= 1.35;
             if (a.S("pow") != 0) x *= 1.25;
             x *= Cliffhanger(a, d);
@@ -89,9 +90,9 @@ namespace BookBuddies.Tales
             return r.x;
         }
 
-        // a foe with dodge evades 20%, a pet with the dodge status 45%, and bushes 25% of foe swings
+        // a foe with dodge evades 20%, a pet with the dodge status 45%, Margin Fog 12% of pet hits, and bushes 25% of foe swings
         bool Misses(BattleUnit a, BattleUnit t) =>
-            (t.IsFoe && t.Foe.Def.Dodge && rng.Next() < .2) || (!t.IsFoe && t.S("dodge") != 0 && rng.Next() < .45) || BushMiss(a, t);
+            (t.IsFoe && t.Foe.Def.Dodge && rng.Next() < .2) || (!t.IsFoe && t.S("dodge") != 0 && rng.Next() < .45) || FogMiss(a, t) || BushMiss(a, t);
 
         // a pet at 0 HP rises once with the phoenix perk, else hangs on with plot armor, otherwise naps; a foe is out
         void Fall(BattleUnit t, BattleHit f)

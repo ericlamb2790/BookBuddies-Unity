@@ -9,7 +9,8 @@ namespace BookBuddies.Tales
     /// victory T:1382-1386, defeat T:1387-1389) as plain steps the views call: Current shows what is on screen (filled
     /// once, so a resumed tale shows the same choices), Choose picks an option, Continue turns the page after a scene or
     /// a roll, and Finish books a fight's outcome. A step that starts a fight sets run.Battle; the views then save the run
-    /// and play the fight (EpicBattle.Setup + TaleScreen.RunBattle).
+    /// and play the fight (EpicBattle.Setup + TaleScreen.RunBattle). After an ordinary room the Story Master may turn the
+    /// page (EpicRooms.Twist); a Fate card is drawn in every new land and the hand carries into the next saga.
     /// </summary>
     public static class EpicFlow
     {
@@ -63,19 +64,20 @@ namespace BookBuddies.Tales
             else Next(run);
         }
 
-        /// <summary>nextNode: the Long Read camp first when a lair boss just fell, else epNext.</summary>
+        /// <summary>nextNode: the Long Read camp first when a lair boss just fell, else epNext (after an ordinary room, the Story Master may turn the page).</summary>
         public static void Next(TaleRun run)
         {
             run.View = null;
             if (run.CampNext) { run.CampNext = false; run.View = EpicView.Of("camp").ToJson(); return; }
             var E = run.Ep;
             if (E.TwOn) { E.TwOn = false; return; }
-            if (E.Next) { E.Next = false; EpicSaga.Begin(run, E.Kind); return; }
-            if (E.Intro) { E.Intro = false; EpicSaga.ActIntro(run); return; }
+            if (E.Next) { E.Next = false; EpicSaga.Begin(run, E.Kind); run.Ep.Hand.AddRange(E.Hand); return; }
+            if (E.Intro) { E.Intro = false; ActIntro(run); return; }
             if (E.Here.T != "boss")
             {
                 run.Node = E.At.r;
                 if (E.Cur.Contains("c_overdue") && run.Gold > 0) run.Gold = Math.Max(0, run.Gold - 6);
+                EpicRooms.Twist(run);
                 return;
             }
             if (E.Act < 4 && !E.Rpick) { E.Rpick = true; run.View = EpicView.Of("relic").ToJson(); return; }
@@ -95,7 +97,7 @@ namespace BookBuddies.Tales
             E.Map = EpicSaga.Map(run, E.Act);
             E.Hz = EpicSaga.LandOf(E).Hz;
             run.Node = 0;
-            EpicSaga.ActIntro(run);
+            ActIntro(run);
         }
 
         /// <summary>Starts a fight of a kind (fight, elite, boss): run.Battle is set with its own seed; the views save the run, then play it.</summary>
@@ -187,6 +189,18 @@ namespace BookBuddies.Tales
         {
             var v = new EpicView { K = "scene", I = icon, T = title };
             v.Lines.AddRange(lines);
+            run.View = v.ToJson();
+        }
+
+        // actIntro, then the land's Fate card: its line goes before the side quest's, as on the site (T:955)
+        static void ActIntro(TaleRun run)
+        {
+            EpicSaga.ActIntro(run);
+            string drew = EpicRooms.Draw(run);
+            if (drew == null) return;
+            var v = EpicView.FromJson(run.View);
+            int at = v.Lines.FindIndex(l => l.StartsWith("📜 Side quest"));
+            v.Lines.Insert(at < 0 ? v.Lines.Count : at, drew);
             run.View = v.ToJson();
         }
 

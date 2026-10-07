@@ -6,12 +6,15 @@ namespace BookBuddies.Tales
 {
     /// <summary>
     /// epStartBattle (tales.js T:1063-1073): the fight for run.Battle, built from the room's kind, the act and what the
-    /// rooms handed out. It reads the run but changes nothing, and draws every random pick from the fight's own seed,
-    /// so a resumed tale rebuilds the very same fight; EpicFlow.Finish clears what it spent afterwards.
-    /// Stage 1: no hazards, fight twists or boss tactics yet (Tale.Hazard, Tale.Twist and the foes' Tactics stay empty).
+    /// rooms handed out: the foes with their mods, the boss's tactic changes, the twist on half the plain fights, the
+    /// land's hazard (none when warded) and its arena. It reads the run but changes nothing, and draws every random pick
+    /// from the fight's own seed, so a resumed tale rebuilds the very same fight; EpicFlow.Finish clears what it spent afterwards.
     /// </summary>
     public static class EpicBattle
     {
+        // the land's scene (TQ_SCN 0-5: fantasy mystery romance sci-fi spooky adventure) as a Bramble Road arena pool
+        static readonly int[] SceneTier = { 3, 2, 5, 3, 4, 1 };
+
         /// <summary>The battle setup for the run's current fight (run.Battle must be set).</summary>
         public static BattleSetup Setup(TaleRun run)
         {
@@ -24,12 +27,14 @@ namespace BookBuddies.Tales
             BattleUnit Make(FoeDef def, double l, bool boss, bool elite, int k) =>
                 FoeFactory.Make(FoeFactory.Variant(def, boss, elite, rng), l, boss, elite, "f" + k, 1, rng);
             BattleUnit Minion(int k) => Make(d.Minions[pool[rng.Range(pool.Count)] % d.Minions.Count], lvl, false, kind == TaleBattle.Elite, k);
+            BattleUnit Extra(int k) { var f = Minion(k); f.Lvl = Math.Max(1, JsMath.Round(f.Lvl)); return f; } // a twist's extra foe: no mods
 
             var foes = new List<BattleUnit>();
             if (kind == TaleBattle.Boss)
             {
                 var f = Make(EpicSaga.Boss(E, E.Act), lvl + (E.Act == 4 ? .6 : 0), true, false, 0);
                 if (E.Act == 4) f.Max = JsMath.Round(f.Max * 1.5);
+                f.Tactics = new List<(double at, string m)>(A.Ph);
                 foes.Add(f);
                 if (E.Act >= 2) foes.Add(Minion(1));
             }
@@ -52,16 +57,19 @@ namespace BookBuddies.Tales
             if (party >= 6 && kind != TaleBattle.Fight) foes.Add(Minion(3));
             if (kind != TaleBattle.Fight) RenownScale(run, foes[0]);
             foreach (var f in foes) Mods(run, kind, f);
+            string twist = kind == TaleBattle.Fight ? BattleEngine.TqTwist(foes, Extra, rng) : null;
 
             var land = EpicSaga.LandOf(E);
+            string hz = E.Ward ? null : E.Hz;
             var setup = new BattleSetup
             {
-                Title = run.Title, Place = $"Act {EpicSaga.Roman(E.Act)} · {land.N}", Lvl = Math.Max(1, run.Ch), Cave = E.Act == 4,
-                Ink = E.Ink + (E.Bless ? 2 : 0) + (E.Rel.Contains("a_ruby") ? 1 : 0) - (E.Cur.Contains("c_spindle") ? 1 : 0),
-                Tale = new TaleBattle { Kind = kind, Ally = E.Ally, Revived = run.Revived, Ch = run.Ch, Sc = land.Sc, Gold = run.Gold },
+                Title = run.Title, Place = $"Act {EpicSaga.Roman(E.Act)} · {land.N}", Lvl = Math.Max(1, run.Ch), Tier = SceneTier[land.Sc % 6], Cave = E.Act == 4,
+                Ink = E.Ink + (E.Bless ? 2 : 0) - (hz == "gloom" ? 1 : 0) + (E.Rel.Contains("a_ruby") ? 1 : 0) - (E.Cur.Contains("c_spindle") ? 1 : 0),
+                Tale = new TaleBattle { Kind = kind, Hazard = hz, Twist = twist, Ally = E.Ally, Revived = run.Revived, Ch = run.Ch, Sc = land.Sc, Gold = run.Gold },
             };
             setup.Tale.Boons.AddRange(run.Boons);
             setup.Tale.ReadyFoes.AddRange(foes);
+            setup.Tale.Pool.AddRange(pool);
             var h = run.Party.Find(x => !x.Ko) ?? run.Party[0];
             setup.Tale.HeroLvl = h.Lvl;
             setup.Hero = Hero(run, h);

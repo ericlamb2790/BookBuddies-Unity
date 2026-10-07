@@ -9,8 +9,9 @@ namespace BookBuddies.Tales
 {
     /// <summary>
     /// The Long Read (the site's campView, tales.js T:2043-2125, solo): after a lair boss the party camps by a fire, healed
-    /// to full. A night picture of the camp with the pets around the fire and their tents, then four things to do (gear up,
-    /// moves, the story so far, a word by the fire) and "Turn in for the night", which brings the morning and turns the page.
+    /// to full. A night picture of the camp with the pets around the fire and their tents, the relic/curse/side-quest bar,
+    /// then four things to do (gear up, moves, the story so far, a word by the fire) and "Turn in for the night", which
+    /// brings the morning and turns the page.
     /// </summary>
     public static class EpicCamp
     {
@@ -25,6 +26,7 @@ namespace BookBuddies.Tales
             UiKit.Badge(kicker, "Campfire · safe zone", UiKit.EmberInk);
             EpicViews.Title(col, "The Long Read", 38);
             EpicViews.Paragraph(col, $"{(string.IsNullOrEmpty(v.Boss) ? "" : v.Boss + " is beaten. ")}Tents are pitched around the fire and everyone is rested. Gear up, then turn in for the night.", UiKit.BodySize, Palette.InkSoft);
+            EpicHand.Bar(col, run);
 
             float w = Mathf.Min(780, body.rect.width - 32);
             var camp = Picture(col, run, Mathf.Clamp(w * .52f, 220, 340));
@@ -219,11 +221,11 @@ namespace BookBuddies.Tales
         // cpStory: the chapter, the run's tallies and everyone's level
         static void Story(RectTransform body, TaleRun run)
         {
-            var s = Sheet.Create(body, "Story so far", new Vector2(.5f, .5f), Vector2.zero, 480, "The story so far");
+            var s = Sheet.Create(body.parent, "Story so far", new Vector2(.5f, .5f), Vector2.zero, 480, "The story so far");
             s.Dim(.35f);
             s.Closed = () => { if (s) UnityEngine.Object.Destroy(s.gameObject); };
             string beaten = string.IsNullOrEmpty(run.CampBoss) ? "" : $"{run.CampBoss} is beaten. ";
-            UiKit.Label(s.Card, BattleText.Prose($"{beaten}Chapter {run.Ch} of {run.Title ?? "this tale"}."), UiKit.BodySize, Palette.InkSoft);
+            UiKit.Label(s.Card, BattleText.Prose($"{beaten}Chapter {run.Ch} of {UiKit.SplitEmoji(run.Title ?? "this tale", out _)}."), UiKit.BodySize, Palette.InkSoft);
             var st = run.Stats;
             var chips = UiKit.Node("chips", s.Card);
             var grid = chips.gameObject.AddComponent<GridLayoutGroup>();

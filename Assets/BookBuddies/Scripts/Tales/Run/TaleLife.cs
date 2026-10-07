@@ -1,11 +1,13 @@
 using System;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace BookBuddies.Tales
 {
     /// <summary>
     /// The life of a solo tale (lobby.md §2.1): start one, leave it (it keeps), end it into a storybook, begin the next
-    /// book, Second Wind once per tale, and a fresh hero snapshot when the bag closes. Saves go through TaleStore. Pure C#.
+    /// book, Second Wind once per tale, and a fresh hero snapshot when the bag closes; plus the daily tale (one seed per
+    /// local day, one try). Saves go through TaleStore. Pure C#.
     /// The dungeon itself starts from the driver: a run with no Ep (new, or a new book) gets its saga there (beginEpic).
     /// </summary>
     public static class TaleLife
@@ -39,6 +41,70 @@ namespace BookBuddies.Tales
             HeroFactory.CheckClassUnlocks(save);
             TaleStore.Save(run);
             return run;
+        }
+
+        /// <summary>tqDay (D:364): the device's local date, "yyyy-MM-dd". A new daily tale starts at local midnight.</summary>
+        public static string Today() => DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+        /// <summary>
+        /// tqDaily (D:365-366): the day's seed (FNV-1a of "daily:" + day, % 1e9), its tale name, starting boon, relic (never
+        /// the Map) and curse. Every reader gets the same ones.
+        /// </summary>
+        public static DailyTale Daily(string day)
+        {
+            int seed = (int)(JsMath.Hash("daily:" + day) % 1000000000u);
+            var r = new Mulberry32(unchecked((uint)(seed ^ 0xda11)));
+            var data = EpicData.Current;
+            return new DailyTale
+            {
+                Day = day, Seed = seed, Name = TaleName(seed), Boon = r.Pick(TalesData.Current.Boons).key,
+                Relic = r.Pick(data.Relics.FindAll(x => x.Key != "a_map")).Key, Curse = r.Pick(data.Curses).Key,
+            };
+        }
+
+        /// <summary>
+        /// dailyNew (T:747-750): the day's tale with its boon, begun at once (beginEpic) with its relic and curse, titled
+        /// "📅 {name}", counted in life.tales and saved as the daily. Null when that day was already played (one try a day).
+        /// </summary>
+        public static TaleRun NewDaily(TalesSave save, string look, string name, string day)
+        {
+            if (TaleStore.LoadDaily(day) != null) return null;
+            var P = Daily(day);
+            var run = new TaleRun { Id = "daily-" + day, Seed = P.Seed, Daily = day };
+            run.Boons.Add(P.Boon);
+            SetParty(run, save, look, name);
+            run.Tell("begin");
+            save.Me.Count("tales");
+            save.Touch();
+            HeroFactory.CheckClassUnlocks(save);
+            EpicFlow.Start(run);
+            run.Ep.Rel.Clear(); run.Ep.Rel.Add(P.Relic);
+            run.Ep.Cur.Clear(); run.Ep.Cur.Add(P.Curse);
+            run.Title = "📅 " + P.Name;
+            TaleStore.Save(run);
+            return run;
+        }
+
+        /// <summary>dScore (T:723): how deep the daily got, 20 an act and 80 a saga plus the room's row.</summary>
+        public static int Score(TaleRun run)
+        {
+            var E = run.Ep;
+            return E == null ? 0 : ((E.Saga - 1) * 4 + (E.Act - 1)) * 20 + E.At.r;
+        }
+
+        /// <summary>dLabel (T:724): "[Saga II · ]Act III · Room 4".</summary>
+        public static string Label(TaleRun run)
+        {
+            var E = run.Ep;
+            if (E == null) return "";
+            return (E.Saga > 1 ? $"Saga {EpicSaga.Roman(E.Saga)} · " : "") + $"Act {EpicSaga.Roman(E.Act)} · Room {E.At.r + 1}";
+        }
+
+        /// <summary>dLeft (T:731): the time to local midnight, "5h 12m" or "40m" (at least a minute).</summary>
+        public static string Countdown(DateTime now)
+        {
+            int m = (int)Math.Max(1, JsMath.Round((now.Date.AddDays(1) - now).TotalMilliseconds / 6e4));
+            return m >= 60 ? $"{m / 60}h {m % 60}m" : $"{m}m";
         }
 
         /// <summary>leaveTale: back to the lobby; the tale is saved and waits (Continue).</summary>
@@ -138,5 +204,12 @@ namespace BookBuddies.Tales
             var all = TalesData.Current.Dark;
             return (all[run.Ep.Dark % all.Count], run.Ep.Relic);
         }
+    }
+
+    /// <summary>One day's daily tale (tqDaily): the day, its seed and name, and the boon, relic and curse it starts with.</summary>
+    public sealed class DailyTale
+    {
+        public string Day, Name, Boon, Relic, Curse;
+        public int Seed;
     }
 }

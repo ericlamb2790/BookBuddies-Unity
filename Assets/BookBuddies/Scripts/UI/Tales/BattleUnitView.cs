@@ -322,6 +322,15 @@ namespace BookBuddies.Tales
                 : new[] { new Kf(0, 0, 0, 0, .5f, 0), new Kf(1) });
         }
 
+        /// <summary>A tale boss switched to its enrage tactic: a red glow behind its sprite for the rest of the fight (the site's .rage drop-shadow).</summary>
+        public void Enrage()
+        {
+            if (idle.Find("rage")) return;
+            var red = Picture(idle, "rage", UiKit.Glow, RisenFill.WithAlpha(.6f)).rectTransform;
+            red.SetAsFirstSibling();
+            Stretch(red, new Vector2(-.12f, -.04f), new Vector2(1.12f, scale * .98f));
+        }
+
         /// <summary>A quick warm flash when hit (the site's brightness pop).</summary>
         public void Flash()
         {

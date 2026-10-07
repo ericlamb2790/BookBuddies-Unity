@@ -97,7 +97,7 @@ namespace BookBuddies.Tales
             var r = plate.rectTransform.Pin(new Vector2(0, 1), new Vector2(Margin, -Margin), new Vector2(10, 10));
             UiKit.Column(r, 2, new RectOffset(18, 18, 10, 12));
             UiKit.Hug(r);
-            title = UiKit.Label(r, BattleText.Prose(engine.Setup.Title), 26, Palette.Cream, UiKit.Title);
+            title = UiKit.Label(r, BattleText.Prose(UiKit.SplitEmoji(engine.Setup.Title, out _)), 26, Palette.Cream, UiKit.Title);
             title.horizontalOverflow = HorizontalWrapMode.Overflow;
             subtitle = UiKit.Label(r, "", UiKit.SmallSize, Palette.Cream.WithAlpha(.75f), UiKit.Bold);
             subtitle.horizontalOverflow = HorizontalWrapMode.Overflow;

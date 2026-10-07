@@ -5,9 +5,9 @@ using System.Linq;
 namespace BookBuddies.Tales
 {
     /// <summary>
-    /// What happens in the dungeon's rooms (tales.js T:912-1037): scenes and their d20 rolls with the effects they hand
-    /// out, relics, curses and the side quest, the campfire, the wandering bookseller, and the gifts after a win.
-    /// Seeded parts use mulberry32 from the run; the rest (rolls, picks) uses Rng.
+    /// What happens in the dungeon's rooms (tales.js T:912-1052): scenes and their d20 rolls with the effects they hand
+    /// out, relics, curses and the side quest, the campfire, the wandering bookseller, the gifts after a win, the Story
+    /// Master's twists and the Fate hand. Seeded parts use mulberry32 from the run; the rest (rolls, picks) uses Rng.
     /// </summary>
     public static class EpicRooms
     {
@@ -49,13 +49,18 @@ namespace BookBuddies.Tales
 
         // ---- narration ----
 
-        /// <summary>epCtx: the words a scene can use ({a} roller, {p} party, {place}, {r} land, {relic}, {dark}, {boss}, {hz}), place seeded by act and node.</summary>
+        /// <summary>
+        /// epCtx: the words a scene can use ({a} roller, {p} party, {place}, {r} land, {relic}, {dark}, {boss}, {hz}, {book},
+        /// {lead}), place seeded by act and node. The site's {book} is a title from the reader's shelf and {lead} the reader's
+        /// name; Unity has neither, so {book} is the site's fallback (no rng draw, as with an empty shelf) and {lead} the first pet.
+        /// </summary>
         public static Dictionary<string, string> Ctx(TaleRun run, string a = null)
         {
             var E = run.Ep; var R = EpicSaga.LandOf(E);
             var r = new Mulberry32(unchecked((uint)(run.Seed + E.Act * 7L + E.At.r * 31L + E.At.c + E.Saga)));
             return new Dictionary<string, string>
             {
+                ["book"] = "The Wind in the Willows", ["lead"] = run.Party.Count > 0 ? run.Party[0].Seed.Name : "your",
                 ["a"] = a ?? "the party", ["p"] = EpicSaga.List(run.Party.ConvertAll(h => h.Seed.Name)), ["place"] = R.Places[(int)Math.Floor(r.Next() * R.Places.Length)],
                 ["r"] = R.N, ["relic"] = E.Relic, ["dark"] = EpicSaga.Dark(E).N, ["boss"] = EpicSaga.Boss(E, E.Act).N,
                 ["hz"] = R.Hz != null ? EpicData.Current.Hazards[R.Hz].n : "the road",
@@ -68,11 +73,11 @@ namespace BookBuddies.Tales
 
         // ---- scenes and rolls ----
 
-        /// <summary>epTpl: the scene a view plays (event, danger or chest table); a bad index gives the first encounter.</summary>
+        /// <summary>epTpl: the scene a view plays (event, danger, chest or the Story Master's twist table); a bad index gives the first encounter.</summary>
         public static EncTpl Template(EpicView v)
         {
             var d = EpicData.Current;
-            var L = v.Tp == "danger" ? d.Dangers : v.Tp == "chest" ? d.Chests : d.Encounters;
+            var L = v.Tp == "danger" ? d.Dangers : v.Tp == "chest" ? d.Chests : v.Tp == "twist" ? d.Twists : d.Encounters;
             return v.E >= 0 && v.E < L.Count ? L[v.E] : d.Encounters[0];
         }
 
@@ -118,10 +123,13 @@ namespace BookBuddies.Tales
             return n / 20.0;
         }
 
-        /// <summary>epResolve: rolls the d20 for option i (Genie's Lamp rerolls a miss once per land), applies its effects and shows the roll.</summary>
+        /// <summary>
+        /// epResolve: rolls the d20 for option i (Genie's Lamp rerolls a miss once per land), applies its effects and shows
+        /// the roll. A Story Master twist finds no side-quest pages and writes the storybook's dm entry instead of a roll.
+        /// </summary>
         public static void Resolve(TaleRun run, EpicView v, int i)
         {
-            var E = run.Ep; var T = Template(v);
+            var E = run.Ep; var T = Template(v); bool twist = v.Tp == "twist";
             var opt = i >= 0 && i < T.Opts.Count ? T.Opts[i] : T.Opts[0];
             var o = v.Opts[Math.Min(i, v.Opts.Count - 1)];
             string name = run.Party.Find(h => h.Seed.PetKey == o.Who)?.Seed.Name ?? SpotName(run);
@@ -145,18 +153,19 @@ namespace BookBuddies.Tales
             string txt = Fill(ok ? opt.OkText : string.IsNullOrEmpty(opt.FailText) ? opt.OkText : opt.FailText, Ctx(run, name));
             var (lines, then) = Fx(run, ok ? opt.OkFx : opt.FailFx);
             lines.InsertRange(0, pre);
-            if (ok && o.Chk != null && E.Th != null && Rng.Next() < .35) lines.AddRange(Page(run));
+            if (ok && o.Chk != null && !twist && E.Th != null && Rng.Next() < .35) lines.AddRange(Page(run));
             E.Spot++;
-            E.Used.Add(v.Tp[0].ToString() + v.E);
+            E.Used.Add(v.Tp[0].ToString() + v.E);   // "e12", "d3", "c0", "t7"
             if (E.Used.Count > 40) E.Used.RemoveRange(0, E.Used.Count - 40);
             var roll1 = new EpicView
             {
                 K = "roll", I = v.I, T = v.T, Ch = o.N, Chk = o.Chk, Roll = roll, B = bb, Dc = o.Dc, Ok = ok, Who = name,
-                Crit = roll == 20 ? 1 : roll == 1 ? -1 : 0, Text = txt, Then = then,
+                Crit = roll == 20 ? 1 : roll == 1 ? -1 : 0, Text = txt, Then = then, Dm = twist,
             };
             roll1.Lines.AddRange(lines);
             run.View = roll1.ToJson();
-            run.Tell("roll", new Dictionary<string, object> { ["bt"] = txt, ["ok"] = ok ? 1.0 : 0.0, ["a"] = name, ["t"] = v.T });
+            if (twist) run.Tell("dm", new Dictionary<string, object> { ["t"] = v.T, ["i"] = v.I, ["bt"] = Fill(T.Text, Ctx(run, name)), ["out"] = txt, ["pick"] = o.N });
+            else run.Tell("roll", new Dictionary<string, object> { ["bt"] = txt, ["ok"] = ok ? 1.0 : 0.0, ["a"] = name, ["t"] = v.T });
         }
 
         /// <summary>epFx: applies a comma list of effects ("gold:15,heal:15", "fight", …); returns the lines to show (no repeats) and a fight it starts.</summary>
@@ -303,9 +312,70 @@ namespace BookBuddies.Tales
             return lines;
         }
 
+        // ---- the Story Master and the Fate hand ----
+
+        /// <summary>
+        /// epTwist: after a room in rows 1-4 the Story Master may turn the page. Every room counts (Dmg2); from the second
+        /// on the odds are .3 + .22·(Dmg2 − 2): 30%, 52%, 74%… A hit opens a TQ_DM scene not met yet (any once all are)
+        /// and sets TwOn, so a twist never chains into another room. True when it fired.
+        /// </summary>
+        public static bool Twist(TaleRun run)
+        {
+            var E = run.Ep;
+            E.Dmg2++;
+            int row = E.At.r;
+            if (row < 1 || row >= E.Map.Count - 2 || E.Dmg2 < 2 || Rng.Next() >= .3 + .22 * (E.Dmg2 - 2)) return false;
+            E.Dmg2 = 0;
+            E.TwOn = true;
+            var all = EpicData.Current.Twists;
+            var fresh = Enumerable.Range(0, all.Count).Where(i => !E.Used.Contains("t" + i)).ToList();
+            int e = fresh.Count > 0 ? fresh[Rng.Range(fresh.Count)] : Rng.Range(all.Count);
+            run.View = new EpicView { K = "enc", Tp = "twist", E = e }.ToJson();
+            return true;
+        }
+
+        /// <summary>epDraw: a random Fate card joins the hand (never past 3); the "🃏 You draw a Fate card: …" line, or null when the hand is full.</summary>
+        public static string Draw(TaleRun run)
+        {
+            var hand = run.Ep.Hand;
+            if (hand.Count >= 3) return null;
+            var c = EpicData.Current.Fates[Rng.Range(EpicData.Current.Fates.Count)];
+            hand.Add(c.Key);
+            return $"🃏 You draw a Fate card: {c.I} {c.N}";
+        }
+
+        /// <summary>playCard: plays card i of the hand (not mid-fight or once the tale is over); the toast "{i} You played {n}: {msg}", or null.</summary>
+        public static string PlayCard(TaleRun run, int i)
+        {
+            var E = run.Ep;
+            if (E == null || run.Battle != null || run.Over) return null;
+            var hand = E.Hand;
+            var c = i >= 0 && i < hand.Count ? EpicData.Current.Fate(hand[i]) : null;
+            if (c == null) return null;
+            hand.RemoveAt(i);
+            string msg;
+            switch (c.Key)
+            {
+                case "f_insp": E.Insp += 5; msg = "+5 on the next roll"; break;
+                case "f_wind":
+                    foreach (var h in run.Party) { double m = TaleLife.MaxHp(run, h); h.Hp = h.Ko ? JsMath.Round(m * .3) : Math.Min(m, h.Hp + m * .3); }
+                    msg = "everyone heals 30%";
+                    break;
+                case "f_lantern": E.Clear = E.Act; msg = "the fog lifts"; break;
+                case "f_armor": E.Bless = true; msg = "shields up for the next battle"; break;
+                case "f_ink": E.Ink = 2; msg = "+2 ink next battle"; break;
+                default:   // f_ally
+                    var npc = TalesData.Current.Npcs[Rng.Range(TalesData.Current.Npcs.Count)];
+                    E.Ally = npc.Key;
+                    msg = $"{npc.Name} joins the next battle";
+                    break;
+            }
+            return $"{c.I} You played {c.N}: {msg}";
+        }
+
         // ---- rooms ----
 
-        /// <summary>campScene: a campfire on the map: a told tale, maybe a storybook visitor (ally next fight), a curse burnt away, then heal or study.</summary>
+        /// <summary>campScene: a campfire on the map: a told tale, maybe a storybook visitor (ally next fight), a curse burnt away, a Fate card drawn, then heal or study.</summary>
         public static void Camp(TaleRun run)
         {
             var E = run.Ep; var d = TalesData.Current; var data = EpicData.Current;
@@ -321,8 +391,9 @@ namespace BookBuddies.Tales
                 lines.Add(npc.Camp);
                 lines.Add($"{npc.Icon} {npc.Name} will help in your next battle.");
             }
-            string lift = Lift(run);
+            string lift = Lift(run), drew = Draw(run);
             if (lift.Length > 0) lines.Add(lift);
+            if (drew != null) lines.Add(drew);
             double hv = E.Rel.Contains("a_bowl") ? 1 : E.Cur.Contains("c_mirror") ? .22 : .45;
             if (study)
             {

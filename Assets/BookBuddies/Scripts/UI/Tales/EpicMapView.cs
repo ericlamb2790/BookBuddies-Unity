@@ -23,8 +23,8 @@ namespace BookBuddies.Tales
         static int sel = -1;
         static float fromBottom = -1;
 
-        /// <summary>Builds the map view into body; pick(i) takes option i, autoGo(go, label) starts the lone way's countdown.</summary>
-        public static void Build(RectTransform body, TaleRun run, EpicView v, Action<int> pick, Action<Action, Text> autoGo)
+        /// <summary>Builds the map view into body; pick(i) takes option i, autoGo(go, label) starts the lone way's countdown, played runs after a Fate card is played.</summary>
+        public static void Build(RectTransform body, TaleRun run, EpicView v, Action<int> pick, Action<Action, Text> autoGo, Action played)
         {
             var E = run.Ep;
             var land = EpicSaga.LandOf(E);
@@ -35,9 +35,9 @@ namespace BookBuddies.Tales
             bool wide = size.x >= WideFrom;
             var root = UiKit.Node("map view", body).Fill();
 
-            // ---- header: act pips, the land, "Act II of IV · hazard" ----
+            // ---- header: act pips, the land, "Act II of IV · hazard", the relic/curse/side-quest bar ----
             bool shortWindow = size.y < 560;
-            float headH = wide && !shortWindow ? 118 : shortWindow ? 84 : 100;
+            float headH = (wide && !shortWindow ? 118 : shortWindow ? 84 : 100) + (EpicHand.HasBar(run) ? 34 : 0);
             var head = UiKit.Node("head", root);
             head.anchorMin = new Vector2(0, 1); head.anchorMax = Vector2.one; head.pivot = new Vector2(.5f, 1);
             head.anchoredPosition = Vector2.zero; head.sizeDelta = new Vector2(0, headH);
@@ -45,6 +45,7 @@ namespace BookBuddies.Tales
             Pips(head, E, shortWindow);
             UiKit.Label(head, BattleText.Prose(land.N), wide && !shortWindow ? UiKit.TitleSize : UiKit.HeadingSize + 2, Palette.Ink, UiKit.Title, TextAnchor.MiddleCenter).horizontalOverflow = HorizontalWrapMode.Overflow;
             Lede(head, E, land);
+            EpicHand.Bar(head, run);
 
             // ---- the map and the side panel: side by side on wide windows, stacked on narrow ones ----
             float room = size.y - headH - Gutter;
@@ -67,7 +68,7 @@ namespace BookBuddies.Tales
                 sideAt = new Rect(x0, headH + mapH + 10, cw, sideH);
             }
 
-            var state = new MapState { Run = run, View = v, Pick = pick };
+            var state = new MapState { Run = run, View = v, Pick = pick, Played = played };
             Map(root, mapAt, state, land);
             Side(root, sideAt, state, wide);
             state.Paint();
@@ -81,6 +82,7 @@ namespace BookBuddies.Tales
             public TaleRun Run;
             public EpicView View;
             public Action<int> Pick;
+            public Action Played;
             public readonly List<(int opt, RectTransform disc, Image face, Image glow, Color color)> Nodes = new List<(int, RectTransform, Image, Image, Color)>();
             public Button First, Go;
             public RectTransform Panel;
@@ -374,7 +376,7 @@ namespace BookBuddies.Tales
             }
         }
 
-        // ---- the side panel: "Where next?", the place picked, Go / Next, the countdown and the party ----
+        // ---- the side panel: "Where next?", the place picked, Go / Next, the countdown, the Fate hand and the party ----
 
         static void Side(RectTransform root, Rect at, MapState st, bool wide)
         {
@@ -385,6 +387,7 @@ namespace BookBuddies.Tales
             st.Panel = UiKit.Node("pick", col);
             UiKit.Column(st.Panel, 8);
             st.Countdown = UiKit.Label(col, "", UiKit.SmallSize, Palette.InkSoft, null, TextAnchor.MiddleCenter);
+            EpicHand.Build(col, st.Run, st.Played);
             EpicViews.PartyStrip(col, st.Run);
         }
 

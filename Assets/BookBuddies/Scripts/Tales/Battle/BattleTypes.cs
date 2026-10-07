@@ -108,7 +108,7 @@ namespace BookBuddies.Tales
         public int Roll;                     // fate d20
         public string Helper;                // fate NPC
         public string Reply;                 // talk: the pet's answer to Line
-        public string Result;                // fate: fumble, meh, good, great or nat (a natural 20)
+        public string Result;                // fate: fumble, meh, good, great or nat (a natural 20); phase: the tactic (summon enrage shield heal)
         public int Bonus;                    // fate: level bonus added to Roll
         public string Sub;                   // rise: what the boss gained ("hits much harder")
     }
@@ -149,6 +149,7 @@ namespace BookBuddies.Tales
         public int Sc;                       // the land's scene 0-5 (arena and storybook backdrop)
         public int Gold;                     // the run's ink drops going in (S.gold): all a foe's steal can take
         public readonly List<BattleUnit> ReadyFoes = new List<BattleUnit>(); // foes built by EpicBattle (variants, mods, Tactics)
+        public readonly List<int> Pool = new List<int>(); // TQ_MIN indices a boss's summon tactic draws from (the act's tqPool)
     }
 
     /// <summary>How a fight ended, for rewards and the road.</summary>

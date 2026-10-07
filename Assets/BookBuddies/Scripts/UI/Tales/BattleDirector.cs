@@ -18,6 +18,7 @@ namespace BookBuddies.Tales
         readonly BattleStage stage;
         readonly BattleFx fx;
         readonly BattleSound sound;
+        readonly Dictionary<string, int> tactics = new Dictionary<string, int>(); // tactic changes so far by boss key (the band's phase count)
         bool effectSaid;
 
         public BattleDirector(BattleEngine engine, BattleStage stage, BattleFx fx, BattleSound sound)
@@ -59,6 +60,7 @@ namespace BookBuddies.Tales
                 case "cheer": Cheer(e); break;
                 case "fate": yield return fx.Fate(e, f => Apply(f, e)); break;
                 case "rise": yield return Risen(e); break;
+                case "phase": yield return Phase(e); break;
                 case "win": yield return Won(); break;
                 case "lose":
                     sound.Play("lose");
@@ -94,7 +96,7 @@ namespace BookBuddies.Tales
             }
         }
 
-        // foes drop in, pets rise, then the "Dust Bunny +2!" callout
+        // foes drop in, pets rise, then the "Dust Bunny +2!" callout, or a twisted fight's banner ("👀 Ambush!" and what it did)
         IEnumerator Intro(BattleEvent e)
         {
             int i = 0, k = 0;
@@ -105,6 +107,12 @@ namespace BookBuddies.Tales
             }
             sound.Play("page");
             yield return Wait(T(500));
+            if (e.Name != null)
+            {
+                fx.Banner(e.Name, e.Sub, false);
+                yield return Wait(T(1000));
+                yield break;
+            }
             fx.Callout(new BattleEvent { Kind = "intro", Name = e.Line, Foe = true });
             yield return Wait(T(350));
         }
@@ -189,12 +197,40 @@ namespace BookBuddies.Tales
                 v.Flash();
                 KeyTween.Play(v.Motion, T(1300), Rise, new Kf(0, 0, 0, 0, .6f), new Kf(.35f, 0, 0, 8, .55f), new Kf(.7f, 0, 0, -4, 1.35f), new Kf(1));
             }
-            fx.RiseBand(e, engine.Find(e.Actor)?.Phase ?? 1);
+            fx.RiseBand(e, PhaseOf(e.Actor));
             yield return Wait(T(500));
             foreach (var f in e.Fx) Apply(f, e);
             yield return Wait(T(900));
             yield return Wait(fx.Bubble(v, e.Line, true));
             yield return Wait(T(300));
+        }
+
+        // a tale boss changes tactics: it stomps and shakes, the rise band names the change with its boast under it, then its
+        // bar (and any minions it called, which the stage pops in by itself)
+        IEnumerator Phase(BattleEvent e)
+        {
+            var v = stage.View(e.Actor);
+            sound.Play("stomp");
+            if (v != null)
+            {
+                v.Flash();
+                if (e.Result == "enrage") v.Enrage();
+                KeyTween.Play(v.Motion, T(700), BattleEase.Out, new Kf(0), new Kf(.33f, 0, 0, -4, 1.18f), new Kf(.66f, 0, 0, 4, 1.12f), new Kf(1));
+            }
+            tactics.TryGetValue(e.Actor, out int n);
+            tactics[e.Actor] = n + 1;
+            string who = BattleText.Prose(engine.Find(e.Actor)?.Name ?? "The villain");
+            fx.RiseBand(new BattleEvent { Name = $"{who} {e.Name}", Sub = e.Line }, PhaseOf(e.Actor));
+            yield return Wait(T(500));
+            foreach (var f in e.Fx) Apply(f, e);
+            yield return Wait(T(1400));
+        }
+
+        // rises and tactic changes count up one phase band after another
+        int PhaseOf(string key)
+        {
+            tactics.TryGetValue(key, out int n);
+            return (engine.Find(key)?.Phase ?? 1) + n;
         }
 
         IEnumerator Won()

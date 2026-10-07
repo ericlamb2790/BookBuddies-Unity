@@ -89,7 +89,7 @@ namespace BookBuddies.Tales
                 face.anchoredPosition = new Vector2((i - (n - 1) / 2f) * size * .82f, 0);
                 bobbers.Add(face);
             }
-            var title = Words(col, data.Str("title"), Mathf.RoundToInt(Mathf.Clamp(w / 12, 26, 64)), CoverInk, UiKit.Title, TextAnchor.MiddleCenter);
+            var title = Words(col, UiKit.SplitEmoji(data.Str("title"), out _), Mathf.RoundToInt(Mathf.Clamp(w / 12, 26, 64)), CoverInk, UiKit.Title, TextAnchor.MiddleCenter);
             Lay(title.rectTransform, null, 0, .3f, 1, .56f);
             int ch = data.Int("ch"), vol = data.Int("vol", 1);
             var sub = Words(col, $"{ch} chapter{(ch > 1 ? "s" : "")}{(vol > 1 ? $" · Book {vol}" : "")}", Mathf.RoundToInt(Mathf.Clamp(w / 40, 15, 22)), CoverInk.WithAlpha(.9f), UiKit.Body, TextAnchor.MiddleCenter);
@@ -289,7 +289,7 @@ namespace BookBuddies.Tales
 
         void FooterOf(RectTransform foot, string title, int index)
         {
-            var t = Words(foot, BattleText.Prose(title), 14, Foot, UiKit.Title, TextAnchor.MiddleLeft);
+            var t = Words(foot, BattleText.Prose(UiKit.SplitEmoji(title, out _)), 14, Foot, UiKit.Title, TextAnchor.MiddleLeft);
             t.fontStyle = FontStyle.Italic;
             t.horizontalOverflow = HorizontalWrapMode.Wrap;
             t.verticalOverflow = VerticalWrapMode.Truncate;
@@ -462,7 +462,7 @@ namespace BookBuddies.Tales
                 img.preserveAspect = true; img.raycastTarget = false;
                 img.rectTransform.Pin(new Vector2(.5f, big ? .66f : .62f), new Vector2((i - (who.Count - 1) / 2f) * pet * .8f, 0), new Vector2(pet * 200 / 232f, pet));
             }
-            var t = UiKit.Label(face.transform, book.Str("title"), big ? 24 : 14, CoverInk, UiKit.Title, big ? TextAnchor.LowerCenter : TextAnchor.LowerLeft);
+            var t = UiKit.Label(face.transform, UiKit.SplitEmoji(book.Str("title"), out _), big ? 24 : 14, CoverInk, UiKit.Title, big ? TextAnchor.LowerCenter : TextAnchor.LowerLeft);
             t.fontStyle = big ? FontStyle.Normal : FontStyle.Italic;
             t.verticalOverflow = VerticalWrapMode.Truncate;
             Lay(t.rectTransform, null, 0, 0, 1, big ? .38f : .42f, new Vector2(big ? 18 : 10, big ? 60 : 8), new Vector2(big ? -18 : -6, 0));

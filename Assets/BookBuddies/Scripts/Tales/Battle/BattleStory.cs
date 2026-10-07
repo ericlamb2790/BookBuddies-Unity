@@ -197,13 +197,14 @@ namespace BookBuddies.Tales
             }
         }
 
-        // a villain needles the pet about its class and the pet answers (only mid-fight in the wild)
+        // a villain needles the pet about its class and the pet answers: in a tale's boss fight the boss itself, else any foe
+        // (the wild only banters mid-fight)
         void Banter(List<BattleEvent> evs)
         {
             var fs = LiveFoes();
             var hs = LiveHeroes();
             if (fs.Count == 0 || hs.Count == 0) return;
-            var f = rng.Pick(fs);
+            var f = Setup.Tale?.Kind == TaleBattle.Boss ? fs.Find(x => x.Boss) ?? fs[0] : rng.Pick(fs);
             var h = rng.Pick(hs);
             var ctx = (pet: h.Name, foe: f.Name, genre: TalesData.Current.GenreLabel(h.Gen).ToLowerInvariant());
             var says = f.Foe.Def.Says;

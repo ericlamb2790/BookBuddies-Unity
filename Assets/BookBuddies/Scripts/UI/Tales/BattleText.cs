@@ -24,13 +24,14 @@ namespace BookBuddies.Tales
             var side = e.Foe ? Side.Foe : Side.Pet;
             switch (e.Kind)
             {
-                case "intro": return ("⚔️", $"Fight starts: {Prose(engine.Setup.Title)}", Side.Story);
+                case "intro": return ("⚔️", $"Fight starts: {string.Join(", ", engine.Foes.ConvertAll(f => Prose(f.Name)))}", Side.Story);
                 case "skip": return ("💫", $"{who} is too dizzy to move", side);
                 case "dot": return (e.Fx.Exists(f => f.Damage > 0) ? "🩸" : "💚", $"{Bold(who)} {Targets(e, engine)}", side);
                 case "slamw": return ("⚠️", $"{Bold(who)} winds up a slam on the {Lane(e.Zone?[0] ?? 'c')} lane", Side.Foe);
                 case "fate" when e.Result == "ally": return ("🤝", Prose(e.Line), Side.Story);
                 case "fate": return ("🎲", $"{e.Name} rolled {e.Roll}{(e.Bonus > 0 ? " + " + e.Bonus : "")}: {Prose(e.Line)}", Side.Story);
                 case "rise": return ("👑", $"{Bold(Prose(e.Name))} rises again: {e.Sub}", Side.Foe);
+                case "phase": return ("⚠️", $"{Bold(who)} changes tactics", Side.Foe);
                 case "talk": return ("💬", $"{Bold(who)}: “{e.Line}” {Bold(Name(engine, e.Listener))}: “{e.Reply}”", Side.Foe);
                 case "cheer": return ("📣", $"{Bold(who)} got a cheer: +1 ink", Side.Pet);
                 case "win": return ("🏆", "Victory!", Side.Story);

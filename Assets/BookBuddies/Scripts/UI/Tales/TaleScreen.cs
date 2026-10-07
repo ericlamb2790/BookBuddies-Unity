@@ -9,8 +9,8 @@ namespace BookBuddies.Tales
     /// <summary>
     /// The running tale (lobby.md §1.6): a top bar (‹ back to the library, the title, "Act II · land · 💧 gold", 🎒, ⋯)
     /// over Body, where the dungeon views build. The ⋯ menu has battle speed, End this tale and Back to the library; the
-    /// end screen shows the storybook cover, ♥ Save, Begin the next tale and the way back. One tale is open at a time, so
-    /// its surface is static. B or Esc goes back to the library (the tale waits there).
+    /// end screen shows the storybook cover, ♥ Save, Begin the next tale (a daily shows how deep it got instead) and the
+    /// way back. One tale is open at a time, so its surface is static. B or Esc goes back to the library (the tale waits there).
     /// </summary>
     public sealed class TaleScreen : TalesScreen
     {
@@ -163,7 +163,7 @@ namespace BookBuddies.Tales
             if (!now.Equals(shown))
             {
                 shown = now;
-                title.text = BattleText.Prose(run.Title ?? "A tale");
+                title.text = BattleText.Prose(UiKit.SplitEmoji(run.Title ?? "A tale", out _)); // the daily's 📅
                 sub.text = run.Over ? "The End" : paused ? "Paused" : Where(run);
                 UiKit.SetIcon(subIcon, paused ? "⏸️" : null);
                 UiKit.Show(drop, !run.Over);
@@ -213,7 +213,7 @@ namespace BookBuddies.Tales
             UiStack.Push(this, Back); // B and Esc took the tale off the stack: it stays under the question
             var ask = Sheet.Create(Root, "Save first", new Vector2(.5f, .5f), Vector2.zero, 520, "Save the storybook first?");
             ask.Dim(.4f);
-            var why = UiKit.Label(ask.Card, $"{BattleText.Prose(run.Title)} isn’t saved yet. If you leave now, it won’t be in your storybooks.", UiKit.BodySize, Palette.InkSoft);
+            var why = UiKit.Label(ask.Card, $"{BattleText.Prose(UiKit.SplitEmoji(run.Title, out _))} isn’t saved yet. If you leave now, it won’t be in your storybooks.", UiKit.BodySize, Palette.InkSoft);
             why.horizontalOverflow = HorizontalWrapMode.Wrap;
             ask.First = UiKit.Primary(ask.Card, "Save and leave", () => { ask.Close(); Keep(); Finish(); }, "❤️");
             UiKit.Secondary(ask.Card, "Leave without saving", () => { ask.Close(); Finish(); });
@@ -222,10 +222,10 @@ namespace BookBuddies.Tales
             ask.Open();
         }
 
-        // an ended tale leaves Your journeys
+        // an ended tale leaves Your journeys (a daily keeps its result: that day is done)
         void Finish()
         {
-            TaleStore.Clear();
+            if (run.Daily == null) TaleStore.Clear();
             ToLobby();
         }
 
@@ -253,14 +253,24 @@ namespace BookBuddies.Tales
             body.gameObject.SetActive(false);
             over.gameObject.SetActive(true);
             for (int i = overColumn.childCount - 1; i >= 0; i--) Destroy(overColumn.GetChild(i).gameObject);
-            bool sad = run.Reason == TaleLife.Defeat;
+            bool sad = run.Reason == TaleLife.Defeat, daily = run.Daily != null;
             var s = run.Stats;
-            UiKit.Label(overColumn, sad ? "The party needs a nap" : "The End", UiKit.TitleSize + 14, Palette.Ink, UiKit.Title, TextAnchor.MiddleCenter);
-            string reached = run.Ep != null ? $"Your fellowship reached Act {EpicSaga.Roman(run.Ep.Act)} of {BattleText.Prose(run.Ep.Name)}." : $"Your party reached chapter {run.Ch}.";
-            UiKit.Label(overColumn, sad ? $"{reached} Your pets keep the renown they earned. Train in a small read or visit the Tales shop, then start a fresh tale from the library."
-                : $"{run.Ch} chapter{(run.Ch > 1 ? "s" : "")} of adventure, all written down.", UiKit.BodySize + 1, Palette.InkSoft, null, TextAnchor.MiddleCenter);
-            UiKit.Label(overColumn, $"{s.Wins} battle{(s.Wins == 1 ? "" : "s")} won · {s.Bosses} villain{(s.Bosses == 1 ? "" : "s")} sent home · {s.Foes} troublemakers",
-                UiKit.SmallSize + 1, UiKit.EmberInk, UiKit.Bold, TextAnchor.MiddleCenter);
+            UiKit.Label(overColumn, sad ? daily ? "The daily tale is over" : "The party needs a nap" : "The End", UiKit.TitleSize + 14, Palette.Ink, UiKit.Title, TextAnchor.MiddleCenter);
+            if (daily)
+            {
+                // the daily's end (T:1532-1533): how deep your pet got, then today's board
+                string name = BattleText.Prose(UiKit.SplitEmoji(run.Title, out _));
+                UiKit.Label(overColumn, $"Your pet reached <b>{TaleLife.Label(run)}</b> in {name}. A new daily tale arrives tomorrow.", UiKit.BodySize + 1, Palette.InkSoft, null, TextAnchor.MiddleCenter);
+                TalesLobby.DailyBoard(overColumn, TaleStore.LoadDaily(run.Daily));
+            }
+            else
+            {
+                string reached = run.Ep != null ? $"Your fellowship reached Act {EpicSaga.Roman(run.Ep.Act)} of {BattleText.Prose(run.Ep.Name)}." : $"Your party reached chapter {run.Ch}.";
+                UiKit.Label(overColumn, sad ? $"{reached} Your pets keep the renown they earned. Train in a small read or visit the Tales shop, then start a fresh tale from the library."
+                    : $"{run.Ch} chapter{(run.Ch > 1 ? "s" : "")} of adventure, all written down.", UiKit.BodySize + 1, Palette.InkSoft, null, TextAnchor.MiddleCenter);
+                UiKit.Label(overColumn, $"{s.Wins} battle{(s.Wins == 1 ? "" : "s")} won · {s.Bosses} villain{(s.Bosses == 1 ? "" : "s")} sent home · {s.Foes} troublemakers",
+                    UiKit.SmallSize + 1, UiKit.EmberInk, UiKit.Bold, TextAnchor.MiddleCenter);
+            }
             Selectable first = null;
             if (run.Book != null)
             {
@@ -276,7 +286,7 @@ namespace BookBuddies.Tales
             }
             var buttons = UiKit.Node("buttons", overColumn);
             UiKit.Row(buttons, 12, new RectOffset(0, 0, 8, 0), TextAnchor.MiddleCenter);
-            if (run.Reason == TaleLife.Ended)
+            if (run.Reason == TaleLife.Ended && !daily)
             {
                 var again = UiKit.Primary(buttons, "Begin the next tale", NextBook, "✨", 52);
                 if (first == null) first = again;

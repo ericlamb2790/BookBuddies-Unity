@@ -11,7 +11,7 @@ namespace BookBuddies.Tales
     /// <remarks>
     /// Event kinds and the fields they set:
     /// <list type="bullet">
-    /// <item>intro: Line is the callout ("Dust Bunny +2!"), Icon ⚔️.</item>
+    /// <item>intro: Line is the callout ("Dust Bunny +2!"), Icon ⚔️; a twisted tale fight carries its banner instead in Name ("👀 Ambush!") and Sub.</item>
     /// <item>atk, heal, shield, buff: Actor, Name, Icon, Ult, Uv, Anim (arc beam rain slash quake orbit burst), Projectile (arc only: lob bolt boomer
     /// volley wave bounce spiral comet disc homing), Aoe, Seq (random hits one after another), Foe, Fx, Pops. A Ground Slam is an atk with Zone set.</item>
     /// <item>slamw: a foe winds up a slam on lane Zone (Actor, Name, Icon ⚠️, Pops). SlamZone stays set until it lands; MoveLane may then pick any lane.</item>
@@ -20,6 +20,7 @@ namespace BookBuddies.Tales
     /// <item>talk: Speaker (a foe) says Line, Listener (the pet) answers Reply.</item>
     /// <item>fate: Actor rolled a d20: Name (who), Roll, Bonus, Result (fumble meh good great nat), Line, Helper (a TalesData.Npcs key, or null), Fx, Pops.</item>
     /// <item>rise: Actor (a boss) rises with a new Name, Line (its boast), Sub (what it gained), Fx. Wild bosses rise once ("…, Second Edition"), a Book Boss once per phase (it may summon its team).</item>
+    /// <item>phase: Actor (a tale boss) changes tactics: Name is the banner ("is enraged!"), Line its boast, Icon ⚠️, Fx its bar (Heal or ShieldGained when it mended or shielded); summoned minions are new entries in Foes.</item>
     /// <item>cheer: Actor got +1 ink (returned by Cheer, not Next).</item>
     /// <item>win, lose: the end; Over is true and Outcome is set.</item>
     /// </list>
@@ -27,9 +28,9 @@ namespace BookBuddies.Tales
     /// Pops are short callouts: (unit key, or null for the whole arena, text).
     /// The library's Second Wind (defeat's meta revive) is a heal event: every pet back up at half HP, once a battle (once a tale in a tale).
     /// With Setup.Tale the fight follows the tale's rules (BattleTale.cs): the run hero's level and boons, ready-made foes,
-    /// starting ink clamped to 0..6, a friend at the intro (a fate event with Result "ally" and no roll), and the run's ink
-    /// drops won or stolen mid-fight (Outcome.Gold).
-    /// Not yet: twists, hazards, tactic changes, intro banter.
+    /// starting ink clamped to 0..6, banter at the intro (always in a boss fight, else 20%), a friend at the intro (a fate
+    /// event with Result "ally" and no roll), the land's hazard, the fight's twist, a boss's tactic changes after each turn,
+    /// and the run's ink drops won or stolen mid-fight (Outcome.Gold).
     /// </remarks>
     public sealed partial class BattleEngine
     {
@@ -94,6 +95,7 @@ namespace BookBuddies.Tales
             {
                 intro = true;
                 Emit(evs, IntroEvent());
+                if (Setup.Tale != null && (Setup.Tale.Kind == TaleBattle.Boss || rng.Next() < .2)) Banter(evs);
                 if (Setup.Tale?.Ally != null) AllyArrives(evs, Setup.Tale.Ally);
                 return evs;
             }
@@ -144,6 +146,7 @@ namespace BookBuddies.Tales
                 BossRise(evs);
                 if (LiveFoes().Count == 0 || LiveHeroes().Count == 0) break;
             }
+            if (Setup.Tale != null && LiveFoes().Count > 0 && LiveHeroes().Count > 0) EpPhase(evs);
             if (Round == 3 && !mid && LiveFoes().Count > 0 && LiveHeroes().Count > 0)
             {
                 mid = true;
@@ -151,13 +154,13 @@ namespace BookBuddies.Tales
             }
         }
 
-        // fills the turn order (speed plus up to 2 at random); a fate roll takes the step every 3-4 rounds from round 2. True if it did.
+        // fills the turn order (speed, slowed by frost, plus up to 2 at random); a fate roll takes the step every 3-4 rounds from round 2. True if it did.
         bool NewRound(List<BattleEvent> evs)
         {
             Round++;
             var order = new List<(string key, double at)>();
-            foreach (var u in LiveHeroes()) order.Add((u.Key, u.Spd + rng.Next() * 2));
-            foreach (var u in LiveFoes()) order.Add((u.Key, u.Spd + rng.Next() * 2));
+            foreach (var u in LiveHeroes()) order.Add((u.Key, SpdOf(u) + rng.Next() * 2));
+            foreach (var u in LiveFoes()) order.Add((u.Key, SpdOf(u) + rng.Next() * 2));
             order.Sort((a, b) => b.at.CompareTo(a.at));
             foreach (var o in order) queue.Add(o.key);
             if (Round < nextFate) return false;
@@ -194,6 +197,7 @@ namespace BookBuddies.Tales
             return true;
         }
 
+        // the "Dust Bunny +2!" callout; a twisted fight announces its twist instead (Name and Sub)
         BattleEvent IntroEvent()
         {
             var first = Foes[0].Name;
@@ -202,7 +206,10 @@ namespace BookBuddies.Tales
                 int i = first.IndexOf(cut, StringComparison.Ordinal);
                 if (i >= 0) first = first.Substring(0, i);
             }
-            return new BattleEvent { Kind = "intro", Icon = "⚔️", Line = first + (Foes.Count > 1 ? " +" + (Foes.Count - 1) : "") + "!" };
+            var e = new BattleEvent { Kind = "intro", Icon = "⚔️", Line = first + (Foes.Count > 1 ? " +" + (Foes.Count - 1) : "") + "!" };
+            var tw = TwistInfo(Setup.Tale?.Twist);
+            if (tw != null) (e.Name, e.Sub) = ($"{tw.Value.icon} {tw.Value.name}", tw.Value.desc);
+            return e;
         }
 
         void End(List<BattleEvent> evs, bool won)

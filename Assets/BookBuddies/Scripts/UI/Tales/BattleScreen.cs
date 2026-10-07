@@ -9,8 +9,8 @@ using UnityEngine.UI;
 namespace BookBuddies.Tales
 {
     /// <summary>
-    /// The full-screen battle, wild or inside a tale (Setup.Tale: it draws over the tale and its subtitle is Setup.Place,
-    /// "Act II · land"). It opens as a circle growing from where the pet met the foe, plays BattleEngine's
+    /// The full-screen battle, wild or inside a tale (Setup.Tale: it draws over the tale, its subtitle is Setup.Place,
+    /// "Act II · land", and the land's hazard sits under the title). It opens as a circle growing from where the pet met the foe, plays BattleEngine's
     /// steps through the stage (BattleStage, BattleUnitView), the effects (BattleFx) and the director (BattleDirector),
     /// and takes the player's say: lanes, the Ultimate, cheers, speed (1×, 2×, 4×, remembered), the bag and the fight log
     /// (both pause the fight between events). At the end it grants renown and loot, shows the end card (which carries
@@ -114,9 +114,22 @@ namespace BookBuddies.Tales
             dock.Speed = NextSpeed;
             dock.Bag = OpenBag;
             dock.Log = () => log.Open(top);
+            HazardChip(hud);
             top = UiKit.Node("sheets", content).Fill();
             log = BattleLog.Create(gameObject, engine);
             sides = BattleSides.Create(hud, engine, stage, log);
+        }
+
+        // a tale's land hazard (TQ_HZ) as a chip under the fight's title, like the site's hzb in the arena's corner
+        void HazardChip(RectTransform hud)
+        {
+            string hz = engine.Setup.Tale?.Hazard;
+            var plate = hud.Find("title") as RectTransform; // the dock's title block (title, subtitle)
+            if (hz == null || plate == null || !EpicData.Current.Hazards.TryGetValue(hz, out var h)) return;
+            var row = UiKit.Node("hazard", plate);
+            UiKit.Row(row, 6);
+            UiKit.Icon(row, h.i, 18);
+            UiKit.Label(row, h.n, UiKit.SmallSize, Palette.Hex("#ffdcc8"), UiKit.Bold).horizontalOverflow = HorizontalWrapMode.Overflow;
         }
 
         // ---- the fight ----

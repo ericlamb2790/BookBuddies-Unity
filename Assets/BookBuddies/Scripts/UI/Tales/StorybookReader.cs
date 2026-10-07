@@ -63,7 +63,7 @@ namespace BookBuddies.Tales
             top.anchorMin = new Vector2(0, 1); top.anchorMax = Vector2.one; top.pivot = new Vector2(.5f, 1);
             top.offsetMin = new Vector2(0, -TopHeight); top.offsetMax = Vector2.zero;
             UiKit.Row(top, 10, new RectOffset(8, 8, 4, 4));
-            var title = UiKit.Label(top, BattleText.Prose(book.Str("title")), UiKit.HeadingSize, Cream, UiKit.Title);
+            var title = UiKit.Label(top, BattleText.Prose(UiKit.SplitEmoji(book.Str("title"), out _)), UiKit.HeadingSize, Cream, UiKit.Title);
             title.horizontalOverflow = HorizontalWrapMode.Wrap; title.verticalOverflow = VerticalWrapMode.Truncate;
             UiKit.Size(title, -1, 44, 1);
             saveButton = Pill(top, "Save", "❤️", Keep);

@@ -17,6 +17,7 @@ namespace BookBuddies.Tales
         public readonly List<(int r, int c)> Trail = new List<(int, int)>(); // nodes visited this act (after the start)
         public readonly List<string> Used = new List<string>();  // scenes already met ("e12", "d3", "c0"), so maps avoid them
         public readonly List<string> Rel = new List<string>(), Cur = new List<string>(); // relics and curses held this saga
+        public readonly List<string> Hand = new List<string>(); // Fate cards (TQ_FATE keys), at most 3; carried into the next saga
         public EpicThread Th;                         // the side quest
         public List<List<MapNode>> Map = new List<List<MapNode>>();
         public string Hz;                             // this land's hazard (TQ_HZ key), null for none
@@ -45,7 +46,7 @@ namespace BookBuddies.Tales
                 ["kind"] = Kind, ["name"] = Name, ["relic"] = Relic, ["want"] = Want, ["saga"] = (double)Saga, ["done"] = (double)Done, ["lv0"] = (double)Lv0,
                 ["dark"] = (double)Dark, ["acts"] = acts, ["act"] = (double)Act, ["spot"] = (double)Spot, ["tone"] = (double)Tone,
                 ["at"] = new Dictionary<string, object> { ["r"] = (double)At.r, ["c"] = (double)At.c }, ["trail"] = trail, ["used"] = TalesSave.Strs(Used),
-                ["rel"] = TalesSave.Strs(Rel), ["cur"] = TalesSave.Strs(Cur), ["th"] = Th?.ToJson(), ["map"] = map, ["hz"] = Hz, ["ally"] = Ally,
+                ["rel"] = TalesSave.Strs(Rel), ["cur"] = TalesSave.Strs(Cur), ["hand"] = TalesSave.Strs(Hand), ["th"] = Th?.ToJson(), ["map"] = map, ["hz"] = Hz, ["ally"] = Ally,
                 ["ward"] = Ward, ["bless"] = Bless, ["curse"] = Curse, ["weak"] = Weak, ["rival"] = Rival, ["ink"] = (double)Ink, ["insp"] = (double)Insp,
                 ["clear"] = (double)Clear, ["lamp"] = (double)Lamp, ["intro"] = Intro, ["rpick"] = Rpick, ["next"] = Next, ["twOn"] = TwOn, ["dmg2"] = (double)Dmg2,
             };
@@ -70,6 +71,7 @@ namespace BookBuddies.Tales
             e.Used.AddRange(TalesData.Strings(o.Arr("used")));
             e.Rel.AddRange(TalesData.Strings(o.Arr("rel")));
             e.Cur.AddRange(TalesData.Strings(o.Arr("cur")));
+            e.Hand.AddRange(TalesData.Strings(o.Arr("hand")));
             foreach (List<object> row in o.Arr("map"))
             {
                 var r = new List<MapNode>();

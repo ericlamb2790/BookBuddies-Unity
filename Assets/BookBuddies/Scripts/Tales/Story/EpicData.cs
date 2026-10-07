@@ -12,7 +12,7 @@ namespace BookBuddies.Tales
         public string[] Deco = new string[0], Places = new string[0], Lines = new string[0];
     }
 
-    /// <summary>A tabletop scene (TQ_ENC, TQ_DANGER, TQ_CHEST): icon, title, narration and 2-3 options.</summary>
+    /// <summary>A tabletop scene (TQ_ENC, TQ_DANGER, TQ_CHEST, TQ_DM): icon, title, narration and 2-3 options.</summary>
     public sealed class EncTpl
     {
         public string I, T, Text;
@@ -26,7 +26,7 @@ namespace BookBuddies.Tales
         public int Dc;
     }
 
-    /// <summary>A relic or curse row (TQ_ART, TQ_CUR in key order): key, icon, name, what it does.</summary>
+    /// <summary>A relic, curse or Fate card row (TQ_ART, TQ_CUR, TQ_FATE in key order): key, icon, name, what it does.</summary>
     public sealed class EpicRow
     {
         public string Key, I, N, D;
@@ -43,7 +43,11 @@ namespace BookBuddies.Tales
 
         public readonly List<Land> Lands = new List<Land>();                     // TQ_REGIONS in order: 4 soft lands (act I), 12 hard
         public readonly List<EncTpl> Encounters = new List<EncTpl>(), Dangers = new List<EncTpl>(), Chests = new List<EncTpl>();
+        public readonly List<EncTpl> Twists = new List<EncTpl>();                 // TQ_DM: the Story Master's scenes (view tp.s = twist, used key "t" + index)
         public readonly List<EpicRow> Relics = new List<EpicRow>(), Curses = new List<EpicRow>(); // TQ_ART, TQ_CUR
+        public readonly List<EpicRow> Fates = new List<EpicRow>();                 // TQ_FATE in key order: f_insp, f_wind, f_lantern, f_armor, f_ink, f_ally
+        public readonly Dictionary<string, string[]> PhaseLines = new Dictionary<string, string[]>(); // TQ_PHASE: a boss's lines by tactic (summon, enrage, shield, heal)
+        public readonly Dictionary<string, string> PhaseNames = new Dictionary<string, string>();     // TQ_PHASEN: the phase banner by tactic ("is enraged!")
         public string[] RelicNames = new string[0];                               // TQ_RELIC: what the Dark Author stole
         public readonly List<(string i, string n)> Threads = new List<(string, string)>(); // TQ_THR side quests
         public string[] CampTales = new string[0];                                // TQ_TALES: told at the campfire
@@ -57,6 +61,7 @@ namespace BookBuddies.Tales
         public Land Land(string k) => Lands.Find(l => l.K == k);
         public EpicRow Relic(string k) => Relics.Find(r => r.Key == k);
         public EpicRow Curse(string k) => Curses.Find(r => r.Key == k);
+        public EpicRow Fate(string k) => Fates.Find(r => r.Key == k);
 
         /// <summary>A check's bonus for a class (TQ_CHKB, sleuth when the class has none).</summary>
         public int Bonus(string cls, string chk)
@@ -78,8 +83,10 @@ namespace BookBuddies.Tales
             ReadScenes(j.Arr("TQ_ENC"), d.Encounters);
             ReadScenes(j.Arr("TQ_DANGER"), d.Dangers);
             ReadScenes(j.Arr("TQ_CHEST"), d.Chests);
+            ReadScenes(j.Arr("TQ_DM"), d.Twists);
             ReadRows(j.Arr("TQ_ART"), d.Relics);
             ReadRows(j.Arr("TQ_CUR"), d.Curses);
+            ReadRows(j.Arr("TQ_FATE"), d.Fates);
             d.RelicNames = TalesData.Strings(j.Arr("TQ_RELIC"));
             foreach (List<object> t in j.Arr("TQ_THR")) d.Threads.Add(((string)t[0], (string)t[1]));
             d.CampTales = TalesData.Strings(j.Arr("TQ_TALES"));
@@ -92,6 +99,8 @@ namespace BookBuddies.Tales
                 d.CheckBonus[kv.Key] = b;
             }
             foreach (var kv in j.Obj("TQ_HZ")) { var h = (Dictionary<string, object>)kv.Value; d.Hazards[kv.Key] = (h.Str("i"), h.Str("n"), h.Str("d")); }
+            foreach (var kv in j.Obj("TQ_PHASE")) d.PhaseLines[kv.Key] = TalesData.Strings((List<object>)kv.Value);
+            foreach (var kv in j.Obj("TQ_PHASEN")) d.PhaseNames[kv.Key] = (string)kv.Value;
             d.Titles = TalesData.Strings(j.Arr("TQ_EPIC_T"));
             d.CampLines = TalesData.Strings(j.Arr("FLV_CAMP"));
             return d;

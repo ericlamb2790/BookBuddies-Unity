@@ -51,7 +51,7 @@ namespace BookBuddies.Tales
             TaleStore.SaveSoon(run);
             switch (v.K)
             {
-                case "map": EpicMapView.Build(body, run, v, Pick, AutoGo); break;
+                case "map": EpicMapView.Build(body, run, v, Pick, AutoGo, Played); break;
                 case "scene": Scene(v); break;
                 case "enc": Encounter(v); break;
                 case "roll": StartCoroutine(Roll(v)); break;
@@ -70,6 +70,13 @@ namespace BookBuddies.Tales
         {
             EpicFlow.Continue(run);
             After();
+        }
+
+        // a Fate card was played: the run is saved and the view redrawn with the card's line (the site's sync + renderView)
+        void Played()
+        {
+            TaleStore.Save(run);
+            Render();
         }
 
         // after every step the run is saved: a fight is saved with run.Battle set before its setup, so a resumed tale replays it
@@ -121,11 +128,13 @@ namespace BookBuddies.Tales
             Focus(UiKit.Primary(Centered(col), "Continue ›", Continue));
         }
 
-        // ---- encounter: the scene, then 2-3 things to do with their odds (encView T:1206-1211) ----
+        // ---- encounter: the scene, then 2-3 things to do with their odds, and the Fate hand (encView T:1206-1211); a Story Master twist is gold-tinted ----
 
         void Encounter(EpicView v)
         {
+            bool twist = v.Tp == "twist";
             var col = Page(body, 780);
+            if (twist) Line(col, "🪶 The Story Master turns the page…", UiKit.BodySize, UiKit.EmberInk, true);
             BigIcon(col, v.I, 84);
             Title(col, v.T, 36);
             Paragraph(col, v.Text, UiKit.BodySize + 1, Palette.Ink);
@@ -137,8 +146,10 @@ namespace BookBuddies.Tales
                 int at = i;
                 string chip = o.Chk == null ? "✓ Safe choice" : $"{EpicData.Current.Checks[o.Chk].n} · {JsMath.RoundI(EpicRooms.Chance(run.Ep, o) * 100)}% chance";
                 var b = Option(col, o, chip, o.Chk == null ? UiKit.LeafInk : UiKit.SkyInk, () => Pick(at));
+                if (twist) b.targetGraphic.color = Color.Lerp(Palette.Paper, EpicHand.Gold, .3f);
                 if (first == null) first = b;
             }
+            EpicHand.Build(col, run, Played);
             PartyStrip(col, run);
             Focus(first);
         }
@@ -148,7 +159,8 @@ namespace BookBuddies.Tales
         IEnumerator Roll(EpicView v)
         {
             var col = Page(body, 720);
-            Paragraph(col, BattleText.Prose($"{v.I} {v.T}"), UiKit.SmallSize + 1, UiKit.EmberInk);
+            if (v.Dm) Line(col, $"🪶 {v.T}", UiKit.SmallSize + 1, UiKit.EmberInk, true);
+            else Paragraph(col, BattleText.Prose($"{v.I} {v.T}"), UiKit.SmallSize + 1, UiKit.EmberInk);
             Title(col, v.Ch, 36);
             RectTransform result = null, outcome;
             Image die = null; Text number = null;

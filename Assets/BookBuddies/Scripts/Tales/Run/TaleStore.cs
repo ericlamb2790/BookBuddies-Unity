@@ -6,7 +6,8 @@ namespace BookBuddies.Tales
 {
     /// <summary>
     /// The tale files next to the Tales save (lobby.md step 4, storybook.md step 5): tale_run.json holds the one solo tale
-    /// (the site's private small read), tale_books.json the kept storybooks, newest first, at most BookCap. Pure C#.
+    /// (the site's private small read), tale_daily.json the daily tale ({day, over, score, label, state}), tale_books.json
+    /// the kept storybooks, newest first, at most BookCap. Pure C#.
     /// </summary>
     public static class TaleStore
     {
@@ -37,11 +38,16 @@ namespace BookBuddies.Tales
             catch (Exception) { return null; } // a damaged file is a tale lost, not a crash
         }
 
-        /// <summary>Saves the tale now (leaving, ending, after each room).</summary>
+        /// <summary>Saves the tale now (leaving, ending, after each room); a daily tale goes to the daily file (saveDaily).</summary>
         public static void Save(TaleRun run)
         {
             pending = null;
-            Write("tale_run.json", run.ToJson());
+            if (run.Daily == null) Write("tale_run.json", run.ToJson());
+            else Write("tale_daily.json", new Dictionary<string, object>
+            {
+                ["day"] = run.Daily, ["over"] = run.Over, ["score"] = (double)TaleLife.Score(run), ["label"] = TaleLife.Label(run),
+                ["state"] = run.Over ? null : run.ToJson(), // a finished daily keeps only its result: that day is done
+            });
         }
 
         /// <summary>Saves the tale a few seconds from now; later calls push the save back (saveSoon). Tick does the save.</summary>
@@ -64,6 +70,19 @@ namespace BookBuddies.Tales
             string path = PathOf("tale_run.json");
             try { if (path != null && File.Exists(path)) File.Delete(path); }
             catch (Exception) { /* nothing else to do */ }
+        }
+
+        // ---- the daily tale ----
+
+        /// <summary>The daily tale saved for that day (going or finished); null when it hasn't been played (or the file is another day's).</summary>
+        public static DailySave LoadDaily(string day)
+        {
+            var o = Read("tale_daily.json") as Dictionary<string, object>;
+            if (o == null || o.Str("day", null) != day) return null;
+            var d = new DailySave { Day = day, Over = o.Truthy("over"), Score = o.Int("score"), Label = o.Str("label") };
+            try { if (!d.Over) d.Run = TaleRun.FromJson(o.Obj("state")); }
+            catch (Exception) { /* a damaged run: the day's try is still spent */ }
+            return d;
         }
 
         // ---- storybooks ----
@@ -132,5 +151,17 @@ namespace BookBuddies.Tales
             }
             catch (Exception) { /* a full disk shouldn't stop the game */ }
         }
+    }
+
+    /// <summary>A day's daily tale as saved: its result (score, label, over) and, while it is going, the run to continue.</summary>
+    public sealed class DailySave
+    {
+        public string Day, Label;
+        public int Score;
+        public bool Over;
+        public TaleRun Run;
+
+        /// <summary>True when that day's try is spent: finished, or its run can't be read back.</summary>
+        public bool Done => Over || Run == null;
     }
 }

@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BookBuddies.UI;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,14 +10,15 @@ namespace BookBuddies.Tales
     /// <summary>
     /// The Tales of Pages library (lobby.md §1.2), opened from Pawtopia's Tale Hall, the road's trailheads and the menu.
     /// A storybook banner, your buddy on the left (gear, class, Pet Lv, stats, Hero & moves, Bag & gear), and on the
-    /// right the Small read (start one, or continue the one waiting; close it to start over) and the shelf of kept
-    /// storybooks. Narrow windows stack it into one column.
+    /// right the Small read (start one, or continue the one waiting; close it to start over), the daily tale and the shelf
+    /// of kept storybooks. Narrow windows stack it into one column.
     /// </summary>
     public sealed class TalesLobby : TalesScreen
     {
         const float Pad = 24, BannerHeight = 128, Narrow = 900;
 
         RectTransform banner, left, leftContent, right, rightContent;
+        Text countdown; // the open daily sheet's "A new daily tale in …"
         float leftWidth = -1;
         bool built;
 
@@ -66,6 +69,7 @@ namespace BookBuddies.Tales
             if (leftWidth > 0) Hero(leftContent, hatched, Mathf.Min(200, leftWidth - 120));
             else Hero(rightContent, hatched, 110);
             var go = SmallRead(hatched);
+            DailyCard();
             Shelf();
             VirtualCursor.FocusFirst(go);
         }
@@ -213,6 +217,116 @@ namespace BookBuddies.Tales
         void Play(TaleRun run)
         {
             run = run ?? TaleLife.NewSolo(TalesSave.Current, Buddy.ShownLook, TalesUi.PetName);
+            Close();
+            TaleScreen.Open(run);
+        }
+
+        // ---- the daily tale ----
+
+        // paintDaily (T:751-753): one card with how today's daily stands and Play / Continue / Board
+        void DailyCard()
+        {
+            var mine = TaleStore.LoadDaily(TaleLife.Today());
+            bool done = mine != null && mine.Done;
+            var card = UiKit.Panel(rightContent, "daily", Palette.Paper);
+            UiKit.Outline(card, Palette.Ink.WithAlpha(.1f), UiKit.CardRadius, 1);
+            UiKit.Row(card.rectTransform, 16, new RectOffset(18, 18, 14, 14));
+            UiKit.Icon(card.transform, "📆", 56);
+            var words = UiKit.Node("words", card.transform);
+            UiKit.Column(words, 2, null, TextAnchor.MiddleLeft);
+            UiKit.Size(words, -1, -1, 1);
+            UiKit.Label(words, "Daily tale", UiKit.TitleSize - 4, Palette.Ink, UiKit.Title);
+            UiKit.Label(words, done ? $"You reached {mine.Label}" : mine != null ? $"Your run is waiting · {mine.Label}" : "Same dungeon for everyone, once a day",
+                UiKit.BodySize, Palette.InkSoft);
+            UiKit.Size(UiKit.Secondary(card.transform, done ? "Board ›" : mine != null ? "Continue ›" : "Play ›", DailySheet, null, 52), 180, 52);
+        }
+
+        // dailySheet (T:732-746): the date, the tale's name, its boon, relic and curse, how your try stands, the board, the countdown
+        void DailySheet()
+        {
+            string day = TaleLife.Today();
+            var P = TaleLife.Daily(day);
+            var mine = TaleStore.LoadDaily(day);
+            var s = Sheet.Create(Root, "Daily tale", new Vector2(.5f, .5f), Vector2.zero, 620, "Daily tale");
+            s.Dim(.4f);
+            s.Closed = () => { countdown = null; Destroy(s.gameObject); };
+            var col = s.Card;
+            UiKit.Label(col, $"{DateTime.Now.ToString("dddd, MMM d", CultureInfo.InvariantCulture)} · the same dungeon for every reader", UiKit.SmallSize + 1, Palette.InkSoft);
+            UiKit.Label(col, BattleText.Prose(P.Name), UiKit.TitleSize - 2, UiKit.EmberInk, UiKit.Title);
+            var rules = UiKit.Node("rules", col);
+            UiKit.Row(rules, 10).childForceExpandWidth = true;
+            var B = TalesData.Current.Boons.Find(b => b.key == P.Boon);
+            var A = EpicData.Current.Relic(P.Relic);
+            var C = EpicData.Current.Curse(P.Curse);
+            Rule(rules, B.icon ?? "✨", B.name, B.desc, Palette.Paper);
+            Rule(rules, A?.I ?? "💎", A?.N, A?.D, Palette.Paper);
+            Rule(rules, C?.I ?? "🌑", C?.N, C?.D, UiKit.RoseInk.WithAlpha(.1f));
+
+            // the status (T:741-745): finished, an egg, Continue, or Start
+            if (mine != null && mine.Done)
+            {
+                UiKit.Label(col, $"<b>{mine.Label}</b> · Finished", UiKit.BodySize + 1, Palette.Ink);
+                UiKit.Label(col, "Your pet has had today’s adventure. Come back tomorrow for a new dungeon.", UiKit.SmallSize + 1, Palette.InkSoft);
+            }
+            else if (!Buddy.Hatched) IconLine(col, "🥚", "Hatch your egg to take on the daily tale.", UiKit.BodySize, null);
+            else
+            {
+                s.First = UiKit.Primary(col, mine != null ? $"Continue · {mine.Label}" : "Start today’s tale", () => { s.Close(); PlayDaily(mine, day); }, mine != null ? "📖" : "✨", 52);
+                UiKit.Label(col, mine != null ? "Your run is saved where you left it." : "Your pet goes until the whole party falls.", UiKit.SmallSize + 1, Palette.InkSoft);
+            }
+            DailyBoard(col, mine);
+            countdown = UiKit.Label(col, "", UiKit.SmallSize + 1, Palette.InkSoft);
+            Countdown();
+            s.Open();
+        }
+
+        // a rule chip: icon, name and what it does (the curse's is tinted)
+        static void Rule(Transform row, string icon, string name, string desc, Color color)
+        {
+            var chip = UiKit.Panel(row, name ?? "rule", color);
+            UiKit.Outline(chip, Palette.Ink.WithAlpha(.1f), UiKit.CardRadius, 1);
+            UiKit.Column(chip.rectTransform, 2, new RectOffset(10, 10, 10, 12), TextAnchor.UpperCenter).childForceExpandWidth = true;
+            UiKit.Size(chip, 0, -1, 1);
+            UiKit.Icon(chip.transform, icon, 32);
+            UiKit.Label(chip.transform, name ?? "", UiKit.SmallSize + 1, Palette.Ink, UiKit.Bold, TextAnchor.MiddleCenter);
+            UiKit.Label(chip.transform, desc ?? "", UiKit.SmallSize - 1, Palette.InkSoft, null, TextAnchor.MiddleCenter);
+        }
+
+        /// <summary>
+        /// "🏆 Today's deepest pets" (dBoard, T:730) as far as this device knows it: your own result for the day. The
+        /// server board (GET /quest/daily, top 10 with medals and "#rank of n") replaces the body here in stage 3.
+        /// </summary>
+        internal static void DailyBoard(Transform parent, DailySave mine)
+        {
+            IconLine(parent, "🏆", "Today’s deepest pets", UiKit.HeadingSize, UiKit.Title);
+            if (mine == null) UiKit.Label(parent, "Nobody has set off yet today. The first pet in sets the mark.", UiKit.BodySize, Palette.InkSoft);
+            else IconLine(parent, "🐾", $"<b>{TalesUi.PetName}</b> · {mine.Label}{(mine.Over ? "" : " · still going")}", UiKit.BodySize, null);
+        }
+
+        static void IconLine(Transform parent, string emoji, string text, int size, Font font)
+        {
+            var row = UiKit.Node("line", parent);
+            UiKit.Row(row, 8);
+            UiKit.Icon(row, emoji, size + 6);
+            UiKit.Size(UiKit.Label(row, text, size, Palette.Ink, font), -1, -1, 1);
+        }
+
+        void Countdown()
+        {
+            if (countdown) countdown.text = $"A new daily tale in <b>{TaleLife.Countdown(DateTime.Now)}</b> · one try a day";
+        }
+
+        protected override void Update()
+        {
+            base.Update();
+            if (countdown && Time.frameCount % 60 == 0) Countdown();
+        }
+
+        // Continue today's run, or begin it (dailyNew); null from NewDaily means today's try is already spent
+        void PlayDaily(DailySave mine, string day)
+        {
+            var run = mine?.Run ?? TaleLife.NewDaily(TalesSave.Current, Buddy.ShownLook, TalesUi.PetName, day);
+            if (run == null) { Fill(); return; }
             Close();
             TaleScreen.Open(run);
         }
