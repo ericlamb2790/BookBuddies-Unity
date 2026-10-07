@@ -1,13 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace BookBuddies.Tales
 {
     /// <summary>
     /// The tale files next to the Tales save (lobby.md step 4, storybook.md step 5): tale_run.json holds the one solo tale
     /// (the site's private small read), tale_daily.json the daily tale ({day, over, score, label, state}), tale_books.json
-    /// the kept storybooks, newest first, at most BookCap. Pure C#.
+    /// the kept storybooks, newest first, at most BookCap. Writes go to a temp file first and the newest wins, also when
+    /// AutoSave writes on a background thread (FlushAsync). Pure C#.
     /// </summary>
     public static class TaleStore
     {
@@ -21,6 +23,8 @@ namespace BookBuddies.Tales
         static TaleRun pending;
         static DateTime dueAt;
         static List<Dictionary<string, object>> books;
+        static long snapshots; // writes asked for (on the main thread)
+        static readonly Dictionary<string, long> written = new Dictionary<string, long>(); // each file's newest write on disk (lock it)
 
         static string PathOf(string file)
         {
@@ -42,8 +46,14 @@ namespace BookBuddies.Tales
         public static void Save(TaleRun run)
         {
             pending = null;
-            if (run.Daily == null) Write("tale_run.json", run.ToJson());
-            else Write("tale_daily.json", new Dictionary<string, object>
+            Writer(run)?.Invoke();
+        }
+
+        // the file a tale goes in and the write that puts it there, its JSON made now
+        static Action Writer(TaleRun run)
+        {
+            if (run.Daily == null) return Writer("tale_run.json", run.ToJson());
+            return Writer("tale_daily.json", new Dictionary<string, object>
             {
                 ["day"] = run.Daily, ["over"] = run.Over, ["score"] = (double)TaleLife.Score(run), ["label"] = TaleLife.Label(run),
                 ["state"] = run.Over ? null : run.ToJson(), // a finished daily keeps only its result: that day is done
@@ -63,13 +73,26 @@ namespace BookBuddies.Tales
             if (pending != null && DateTime.UtcNow >= dueAt) Save(pending);
         }
 
+        /// <summary>Saves a SaveSoon tale now instead of when it's due (before a fight, when the game closes).</summary>
+        public static void Flush()
+        {
+            if (pending != null) Save(pending);
+        }
+
+        /// <summary>Flush, with only the JSON made on the caller's thread: the file is written on a background thread.</summary>
+        public static Task FlushAsync()
+        {
+            if (pending == null) return Task.CompletedTask;
+            var write = Writer(pending);
+            pending = null;
+            return write == null ? Task.CompletedTask : Task.Run(write);
+        }
+
         /// <summary>Forgets the solo tale (closed from the lobby, or left after its end).</summary>
         public static void Clear()
         {
             pending = null;
-            string path = PathOf("tale_run.json");
-            try { if (path != null && File.Exists(path)) File.Delete(path); }
-            catch (Exception) { /* nothing else to do */ }
+            Writer("tale_run.json", null)?.Invoke();
         }
 
         // ---- the daily tale ----
@@ -137,19 +160,33 @@ namespace BookBuddies.Tales
             catch (Exception) { return null; }
         }
 
-        // written whole to a temp file first, so a crash mid-write never leaves half a tale
-        static void Write(string file, object value)
+        static void Write(string file, object value) => Writer(file, value)?.Invoke();
+
+        // the write of a file (null deletes it), its JSON made now; null when there's no folder to write in
+        static Action Writer(string file, object value)
         {
             string path = PathOf(file);
-            if (path == null) return;
-            try
+            if (path == null) return null;
+            string text = value == null ? null : Json.Write(value);
+            long n = ++snapshots;
+            return () => Put(path, text, n);
+        }
+
+        // one write at a time, written whole to a temp file first so a crash mid-write never leaves half a tale;
+        // a write older than the file's newest is dropped
+        static void Put(string path, string text, long n)
+        {
+            lock (written)
             {
-                string tmp = path + ".tmp";
-                File.WriteAllText(tmp, Json.Write(value));
-                if (File.Exists(path)) File.Delete(path);
-                File.Move(tmp, path);
+                if (written.TryGetValue(path, out long last) && n <= last) return;
+                written[path] = n;
+                try
+                {
+                    if (text != null) TalesSave.WriteAtomic(path, text);
+                    else if (File.Exists(path)) File.Delete(path);
+                }
+                catch (Exception) { /* a full disk shouldn't stop the game */ }
             }
-            catch (Exception) { /* a full disk shouldn't stop the game */ }
         }
     }
 

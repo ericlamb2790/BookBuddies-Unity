@@ -177,6 +177,7 @@ namespace BookBuddies.UI
                 return false;
             }
             busy = false;
+            AutoSave.Now("pets");
             if (!this) return false;
             if (me && me.Look != Buddy.Look) me.SetLook(Buddy.Look);
             if (done != null) Sound.Play("happy");

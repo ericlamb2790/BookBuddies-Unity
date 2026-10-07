@@ -2,7 +2,8 @@
 // always SUM(amount), so there's no stored number to edit or drift. The same (kind, ref) pays or charges only once.
 // Book Fair tickets are a second ledger (fair_tx) with the same rules, and econ_state holds the fair's counters.
 // Rewards and prices come from economy.json (tools/export_econ.js, the same file the game reads), never from the client.
-// Routes: GET /wallet, POST /wallet/earn {kind}, POST /wallet/spend {kind, item, ref, amount | n}.
+// Routes: GET /wallet, POST /wallet/earn {kind}, POST /wallet/spend {kind, item, ref, amount | n},
+// POST /wallet/bank {session, days, total} (coins from offline play, checked against the daily find caps).
 
 import ECONOMY from './economy.json';
 import { etDay, Problem, json, readJson } from './db.js';
@@ -23,11 +24,15 @@ async function sum(env, L, pid) {
   return r ? r.b : 0;
 }
 
+// the statement that pays a row once per (kind, ref)
+const addRow = (env, L, pid, kind, ref, amount) =>
+  env.DB.prepare(`INSERT OR IGNORE INTO ${L.table} (player_id, kind, ref, amount, day, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)`)
+    .bind(pid, kind, String(ref), Math.floor(amount), etDay(), Date.now());
+
 // a whole positive amount, once per (kind, ref): true when it was paid now
 async function add(env, L, pid, kind, ref, amount) {
   if (!(amount > 0)) return false;
-  const r = await env.DB.prepare(`INSERT OR IGNORE INTO ${L.table} (player_id, kind, ref, amount, day, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)`)
-    .bind(pid, kind, String(ref), Math.floor(amount), etDay(), Date.now()).run();
+  const r = await addRow(env, L, pid, kind, ref, amount).run();
   return !!(r.meta && r.meta.changes);
 }
 
@@ -61,12 +66,21 @@ export const tickets = (env, pid) => sum(env, TICKETS, pid);
 export const fairCredit = (env, pid, kind, ref, amount) => add(env, TICKETS, pid, kind, ref, amount);
 export const fairDebit = (env, pid, kind, ref, amount) => take(env, TICKETS, pid, kind, ref, amount);
 
-/** How many coin rows of one kind today, and what they add up to: {n, s}. Daily caps count these. */
+/**
+ * How many coin rows of one kind today, and what they add up to: {n, s}. Daily caps count these; "n" for finds also
+ * counts the finds banked from offline play today, so the town and the bank share one cap.
+ */
 export async function todayCount(env, pid, kind) {
-  const r = await env.DB.prepare('SELECT COUNT(*) AS n, COALESCE(SUM(amount), 0) AS s FROM coin_tx WHERE player_id = ?1 AND kind = ?2 AND day = ?3')
-    .bind(pid, kind, etDay()).first();
-  return r || { n: 0, s: 0 };
+  const day = etDay();
+  const r = (await env.DB.prepare('SELECT COUNT(*) AS n, COALESCE(SUM(amount), 0) AS s FROM coin_tx WHERE player_id = ?1 AND kind = ?2 AND day = ?3')
+    .bind(pid, kind, day).first()) || { n: 0, s: 0 };
+  if (kind === 'find') r.n += await bankedFinds(env, pid, day);
+  return r;
 }
+
+// the finds banked from offline play for one day
+const bankedFinds = async (env, pid, day) =>
+  (await env.DB.prepare('SELECT finds FROM bank_days WHERE player_id = ?1 AND day = ?2').bind(pid, day).first())?.finds || 0;
 
 /** The Book Fair counters (pinballs, wheel tickets, prism drops, pity, fishing, upgrade levels, free capsule day), made with zeros on first use. */
 export async function econ(env, pid) {
@@ -98,16 +112,18 @@ const ownedRows = (env, pid, today) => env.DB.prepare(
 /** What every wallet reply carries: balances, today's gift and caps, the fair's counters, what's owned and the last 20 coin rows. */
 export async function payload(env, pid) {
   const today = etDay();
-  const [coins, fair, st, [giftDay, run], recent, used, owned] = await Promise.all([
+  const [coins, fair, st, [giftDay, run], recent, used, owned, bankedToday] = await Promise.all([
     balance(env, pid), tickets(env, pid), econ(env, pid), lastGift(env, pid),
     env.DB.prepare('SELECT kind, amount, day, created_at FROM coin_tx WHERE player_id = ?1 ORDER BY id DESC LIMIT 20').bind(pid).all(),
     env.DB.prepare('SELECT kind, COUNT(*) AS n FROM coin_tx WHERE player_id = ?1 AND day = ?2 GROUP BY kind').bind(pid, today).all(),
-    ownedRows(env, pid, today),
+    ownedRows(env, pid, today), bankedFinds(env, pid, today),
   ]);
+  const usedToday = Object.fromEntries((used.results || []).map((u) => [u.kind, u.n]));
+  if (bankedToday) usedToday.find = (usedToday.find || 0) + bankedToday;
   return {
     balance: coins, fair, day: today, boost: 100,
     gift: { claimed: giftDay === today, run: giftDay === today || giftDay === shiftDay(today, -1) ? run : 0 },
-    used: Object.fromEntries((used.results || []).map((u) => [u.kind, u.n])),
+    used: usedToday,
     balls: st.balls, tix: st.tix, drops: st.drops, pity: st.pity, ups: st.ups, freecap: st.freecap === today,
     owned: (owned.results || []).map((o) => o.ref), recent: recent.results || [],
   };
@@ -115,18 +131,20 @@ export async function payload(env, pid) {
 
 // ---- routes ----
 
-/** GET /wallet, POST /wallet/earn and POST /wallet/spend. Each answers with the wallet payload plus what happened. */
+/** GET /wallet and POST /wallet/earn, /wallet/spend and /wallet/bank. Each answers with the wallet payload plus what happened. */
 export async function walletRoute(request, env, path, me) {
   const method = request.method;
   if (path === '/wallet' && method === 'GET') {
     await credit(env, me.id, 'starter', 'once', ECONOMY.starter);
     return reply(env, me.id);
   }
-  if (method !== 'POST' || (path !== '/wallet/earn' && path !== '/wallet/spend')) throw new Problem('Not found', 404);
+  if (method !== 'POST' || !Object.hasOwn(POSTS, path)) throw new Problem('Not found', 404);
   const body = await readJson(request);
   await credit(env, me.id, 'starter', 'once', ECONOMY.starter);
-  return reply(env, me.id, path === '/wallet/earn' ? await earn(env, me.id, body) : await spend(env, me.id, body));
+  return reply(env, me.id, await POSTS[path](env, me.id, body));
 }
+
+const POSTS = { '/wallet/earn': earn, '/wallet/spend': spend, '/wallet/bank': bank };
 
 const reply = async (env, pid, extra = {}) => json({ ...(await payload(env, pid)), ...extra });
 
@@ -223,6 +241,83 @@ function stockPrice(day, town, index) {
   }
 }
 
+// ---- banking offline coins ----
+
+const SESSION = /^[A-Za-z0-9-]{8,40}$/;
+const BANK_DAYS = 14;                                       // how old a day's finds may be and still bank
+const FIND_KINDS = Object.keys(ECONOMY.finds.coins).sort((a, b) => ECONOMY.finds.coins[b] - ECONOMY.finds.coins[a]);
+
+/**
+ * {session, days: {"YYYY-MM-DD": {coin, bag, gift}}, total}: banks one stretch of offline play (the game's offline purse).
+ * Each day's finds fit under that day's find cap after the online finds and the finds banked before (the most valuable
+ * first: gifts, then bags, then coins), and the session banks its total up to what those finds are worth, as one
+ * 'bank' row. Each session banks once: sending it again answers what it banked the first time.
+ */
+async function bank(env, pid, body) {
+  const session = String(body.session || '');
+  if (!SESSION.test(session)) throw new Problem('Bad session');
+  const done = await bankedSession(env, pid, session);
+  if (done) return done;
+  const total = body.total, days = bankDays(body.days);
+  if (!Number.isSafeInteger(total) || total < 0) throw new Problem('Bad total');
+
+  // the session's days so far: online finds (coin_tx) and finds banked by earlier sessions, as {day: n}
+  const list = JSON.stringify(Object.keys(days));
+  const perDay = async (sql) => Object.fromEntries(((await env.DB.prepare(sql).bind(pid, list).all()).results || []).map((x) => [x.day, x.n]));
+  const [online, before] = await Promise.all([
+    perDay("SELECT day, COUNT(*) AS n FROM coin_tx WHERE player_id = ?1 AND kind = 'find' AND day IN (SELECT value FROM json_each(?2)) GROUP BY day"),
+    perDay('SELECT day, finds AS n FROM bank_days WHERE player_id = ?1 AND day IN (SELECT value FROM json_each(?2))'),
+  ]);
+  let allowed = 0;
+  const kept = {};                                          // day -> the finds this session banks for it
+  for (const [day, found] of Object.entries(days)) {
+    let room = Math.max(0, ECONOMY.finds.perDay - (online[day] || 0) - (before[day] || 0));
+    for (const k of FIND_KINDS) {
+      const n = Math.min(found[k] || 0, room);
+      room -= n;
+      allowed += n * ECONOMY.finds.coins[k];
+      if (n) kept[day] = (kept[day] || 0) + n;
+    }
+  }
+  const banked = Math.min(total, allowed), refused = total - banked;
+
+  // one batch, so it all happens or none of it: the session's row goes in first and fails if this session was banked meanwhile
+  const writes = [
+    env.DB.prepare('INSERT INTO bank_sessions (player_id, id, banked, refused, created_at) VALUES (?1, ?2, ?3, ?4, ?5)').bind(pid, session, banked, refused, Date.now()),
+    ...Object.entries(kept).map(([day, n]) => env.DB.prepare(
+      'INSERT INTO bank_days (player_id, day, finds) VALUES (?1, ?2, ?3) ON CONFLICT (player_id, day) DO UPDATE SET finds = finds + ?3').bind(pid, day, n)),
+    env.DB.prepare('DELETE FROM bank_days WHERE player_id = ?1 AND day < ?2').bind(pid, shiftDay(etDay(), -BANK_DAYS)),
+    ...(banked > 0 ? [addRow(env, COINS, pid, 'bank', `sess:${session}`, banked)] : []),
+  ];
+  try {
+    await env.DB.batch(writes);
+  } catch (e) {
+    const again = await bankedSession(env, pid, session);
+    if (again) return again;
+    throw e;
+  }
+  return { session, banked, refused };
+}
+
+// what a session banked, or null when it hasn't been sent before
+async function bankedSession(env, pid, session) {
+  const r = await env.DB.prepare('SELECT banked, refused FROM bank_sessions WHERE player_id = ?1 AND id = ?2').bind(pid, session).first();
+  return r && { session, banked: r.banked, refused: r.refused };
+}
+
+// {day: {kind: whole count}} with days from BANK_DAYS ago to tomorrow and the town's find kinds; 400 otherwise
+function bankDays(days) {
+  if (!days || typeof days !== 'object' || Array.isArray(days)) throw new Problem('Bad finds');
+  const today = etDay(), open = new Set();
+  for (let n = -BANK_DAYS; n <= 1; n++) open.add(shiftDay(today, n));
+  for (const [day, found] of Object.entries(days)) {
+    if (!open.has(day)) throw new Problem(`Only finds from the last ${BANK_DAYS} days can be banked`);
+    if (!found || typeof found !== 'object' || Array.isArray(found)) throw new Problem('Bad finds');
+    for (const [k, n] of Object.entries(found)) if (!FIND_KINDS.includes(k) || !Number.isSafeInteger(n) || n < 0) throw new Problem('Bad finds');
+  }
+  return days;
+}
+
 // ---- admin ----
 
 /** Sets a player's coins to "target" with one 'admin' row for the difference. Returns [old, new]; refuses a change of 0. */
@@ -235,4 +330,5 @@ export async function adminSetCoins(env, pid, target, by) {
 }
 
 /** Statements that delete everything the wallet keeps for a player (for a batch that deletes the account). */
-export const deleteWalletRows = (env, pid) => ['coin_tx', 'fair_tx', 'econ_state'].map((t) => env.DB.prepare(`DELETE FROM ${t} WHERE player_id = ?1`).bind(pid));
+export const deleteWalletRows = (env, pid) =>
+  ['coin_tx', 'fair_tx', 'econ_state', 'bank_sessions', 'bank_days'].map((t) => env.DB.prepare(`DELETE FROM ${t} WHERE player_id = ?1`).bind(pid));

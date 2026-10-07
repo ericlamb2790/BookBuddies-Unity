@@ -58,6 +58,7 @@ namespace BookBuddies.Tales
         public static void Run(BattleSetup setup, Vector2 from, Action<BattleOutcome> done)
         {
             if (Open) { done?.Invoke(Unstarted(setup)); return; } // one fight at a time
+            AutoSave.BeforeFight();
             if (string.IsNullOrEmpty(setup.Look)) setup.Look = Buddy.Look;
             if (string.IsNullOrEmpty(setup.PetName)) setup.PetName = MyPets.ActiveName;
             BattleEngine engine;
@@ -194,6 +195,7 @@ namespace BookBuddies.Tales
         {
             o.Rounds = Math.Max(1, o.Rounds);
             Grant(o);
+            AutoSave.Now("fight");
             if (foeCard) foeCard.Close();
             log.Close();
             BattleReward.Show(top, o, sound, () => Close(o, null), item => Close(o, item), engine.Setup.BookBoss);

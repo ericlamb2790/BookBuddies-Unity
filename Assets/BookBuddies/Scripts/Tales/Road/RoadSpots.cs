@@ -98,6 +98,7 @@ namespace BookBuddies.Road
             var w = World;
             if (w == null) return;
             w.Me.ShowEmote("📜");
+            AutoSave.Now("trailhead");
             TalesUi.OpenTales();
         }
 

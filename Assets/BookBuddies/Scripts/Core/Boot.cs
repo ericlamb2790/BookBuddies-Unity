@@ -1,5 +1,8 @@
 using System.Collections;
+using System.IO;
+using System.Threading.Tasks;
 using BookBuddies.Live;
+using BookBuddies.Local;
 using BookBuddies.Net;
 using BookBuddies.Pets;
 using BookBuddies.Road;
@@ -15,6 +18,7 @@ namespace BookBuddies
     /// loading → the intro (first launch only) → the title → hatching or signing in → loading → arriving in town,
     /// and back to the title from the town menu. Travel moves you between the towns on Bramble Road, the road's
     /// links and the Inkwell Caves, and the place you were last in is where you come back to.
+    /// Offline play ends its session (and banks its coins, see CoinBank) back on the title and when the game quits.
     /// It adds itself to whatever scene is open, so an empty scene works.
     /// </summary>
     public sealed class Boot : MonoBehaviour
@@ -24,6 +28,7 @@ namespace BookBuddies
         const float RoomWait = 2.5f;   // seconds the loading screen waits for the live room, so you arrive to company
         const float TravelWait = 1.8f; // the same wait when travelling (the site's 1800 ms)
         const float NewStopToast = 1.8f; // "… is now a stop on the Paw Express", after arriving somewhere new
+        const float QuitWait = 4;        // seconds quitting waits for offline coins to reach the bank
 
         static Boot running;
         TownMap map;
@@ -34,7 +39,11 @@ namespace BookBuddies
         Hud hud;
         RoadHud roadHud;
         RoadSky sky;
-        bool travelling;
+        bool travelling, quitting, quitReady;
+
+        // the offline world's save file, before anything can ask the backend on this PC
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void OfflineFile() => LocalServer.FilePath = Path.Combine(Application.persistentDataPath, "offline", "world.json");
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void AutoStart()
@@ -42,7 +51,13 @@ namespace BookBuddies
             if (running == null) new GameObject("BookBuddies").AddComponent<Boot>();
         }
 
-        void Awake() => running = this;
+        void Awake()
+        {
+            running = this;
+            Application.wantsToQuit += WantsToQuit;
+        }
+
+        void OnDestroy() => Application.wantsToQuit -= WantsToQuit;
 
         IEnumerator Start()
         {
@@ -58,6 +73,8 @@ namespace BookBuddies
             var loading = LoadingScreen.Show(Buddy.ShownLook, "Opening the storybook…");
             Sound.Music("home");
             yield return null;
+            CoinBank.EndSession(); // a session a crash left open ends now
+            if (!Settings.IsLocal) _ = CoinBank.SyncAll(); // and sessions that couldn't upload try again (offline boots stay off the network)
 
             map = TownMap.Load(TownKey);
             loading.Stage("Painting Pawtopia…");
@@ -121,7 +138,7 @@ namespace BookBuddies
                 {
                     Buddy.Forget();
                     yield return loading.Hide();
-                    ShowTitle("Your sign-in has run out. Please sign in again.");
+                    ShowTitle(Settings.IsLocal ? null : "Your sign-in has run out. Please sign in again."); // offline, the egg hatches again
                     yield break;
                 }
                 if (me.Status == System.Threading.Tasks.TaskStatus.RanToCompletion)
@@ -157,6 +174,7 @@ namespace BookBuddies
             yield return loading.Hide();
             yield return arrival;
             ShowTown();
+            AutoSave.Now("arrive");
         }
 
         /// <summary>The place you're in (null on the title screen).</summary>
@@ -212,6 +230,7 @@ namespace BookBuddies
             if (TownProgress.MarkSeen(map.Key)) StartCoroutine(NewStop(TownBook.Current.Get(map.Key)));
             PlazaInput.Locked = false;
             travelling = false;
+            AutoSave.Now("arrive");
         }
 
         // what the loading card says about a place: its icon, its name and the step line ("Romance town", "Tier I · the meadows")
@@ -300,6 +319,8 @@ namespace BookBuddies
             var fade = Cinema.Create(cam, false);
             yield return fade.Fade(1, .45f);
             LeaveTown();
+            BankOfflineCoins();
+            AutoSave.Now("title");
             view.ClearItems();
             if (map.Key != TownKey)
             {
@@ -311,6 +332,36 @@ namespace BookBuddies
             ShowTitle(null);
             yield return fade.Fade(0, .6f);
             Destroy(fade.gameObject);
+        }
+
+        // ---- offline coins ----
+
+        // ends the offline session (if one is open) and banks every finished one in the background
+        static void BankOfflineCoins()
+        {
+            CoinBank.EndSession();
+            _ = CoinBank.SyncAll();
+        }
+
+        // quitting ends the offline session and waits a moment for its coins to reach the bank (next launch tries again)
+        bool WantsToQuit()
+        {
+            if (quitReady) return true;
+            if (quitting) return false;
+            CoinBank.EndSession();
+            var sync = CoinBank.SyncAll();
+            if (sync.IsCompleted || Application.isEditor) return true;
+            quitting = true;
+            StartCoroutine(QuitAfter(sync));
+            return false;
+        }
+
+        IEnumerator QuitAfter(Task<bool> sync)
+        {
+            float until = Time.realtimeSinceStartup + QuitWait;
+            while (!sync.IsCompleted && Time.realtimeSinceStartup < until) yield return null;
+            quitReady = true;
+            Application.Quit();
         }
     }
 }

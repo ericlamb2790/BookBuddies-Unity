@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace BookBuddies.Tales
 {
@@ -27,7 +28,7 @@ namespace BookBuddies.Tales
     /// Bramble Road's daily finds, the towns you've walked to, your lore stones, the Book Bosses you've beaten, and what
     /// the shops sold you (library upgrades, unlocked classes, keepsakes; the server's ledger keeps those too, see
     /// Economy/Shop.TakeOwned).
-    /// Saved as JSON next to the game's other data (TalesSave.FilePath).
+    /// Saved as JSON next to the game's other data (TalesSave.FilePath); AutoSave also flushes it at good moments.
     /// Pure C#: Unity sets FilePath at startup.
     /// </summary>
     public sealed class TalesSave
@@ -37,6 +38,10 @@ namespace BookBuddies.Tales
         static TalesSave current;
         public static TalesSave Current => current ?? (current = Load());
         public static event Action Changed;
+
+        static readonly object writing = new object();
+        static long snapshots, written;   // snapshots made, and the newest one on disk
+        static volatile string writtenText; // what the last write put in the file
 
         public string Personality;                           // the site's pers; picked once for a Unity-hatched buddy
         public readonly PetProfile Me = new PetProfile();
@@ -66,6 +71,57 @@ namespace BookBuddies.Tales
         public void Save()
         {
             if (string.IsNullOrEmpty(FilePath)) return;
+            Write(FilePath, ToText(), ++snapshots);
+        }
+
+        /// <summary>Writes the loaded profile now if it changed since it was last written (nothing before it's loaded).</summary>
+        public static void Flush() => Snapshot()?.Invoke();
+
+        /// <summary>Flush, with only the JSON made on the caller's thread: the file is written on a background thread.</summary>
+        public static Task FlushAsync() => Snapshot() is Action write ? Task.Run(write) : Task.CompletedTask;
+
+        // the loaded profile as text now, and the write that puts it on disk; null when there's nothing new to write
+        static Action Snapshot()
+        {
+            if (current == null || string.IsNullOrEmpty(FilePath)) return null;
+            string path = FilePath, text = current.ToText();
+            if (text == writtenText) return null;
+            long n = ++snapshots;
+            return () => Write(path, text, n);
+        }
+
+        // one write at a time; a snapshot older than the one on disk is dropped
+        static void Write(string path, string text, long n)
+        {
+            lock (writing)
+            {
+                if (n <= written) return;
+                try
+                {
+                    WriteAtomic(path, text);
+                    written = n;
+                    writtenText = text;
+                }
+                catch (Exception) { /* a full disk shouldn't stop the game */ }
+            }
+        }
+
+        /// <summary>Writes a file whole: a temp file first, then swapped in, so a crash mid-write never leaves half of it.</summary>
+        internal static void WriteAtomic(string path, string text)
+        {
+            string tmp = path + ".tmp";
+            File.WriteAllText(tmp, text);
+            if (!File.Exists(path)) { File.Move(tmp, path); return; }
+            try { File.Replace(tmp, path, null); }
+            catch (Exception e) when (e is IOException || e is PlatformNotSupportedException)
+            {
+                File.Delete(path);
+                File.Move(tmp, path);
+            }
+        }
+
+        string ToText()
+        {
             var o = new Dictionary<string, object>
             {
                 ["v"] = (double)Version, ["pers"] = Personality, ["bag"] = Strs(Bag), ["fresh"] = Strs(Fresh), ["dust"] = (double)Dust,
@@ -79,14 +135,7 @@ namespace BookBuddies.Tales
                     ["gear"] = Texts(Me.Gear), ["order"] = Me.Order == null ? null : Strs(Me.Order), ["ua"] = Me.AutoUlt, ["lane"] = Me.Lane,
                 },
             };
-            try
-            {
-                string tmp = FilePath + ".tmp";
-                File.WriteAllText(tmp, Json.Write(o));
-                if (File.Exists(FilePath)) File.Delete(FilePath);
-                File.Move(tmp, FilePath);
-            }
-            catch (Exception) { /* a full disk shouldn't stop the game */ }
+            return Json.Write(o);
         }
 
         public static TalesSave Load()

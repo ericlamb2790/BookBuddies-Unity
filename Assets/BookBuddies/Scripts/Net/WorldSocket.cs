@@ -12,7 +12,7 @@ namespace BookBuddies.Net
     /// handed to the game on the main thread by Poll(), so game code never has to think about threads.
     /// (Works on desktop and mobile builds. WebGL would need a browser WebSocket bridge instead.)
     /// </summary>
-    public sealed class WorldSocket : IDisposable
+    public sealed class WorldSocket : IWorldLink
     {
         public event Action<string> OnMessage;
         public event Action<int> OnClosed; // close code: 4000 = signed in elsewhere, 4003 = sent home by an admin

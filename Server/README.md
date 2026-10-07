@@ -109,6 +109,7 @@ The routes and live messages match the website's, so the game works with this se
 | Delete the account | `POST /api/me/delete` |
 | Your coins | `GET /api/wallet` → `balance`, Book Fair tickets `fair`, today's `gift` `{claimed, run}`, today's counts per kind `used`, the last 20 coin rows `recent`, the `day` (US Eastern) and the Book Fair counters. A new account gets 1000 coins the first time. |
 | Daily gift | `POST /api/wallet/earn {kind: 'gift'}` → `granted` and `run` (200, 250, 300, 400, 500, 600, 1000 for days in a row) |
+| Bank offline coins | `POST /api/wallet/bank {session, days, total}` → the wallet plus `banked` and `refused` (see below) |
 | Buy something | `POST /api/wallet/spend {kind: 'shop', item, ref}` → `paid`; the server prices `item` from `src/economy.json` (`decor:<id>`, `move:<class>:<move>`, `unlock:<class>`, `meta:<upgrade>:<level>`, `stock:<day>:<town>:<i>` with `amount`, `satchel:<town>`). `{kind: 'fair', n}` trades coins for 1, 5, 12 or 30 Book Fair tickets. |
 | Live ticket | `GET /api/plaza/world/ticket?s=1-6&town=pawtopia` (or a town on Bramble Road such as `romance`, a road link `road1` … `road17`, or `caves`) → a 60-second ticket and a 15-minute pass |
 | Live town | WebSocket `/api/world/live?ticket=…` into the Durable Object `<town>:<room>` |
@@ -126,6 +127,16 @@ Admin routes answer `403` unless the signed-in player is an admin.
 
 Each room holds up to 300 pets. In Pawtopia six villagers wander, chat and sit while anyone is there, and in every town (Pawtopia and the 17 on Bramble Road) coins, coin bags and gift boxes turn up. The road links and the caves have neither. Each player can collect up to 25 finds a day (US Eastern days, like the website); the coins go straight into their wallet. A room stops ticking when the last pet leaves, so an empty town costs nothing.
 
-Tested locally with `wrangler dev`: signing up, signing in with a recovery code, renaming, deleting an account, tickets and passes, joining rooms, walking, chat filtering, emotes, hugs, ping, collecting coins, and signing in elsewhere; the wallet (starter coins, the daily gift and its run, purchases, refusals, find limits, admin changes and moving old coin totals into the ledger).
+Tested locally with `wrangler dev`: signing up, signing in with a recovery code, renaming, deleting an account, tickets and passes, joining rooms, walking, chat filtering, emotes, hugs, ping, collecting coins, and signing in elsewhere; the wallet (starter coins, the daily gift and its run, purchases, refusals, find limits, admin changes, moving old coin totals into the ledger and banking offline coins).
 
 Coins are a ledger (`coin_tx`): every coin earned or spent is one row, and a balance is the sum, so there's no total to edit by mistake. Prices and rewards live in `src/economy.json`, made from the website by `tools/export_econ.js` (the game reads the same file). Coins from before v0.4 (`players.coins`) move into the ledger once, by themselves, the first time the new Worker starts.
+
+### Offline coins
+
+The game can also play offline, on the player's own PC, with its own offline purse. When a stretch of offline play (a *session*) ends, the game sends its coins once to `POST /api/wallet/bank` with the player's online sign-in:
+
+```
+{"session": "8 to 40 letters, digits or -", "days": {"2026-10-07": {"coin": 3, "bag": 1, "gift": 0}}, "total": 45}
+```
+
+`days` holds that session's finds per day (US Eastern days, from 14 days ago up to tomorrow), and `total` the coins it wants to bank. Each day's finds count toward that day's 25-find cap together with the finds made online that day and the finds banked earlier for it; the finds that fit (gifts first, then bags, then coins) are worth the usual 30, 15 and 5 coins. The server banks `total` up to that worth as one `coin_tx` row (kind `bank`, ref `sess:<session>`) and answers `banked` and `refused` (the rest, which stays in the game's offline purse). A session banks once: sending it again answers the same numbers and pays nothing. A malformed body or a day outside the window answers `400`. The tables are `bank_sessions` (what each session banked) and `bank_days` (finds banked per day; today's also count toward the town's cap).

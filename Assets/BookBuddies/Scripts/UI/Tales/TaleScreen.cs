@@ -69,6 +69,7 @@ namespace BookBuddies.Tales
         {
             if (!current) return;
             if (!current.run.Over) TaleLife.End(current.run, reason);
+            AutoSave.Now("tale end");
             current.ShowEnd();
             if (current.run.Book != null) current.Invoke(nameof(AutoRead), .9f);
         }
@@ -238,6 +239,7 @@ namespace BookBuddies.Tales
         protected override void OnClosed()
         {
             if (!run.Over) TaleLife.Leave(run); // the tale waits (Continue in the lobby)
+            AutoSave.Now("tale left");
             if (current == this) current = null;
         }
 

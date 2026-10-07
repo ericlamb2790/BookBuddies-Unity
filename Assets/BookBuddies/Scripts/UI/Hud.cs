@@ -622,7 +622,8 @@ namespace BookBuddies.UI
                 case LiveState.Live:
                     int others = world.PeopleHere();
                     detail = others == 0 ? "Just you" : (others + 1) + " here";
-                    if (live.RoundTripMs > 0) detail += " · " + Mathf.RoundToInt(live.RoundTripMs) + " ms";
+                    if (live.OnThisPc) detail += " · On this PC";
+                    else if (live.RoundTripMs > 0) detail += " · " + Mathf.RoundToInt(live.RoundTripMs) + " ms";
                     dot = Palette.Leaf;
                     break;
                 case LiveState.Connecting: detail = "Connecting…"; dot = Palette.Amber; break;
@@ -630,7 +631,7 @@ namespace BookBuddies.UI
                 case LiveState.Reconnecting: detail = "Reconnecting…"; dot = Palette.Amber; break;
                 case LiveState.Elsewhere: detail = "Open on another device"; break;
                 case LiveState.SentHome: detail = "Taking a short break"; break;
-                default: detail = Settings.SignedIn ? "Offline" : "Exploring offline"; break;
+                default: detail = live.OnThisPc ? "On this PC" : Settings.SignedIn ? "Offline" : "Exploring offline"; break;
             }
             detailText.text = area == world.Map.Name ? detail : area + " · " + detail;
             liveDot.color = dot;

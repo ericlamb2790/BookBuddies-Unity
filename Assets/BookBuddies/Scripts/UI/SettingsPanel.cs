@@ -1,3 +1,5 @@
+using System.Threading.Tasks;
+using BookBuddies.Local;
 using BookBuddies.Net;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -25,8 +27,9 @@ namespace BookBuddies.UI
         System.Action accountChanged;
         float soundPreviewAt;
         Vector2 lastSize;
+        bool switching;
 
-        /// <summary>Opens Settings. "accountChanged" runs after signing out or deleting the account.</summary>
+        /// <summary>Opens Settings. "accountChanged" runs after signing out, deleting the account or switching servers.</summary>
         public static void Open(System.Action accountChanged)
         {
             if (open) return;
@@ -135,68 +138,96 @@ namespace BookBuddies.UI
         void AccountTab()
         {
             bool signedIn = Settings.SignedIn;
-            Note(signedIn ? $"Signed in as {(Buddy.Name.Length > 0 ? Buddy.Name : "a reader")} on {Settings.ServerHost}." : "Not signed in. Choose “I have a recovery code” on the title screen to sign in.");
+            string name = Buddy.Name.Length > 0 ? Buddy.Name : "a reader";
+            if (Settings.IsLocal) OfflineAccount(signedIn, name);
+            else OnlineAccount(signedIn, name);
 
-            if (signedIn)
-            {
-                Text code = null;
-                Row("Recovery code", "Brings your buddy back on another device. Keep it secret.", r =>
-                {
-                    var b = UiKit.Secondary(r, "Show", null);
-                    b.onClick.AddListener(() => ShowRecovery(code, b));
-                    return b;
-                });
-                code = Note("");
-                UiKit.Show(code, false);
-                if (Settings.IsAdmin)
-                    Row("Admin tools", "Find players, mute, send home, give breaks.", r => UiKit.Secondary(r, "Open", () => AdminPanel.Open(), "🛡️"));
-                Row("Sign out", "Your buddy stays safe on the server.", r => UiKit.ConfirmButton(r, "Sign out", "Tap again to sign out", () =>
-                {
-                    Settings.SignOut();
-                    Buddy.Forget();
-                    AccountChanged();
-                }));
-                Row("Delete account", "Removes your buddy and coins for good. A bookbuddies.pet account can only be deleted on the website.", r => UiKit.ConfirmButton(r, "Delete", "Tap again to delete forever", DeleteAccount));
-            }
-
-            // where your buddy lives: the main server, the dev one, or an address of your own (typed below)
+            // where your buddy lives: the main server, the dev one, an address of your own (typed below) or this PC
             InputField address = null;
-            void Switch(string url)
-            {
-                if (url.Trim().TrimEnd('/') == Settings.Server) return;
-                Settings.Server = url;
-                Settings.SignOut();
-                Buddy.Forget();
-                AccountChanged();
-            }
-            Row("Server", "Main is the game’s own server, Dev the test one. Custom uses the address below.", r =>
+            Row("Server", "Main is the game’s own server, Dev the test one, Custom the address below. Offline plays on this PC with no network.", r =>
                 UiKit.Choice(r, ServerNames, Settings.ServerChoice, i =>
                 {
                     address.interactable = i == 2;
                     if (i == 2) { address.Select(); return; }
-                    string url = i == 0 ? Settings.DefaultServer : Settings.DevServer;
-                    address.text = url;
-                    Switch(url); // closes the panel when the server really changed
-                }));
-            Row("Address", "Type a server address for Custom. Switching signs you out of the old one.", r =>
+                    if (i < 2) address.text = i == 0 ? Settings.DefaultServer : Settings.DevServer;
+                    Switch(i == 3 ? Settings.Local : address.text); // closes the panel when the server really changed
+                }, 300));
+            Row("Address", "Type a server address for Custom. Each server keeps its own sign-in.", r =>
             {
                 address = UiKit.Input(r, "https://…", UiKit.SmallSize + 1);
-                address.text = Settings.Server;
+                address.text = Settings.OnlineServer;
                 address.interactable = Settings.ServerChoice == 2;
                 UiKit.Size(address, 260, UiKit.ButtonHeight);
-                address.onEndEdit.AddListener(v => { Switch(v); address.text = Settings.Server; });
+                address.onEndEdit.AddListener(v => { Switch(v); address.text = Settings.OnlineServer; });
                 return address;
             });
         }
 
-        static readonly string[] ServerNames = { "Main", "Dev", "Custom" };
+        void OnlineAccount(bool signedIn, string name)
+        {
+            Note(signedIn ? $"Signed in as {name} on {Settings.ServerHost}." : "Not signed in. Choose “I have a recovery code” on the title screen to sign in.");
+            if (!signedIn) return;
+            Text code = null;
+            Row("Recovery code", "Brings your buddy back on another device. Keep it secret.", r =>
+            {
+                var b = UiKit.Secondary(r, "Show", null);
+                b.onClick.AddListener(() => ShowRecovery(code, b));
+                return b;
+            });
+            code = Note("");
+            UiKit.Show(code, false);
+            if (Settings.IsAdmin)
+                Row("Admin tools", "Find players, mute, send home, give breaks.", r => UiKit.Secondary(r, "Open", () => AdminPanel.Open(), "🛡️"));
+            Row("Sign out", "Your buddy stays safe on the server.", r => UiKit.ConfirmButton(r, "Sign out", "Tap again to sign out", () =>
+            {
+                Settings.SignOut();
+                Buddy.Forget();
+                AccountChanged();
+            }));
+            Row("Delete account", "Removes your buddy and coins for good. A bookbuddies.pet account can only be deleted on the website.", r => UiKit.ConfirmButton(r, "Delete", "Tap again to delete forever", DeleteAccount));
+        }
+
+        // offline there's no recovery code and nothing to sign out of: the profile lives in a file on this PC
+        void OfflineAccount(bool signedIn, string name)
+        {
+            Note(!signedIn ? "Playing offline on this PC. Hatch your egg on the title screen to start."
+                : $"Playing offline as {name} on this PC. " + (CoinBank.HasBank ? "Coins you find go to your online wallet when you stop playing offline." : "Coins you find stay on this PC."));
+            if (LocalServer.SaveError != null) Note("The offline save isn’t working right now: " + LocalServer.SaveError).color = UiKit.RoseInk;
+            if (signedIn)
+                Row("Delete offline profile", "Removes your offline buddy, pets and coins from this PC. Your online account isn’t touched.", r => UiKit.ConfirmButton(r, "Delete", "Tap again to delete it", DeleteAccount));
+        }
+
+        static readonly string[] ServerNames = { "Main", "Dev", "Custom", "Offline (this PC)" };
+
+        // another server, or offline play; the first time offline it brings your online buddy along, so it can take a moment
+        async void Switch(string url)
+        {
+            if (switching || url.Trim().TrimEnd('/') == Settings.Server) return;
+            switching = true;
+            string from = Settings.Server;
+            Note(url == Settings.Local ? "Getting your buddy ready for offline play…" : "Switching servers…");
+            await BBApi.UseServer(url);
+            switching = false;
+            if (Settings.Server != from) AccountChanged();
+        }
 
         async void DeleteAccount()
         {
-            try { await BBApi.DeleteAccount(); }
+            try
+            {
+                if (Settings.IsLocal) await BankFirst();
+                await BBApi.DeleteAccount();
+            }
             catch (System.Exception e) { if (this) Note(e.Message).color = UiKit.RoseInk; return; }
             Buddy.Forget();
             if (this) AccountChanged();
+        }
+
+        // before the offline profile goes, its finished sessions get a few seconds to reach the online wallet
+        static async Task BankFirst()
+        {
+            CoinBank.EndSession();
+            await Task.WhenAny(CoinBank.SyncAll(), Task.Delay(4000));
         }
 
         async void ShowRecovery(Text code, Button button)
@@ -294,6 +325,7 @@ namespace BookBuddies.UI
         public void Close()
         {
             if (!this) return;
+            if (switching) { UiStack.Push(this, Close); return; } // stays open until the new server is ready
             Sound.Play("close");
             GameSettings.Save();
             if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);

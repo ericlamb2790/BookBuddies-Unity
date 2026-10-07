@@ -76,12 +76,14 @@ namespace BookBuddies.Economy
     /// <summary>
     /// The one wallet: coins, Book Fair tickets and the fair's counters, always the server's numbers (the Worker keeps
     /// them as a ledger and prices every purchase itself, see Server/src/wallet.js). Towns, shops, bosses and the
-    /// Book Fair earn and spend through here. Offline it shows the last balance the server sent and refuses to spend,
-    /// so nothing is ever made up on the device.
+    /// Book Fair earn and spend through here. When the server can't be reached it shows the last balance the server sent
+    /// and refuses to spend, so nothing is ever made up on the device. Playing offline the server is the backend on this
+    /// PC with the same rules: those coins are the offline purse, banked into the online wallet when offline play ends
+    /// (Net/CoinBank). Online and offline each keep their own numbers.
     /// </summary>
     public static class Wallet
     {
-        const string SavedKey = "bb.wallet"; // "account|coins|tickets": the last numbers the server sent
+        const string SavedKey = "bb.wallet"; // "account|coins|tickets": the last numbers the server sent (".local" offline)
         const string ShortCoins = "Not enough coins yet! 🪙";
         const string ShortTickets = "Not enough 🎟️ tickets yet.";
 
@@ -105,25 +107,54 @@ namespace BookBuddies.Economy
         public static bool HasBalance => Mine;
         /// <summary>The prices and rewards (Data/economy.json).</summary>
         public static EconomyData Economy => EconomyData.Current;
+        /// <summary>Playing offline: these are the offline purse's coins, on this PC until they're banked.</summary>
+        public static bool OfflinePurse => Settings.IsLocal;
 
         static bool Mine => Settings.SignedIn && account == Settings.AccountId;
+        static string Key => Settings.IsLocal ? SavedKey + ".local" : SavedKey;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void Init()
         {
             EconomyData.TextLoader = Art.Text;
-            var saved = PlayerPrefs.GetString(SavedKey, "").Split('|');
-            if (saved.Length != 3) return;
-            account = saved[0];
-            int.TryParse(saved[1], out coins);
-            int.TryParse(saved[2], out tickets);
+            Settings.ServerChanged -= Load;
+            Settings.ServerChanged += Load;
+            CoinBank.BankedCoins -= OnBanked;
+            CoinBank.BankedCoins += OnBanked;
+            Load();
         }
+
+        // the last numbers saved for the server in use (switching between online and offline shows the other's)
+        static void Load()
+        {
+            fresh = false;
+            account = null;
+            coins = tickets = 0;
+            State = new WalletState();
+            var saved = PlayerPrefs.GetString(Key, "").Split('|');
+            if (saved.Length == 3)
+            {
+                account = saved[0];
+                int.TryParse(saved[1], out coins);
+                int.TryParse(saved[2], out tickets);
+            }
+            Changed?.Invoke();
+        }
+
+        // offline coins went to the online wallet: both purses have new numbers
+        static void OnBanked(int banked) => _ = Refresh();
 
         /// <summary>Asks the server for the wallet (the first time on an account, that adds its starter coins). False when it couldn't.</summary>
         public static async Task<bool> Refresh()
         {
             if (!Settings.SignedIn) return false;
-            try { Apply(await BBApi.Wallet()); return true; }
+            string server = Settings.Server;
+            try
+            {
+                var reply = await BBApi.Wallet();
+                if (Settings.Server == server) Apply(reply); // not another server's numbers
+                return true;
+            }
             catch (BBApi.ApiError) { GoneOffline(); return false; }
         }
 
@@ -216,8 +247,9 @@ namespace BookBuddies.Economy
             return new WalletResult(WalletOutcome.Refused, 0, e.Message);
         }
 
-        static WalletResult SignedOut() =>
-            new WalletResult(WalletOutcome.Offline, 0, "Coins live on your account. Sign in from the title screen to use them.");
+        static WalletResult SignedOut() => new WalletResult(WalletOutcome.Offline, 0, Settings.IsLocal
+            ? "Offline coins need a buddy. Hatch your egg on the title screen to use them."
+            : "Coins live on your account. Sign in from the title screen to use them.");
 
         static void GoneOffline()
         {
@@ -227,7 +259,7 @@ namespace BookBuddies.Economy
 
         static void Save()
         {
-            PlayerPrefs.SetString(SavedKey, $"{account}|{coins}|{tickets}");
+            PlayerPrefs.SetString(Key, $"{account}|{coins}|{tickets}");
             PlayerPrefs.Save();
         }
 

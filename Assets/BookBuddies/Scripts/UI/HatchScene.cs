@@ -51,6 +51,7 @@ namespace BookBuddies.UI
             h.done = done;
             h.Build();
             h.StartCoroutine(h.Run());
+            AutoSave.Now("hatch");
         }
 
         void Build()
@@ -151,7 +152,9 @@ namespace BookBuddies.UI
             else
             {
                 UiKit.Label(cardRect, "Ready to explore?", UiKit.TitleSize, Palette.Ink, UiKit.Title);
-                UiKit.Label(cardRect, "Your buddy lives on this device. Sign in with a recovery code any time to meet other readers in town.", UiKit.BodySize, Palette.InkSoft);
+                UiKit.Label(cardRect, Settings.IsLocal
+                    ? "Your buddy lives on this PC, for playing offline. Choose “Play online” on the title screen any time to meet other readers in town."
+                    : "Your buddy lives on this device. Sign in with a recovery code any time to meet other readers in town.", UiKit.BodySize, Palette.InkSoft);
                 go = UiKit.Primary(cardRect, "Let’s go!", Finish, null, 52);
             }
             UiKit.PadHints(cardRect, ("A", "Select"));

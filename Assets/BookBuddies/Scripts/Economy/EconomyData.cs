@@ -20,6 +20,8 @@ namespace BookBuddies.Economy
         public readonly int[] LoginTrack;
         /// <summary>How many town finds pay coins each day.</summary>
         public readonly int FindsPerDay;
+        /// <summary>What each kind of town find pays ("coin", "bag", "gift").</summary>
+        public readonly Dictionary<string, int> FindCoins = new Dictionary<string, int>();
         /// <summary>Book Fair ticket packs: [tickets, coin price].</summary>
         public readonly List<int[]> TicketPacks = new List<int[]>();
         /// <summary>The shop prices (decor, move, unlock, meta, satchel, stock); read them with WalletMath.Price.</summary>
@@ -30,6 +32,8 @@ namespace BookBuddies.Economy
             Starter = o.Int("starter");
             LoginTrack = o.Ints("loginTrack");
             FindsPerDay = o.Obj("finds").Int("perDay");
+            var finds = o.Obj("finds").Obj("coins");
+            if (finds != null) foreach (var kv in finds) FindCoins[kv.Key] = finds.Int(kv.Key);
             foreach (List<object> pack in o.Obj("fair").Arr("packs")) TicketPacks.Add(new[] { (int)(double)pack[0], (int)(double)pack[1] });
             Shop = o.Obj("shop") ?? new Dictionary<string, object>();
         }

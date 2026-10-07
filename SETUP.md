@@ -54,6 +54,20 @@ Open any scene (the default `SampleScene` is fine) and press **Play**. The game 
    - **I have a recovery code** signs in with a code like `BB-XXXXX-XXXXX`.
 4. **Arriving:** the camera cranes down from the sky to your pet, and the HUD fades in.
 
+## Offline play, coin banking and autosaves
+
+**What players see.** The title screen has **Play offline** (and **Play online** to go back), and **Settings → Account → Server** has **Offline (this PC)** next to Main, Dev and Custom. When the server can't be reached at start, the title offers to play offline instead. Offline, everything runs inside the game with no network at all: your buddy and pets, the coins sheet, the shops and the Book Fair, and a live town with the villagers, a few wandering readers and coins to find (the HUD says *On this PC*). The first time you go offline while signed in, your offline buddy starts with your online name and pets; without an online account you hatch an egg as usual. Online and offline each keep their own sign-in, so switching never signs you out. Recovery codes, the admin tools and other players stay online.
+
+**Offline coins.** Offline coins are an *offline purse* with the same rules as online (starter coins, the daily gift, 25 finds a day, the same prices). A stretch of offline play is a *session*. When it ends (back to the title, switching to online, or quitting), the coins it found go to your online wallet in one upload, if you have an online account. The server checks them against the day's find limit, and coins it accepts leave the offline purse. Coins it refuses stay offline. A session that couldn't upload (no network, a crash) tries again at the next launch online or the next time a session ends. When you quit, the game waits up to 4 seconds for the upload.
+
+**Autosaves.** The game saves before every fight and after it, after purchases, Paw Express trips, bag and pet changes, hero class and move changes, Tales pages, camps and endings, on arriving somewhere, when the window loses focus, and every 3 minutes. A small book blinks in the bottom-right corner when a save lands. Files are written in the background (to a temp file, then swapped in), so a save never stalls the game.
+
+**Where it's saved.** The offline world is one file, `offline/world.json` in the game's data folder (on Windows: `%USERPROFILE%\AppData\LocalLow\<company>\<product>\offline\world.json`). If it ever can't be read, it's renamed to `world.json.bad` and the game starts a fresh offline world.
+
+**Redeploy the Worker** (`npx wrangler deploy` in `Server`) so it has the new `POST /api/wallet/bank` route. It makes its two new tables by itself. Until then, offline coins wait in the offline purse and upload after you deploy.
+
+**To test offline:** turn off the network (or pick **Offline (this PC)** in Settings), press **Play offline**, pick up some coins in Pawtopia, then go back to the title. With the network on and an online account, the coins sheet then says how many coins were banked, and your online wallet lists them as *Banked from offline play*.
+
 ## Controls
 
 | | Mouse and touch | Keyboard | Gamepad |
@@ -129,7 +143,8 @@ If art looks stretched or blurry after a swap, right-click `Resources/BookBuddie
 | Folder | What's in it |
 |---|---|
 | `Scripts/Core` | Startup and screen flow (`Boot.cs`), input for every device, settings, sound and music, your buddy, art loading, colours, JSON |
-| `Scripts/Net` | The Worker's HTTP API and the live WebSocket |
+| `Scripts/Net` | The Worker's HTTP API, the live WebSocket and banking offline coins (`CoinBank.cs`) |
+| `Scripts/Local` | The offline backend: the Worker's account, pet, wallet and town routes and the live town rooms in plain C#, saved to one file |
 | `Scripts/Live` | The live town: connection, players, chat, emotes, tricks and interactions |
 | `Scripts/World` | The town map, camera, villagers and ambient life |
 | `Scripts/Pets` | Pet looks, the pet drawing (a port of build 551's `petSVG`), DNA rolls, your pets list and pets walking around |

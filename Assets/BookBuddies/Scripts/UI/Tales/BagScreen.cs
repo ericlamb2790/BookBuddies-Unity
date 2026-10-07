@@ -42,6 +42,7 @@ namespace BookBuddies.Tales
                 bag = Create<BagScreen>("Bag", false);
                 bag.Build();
                 bag.pending = highlight ?? "";
+                AutoSave.Now("bag");
                 return;
             }
             TalesUi.Find<HeroCard>()?.Close();
@@ -486,6 +487,7 @@ namespace BookBuddies.Tales
             if (it == null || !Loot.Equip(save, it.Id)) return;
             Sound.Play("happy");
             Flash($"{it.Name} equipped");
+            AutoSave.Now("equip");
             Refresh();
             VirtualCursor.FocusFirst(primaryAction);
         }
@@ -497,6 +499,7 @@ namespace BookBuddies.Tales
             if (!Loot.Unequip(save, slot)) { Flash("Your bag is full. Salvage something first."); return; }
             Sound.Play("pop");
             Flash("Back in your bag");
+            AutoSave.Now("equip");
             Refresh();
         }
 
@@ -507,6 +510,7 @@ namespace BookBuddies.Tales
             if (dust == 0) return;
             Sound.Play("coin");
             Flash($"+{dust} page dust");
+            AutoSave.Now("salvage");
             selected = null;
             Refresh();
             VirtualCursor.FocusFirst(FirstTile());

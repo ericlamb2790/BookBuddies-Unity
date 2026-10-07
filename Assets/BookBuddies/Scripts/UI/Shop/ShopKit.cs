@@ -38,7 +38,7 @@ namespace BookBuddies.UI
             paying = true;
             var r = await Wallet.Spend("shop", item, reff);
             paying = false;
-            if (r.Ok) { Sound.Play("coin"); paid(r); }
+            if (r.Ok) { Sound.Play("coin"); paid(r); AutoSave.Now("shop"); }
             else say(r.Outcome == WalletOutcome.Short ? Short(price) : r.Message);
         }
 

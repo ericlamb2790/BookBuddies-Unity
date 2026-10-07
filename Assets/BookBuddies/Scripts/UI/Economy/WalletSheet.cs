@@ -1,4 +1,5 @@
 using BookBuddies.Economy;
+using BookBuddies.Net;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,7 +8,8 @@ namespace BookBuddies.UI
     /// <summary>
     /// The coins sheet (the site's coins dialog, for Unity): your balance, the daily login gift with its 7-day track,
     /// today's town finds, and your latest coins. It opens from the HUD's coin counter and the town menu, and by
-    /// itself once a day while the gift waits. It always shows the server's numbers, refreshed as it opens.
+    /// itself once a day while the gift waits. It always shows the server's numbers, refreshed as it opens. Playing
+    /// offline it's the offline purse, and it says when offline coins were banked into the online wallet.
     /// </summary>
     public sealed class WalletSheet : MonoBehaviour
     {
@@ -41,7 +43,7 @@ namespace BookBuddies.UI
         void Fill()
         {
             var st = Wallet.State;
-            string now = $"{Settings.SignedIn}|{Wallet.Ready}|{Wallet.Coins}|{Wallet.Tickets}|{st.Day}|{st.GiftClaimed}|{st.GiftRun}|{st.UsedToday("find")}|{st.Recent.Count}|{notice}";
+            string now = $"{Settings.Server}|{Settings.SignedIn}|{Wallet.Ready}|{CoinBank.Banked}|{Wallet.Coins}|{Wallet.Tickets}|{st.Day}|{st.GiftClaimed}|{st.GiftRun}|{st.UsedToday("find")}|{st.Recent.Count}|{notice}";
             if (now == painted) return;
             painted = now;
             var card = sheet.Card;
@@ -54,11 +56,17 @@ namespace BookBuddies.UI
             sheet.First = null;
 
             Head(card);
+            if (CoinBank.Banked > 0) UiKit.Label(card, $"Banked {CoinPill.Format(CoinBank.Banked)} offline coin{(CoinBank.Banked == 1 ? "" : "s")} to your online wallet", UiKit.SmallSize + 1, UiKit.LeafInk, UiKit.Bold);
             if (!Settings.SignedIn)
             {
-                Line(card, $"Coins live on your account. Hatch a pet (you start with {CoinPill.Format(Wallet.Economy.Starter)} coins) or sign in from the title screen to earn and keep them.");
+                Line(card, Wallet.OfflinePurse
+                    ? $"Offline coins need a buddy. Hatch your egg on the title screen (you start with {CoinPill.Format(Wallet.Economy.Starter)} coins)."
+                    : $"Coins live on your account. Hatch a pet (you start with {CoinPill.Format(Wallet.Economy.Starter)} coins) or sign in from the title screen to earn and keep them.");
                 return;
             }
+            if (Wallet.OfflinePurse) Line(card, CoinBank.HasBank
+                ? "Kept on this PC. What you find goes to your online wallet when you stop playing offline."
+                : "Kept on this PC.");
             if (notice.Length > 0) UiKit.Label(card, notice, UiKit.SmallSize + 1, UiKit.RoseInk, UiKit.Bold);
             if (!Wallet.Ready) Offline(card);
             else if (st.GiftClaimed) GiftDone(card, st.GiftRun);
@@ -76,7 +84,8 @@ namespace BookBuddies.UI
             var words = UiKit.Node("words", head);
             UiKit.Column(words, 0, null, TextAnchor.MiddleLeft);
             UiKit.Size(words, -1, -1, 1);
-            string coins = Wallet.HasBalance ? CoinPill.Format(Wallet.Coins) + (Wallet.Coins == 1 ? " coin" : " coins") : "Coins";
+            string kind = Wallet.OfflinePurse ? " offline coin" : " coin";
+            string coins = Wallet.HasBalance ? CoinPill.Format(Wallet.Coins) + kind + (Wallet.Coins == 1 ? "" : "s") : Wallet.OfflinePurse ? "Offline coins" : "Coins";
             UiKit.Label(words, coins, UiKit.TitleSize, Palette.Ink, UiKit.Title);
             if (Wallet.Tickets > 0) UiKit.Label(words, $"and {CoinPill.Format(Wallet.Tickets)} Book Fair ticket{(Wallet.Tickets == 1 ? "" : "s")}", UiKit.SmallSize + 1, Palette.InkSoft);
             UiKit.CloseButton(head, sheet.Close);
@@ -85,6 +94,7 @@ namespace BookBuddies.UI
         void Offline(Transform card)
         {
             var box = Box(card, Palette.Paper);
+            if (Wallet.OfflinePurse) { Line(box, "Counting your coins…"); return; } // the purse on this PC answers straight away
             Line(box, Wallet.HasBalance
                 ? "You’re offline, so this is the last balance the server sent. The daily gift and shopping come back when you reconnect."
                 : "You’re offline. Your coins are safe on the server and show up here when you reconnect.");
@@ -139,6 +149,7 @@ namespace BookBuddies.UI
             painted = null;
             Fill();
             var result = await Wallet.Earn("gift");
+            if (result.Outcome == WalletOutcome.Done) AutoSave.Now("gift");
             if (!this) return;
             claiming = false;
             if (result.Outcome == WalletOutcome.Done) Sound.Play("rare");
@@ -220,6 +231,8 @@ namespace BookBuddies.UI
                 case "admin": return "From a town admin";
                 case "legacy": return "Coins from before";
                 case "garden": return "Garden";
+                case "bank": return "Banked from offline play";
+                case "banked": return "Sent to your online wallet";
                 default: return kind.Length > 0 ? char.ToUpperInvariant(kind[0]) + kind.Substring(1) : "Coins";
             }
         }

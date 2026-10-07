@@ -10,7 +10,8 @@ namespace BookBuddies.Pets
     /// Your pets: up to six, like the site, each with an id, a name and a look, and one of them active. The active pet's look
     /// is Buddy.Look, so the town, Tales and the title screen all show it. Signed in to the Unity server, the list lives there
     /// (/me/pets) and every change answers with the whole list; signed out, or on the website's server (which keeps extra pets
-    /// in its own save), it lives on this device.
+    /// in its own save), it lives on this device. Offline the backend on this PC keeps them the same way, and switching
+    /// between online and offline loads that account's list (the list is saved with the account it belongs to).
     /// </summary>
     public static class MyPets
     {
@@ -90,10 +91,11 @@ namespace BookBuddies.Pets
             Saved();
         }
 
-        // the Unity server keeps pets (its /health says it makes accounts); asked once per server
+        // the Unity server keeps pets (its /health says it makes accounts), and so does the offline one; asked once per server
         static async Task<bool> OnServer()
         {
             if (!Settings.SignedIn) return false;
+            if (Settings.IsLocal) return true;
             if (petServer.server != Settings.Server) petServer = (Settings.Server, await BBApi.CanHatch());
             return petServer.keeps;
         }

@@ -49,6 +49,7 @@ namespace BookBuddies.Tales
             size = body.rect.size;
             var v = EpicFlow.Current(run);
             TaleStore.SaveSoon(run);
+            AutoSave.Now("page"); // every new page: a map, a scene, an encounter, a roll, a camp, a gift
             switch (v.K)
             {
                 case "map": EpicMapView.Build(body, run, v, Pick, AutoGo, Played); break;

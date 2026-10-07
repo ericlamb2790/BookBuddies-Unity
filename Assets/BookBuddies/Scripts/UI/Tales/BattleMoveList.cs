@@ -142,6 +142,7 @@ namespace BookBuddies.Tales
             var save = TalesSave.Current;
             save.Me.Order = keys == null ? null : new List<string>(keys);
             save.Touch();
+            AutoSave.Now("move order");
         }
 
         Vector2 Local(PointerEventData e)

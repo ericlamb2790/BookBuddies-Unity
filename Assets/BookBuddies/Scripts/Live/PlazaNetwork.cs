@@ -11,7 +11,8 @@ namespace BookBuddies.Live
     /// Keeps you connected to the live town, the same way the website does:
     /// get a ticket for this place (Pawtopia, the road or the caves), open the room's WebSocket, try the next
     /// room (shard 1-6) when one is full, rejoin quickly with a 15-minute pass, back off between retries, and
-    /// ping every 5 seconds to measure lag and line up with the server clock.
+    /// ping every 5 seconds to measure lag and line up with the server clock. Offline the room runs inside the game
+    /// (WorldLinks picks the link), so there's no lag to measure and no pass to keep.
     /// </summary>
     public sealed class PlazaNetwork
     {
@@ -25,13 +26,15 @@ namespace BookBuddies.Live
         /// <summary>Why you were sent home (the admin's message, or how long the break lasts), or null.</summary>
         public string Notice { get; private set; }
         public bool IsLive => State == LiveState.Live && live != null && live.Open;
+        /// <summary>The room runs inside the game (offline play): no network, so no lag.</summary>
+        public bool OnThisPc { get; }
 
         public event Action<Dictionary<string, object>> Welcome;
         public event Action<Dictionary<string, object>> Message;
         public event Action<LiveState> StateChanged;
 
         readonly string town;
-        WorldSocket live, trying;
+        IWorldLink live, trying;
         int shard = 1, retries;
         float retryAt = -1, nextPing;
         string pass;
@@ -39,7 +42,11 @@ namespace BookBuddies.Live
         double clockOffset; // server time minus local time, in ms
         bool running;
 
-        public PlazaNetwork(string town) { this.town = town; }
+        public PlazaNetwork(string town)
+        {
+            this.town = town;
+            OnThisPc = Settings.IsLocal;
+        }
 
         /// <summary>Server time now, in Unix milliseconds.</summary>
         public double ServerNow => LocalNow + clockOffset;
@@ -85,7 +92,7 @@ namespace BookBuddies.Live
             SetState(LiveState.Connecting);
 
             string ticket;
-            bool viaPass = pass != null && passExpires - LocalNow > 60000;
+            bool viaPass = !OnThisPc && pass != null && passExpires - LocalNow > 60000;
             if (viaPass) ticket = pass;
             else
             {
@@ -105,7 +112,8 @@ namespace BookBuddies.Live
             }
             if (!running) return;
 
-            var socket = new WorldSocket();
+            string url = BBApi.LiveUrl(ticket, town, shard, viaPass);
+            var socket = WorldLinks.Create(url);
             bool welcomed = false;
             trying = socket;
             socket.OnMessage += text =>
@@ -118,10 +126,10 @@ namespace BookBuddies.Live
                 else if (socket == live) OnMessage(m);
             };
             socket.OnClosed += code => OnClosed(socket, code, welcomed, viaPass);
-            await socket.Connect(BBApi.LiveUrl(ticket, town, shard, viaPass));
+            await socket.Connect(url);
         }
 
-        void OnWelcome(WorldSocket socket, Dictionary<string, object> m)
+        void OnWelcome(IWorldLink socket, Dictionary<string, object> m)
         {
             if (live != null && live != socket) live.Dispose();
             live = socket;
@@ -138,6 +146,7 @@ namespace BookBuddies.Live
         {
             if (m.Str("t") == "pong")
             {
+                if (OnThisPc) return; // the same clock, and no network to measure
                 float rtt = (float)(WorldSocket.ArrivedMs - m.Num("c")); // network time only, not the frames it waited for
                 if (rtt <= 0 || rtt >= 10000) return;
                 RoundTripMs = RoundTripMs > 0 ? RoundTripMs * .7f + rtt * .3f : rtt;
@@ -149,7 +158,7 @@ namespace BookBuddies.Live
             Message?.Invoke(m);
         }
 
-        void OnClosed(WorldSocket socket, int code, bool welcomed, bool viaPass)
+        void OnClosed(IWorldLink socket, int code, bool welcomed, bool viaPass)
         {
             bool wasLive = socket == live;
             if (wasLive) live = null;

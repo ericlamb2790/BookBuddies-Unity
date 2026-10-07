@@ -10,8 +10,9 @@ namespace BookBuddies.UI
     /// <summary>
     /// The title screen over a slowly drifting Pawtopia: the BookBuddies name, the main menu, and your egg
     /// (or the buddy that hatched from it) sitting on a stack of books. Tap the egg and it wobbles; tap your
-    /// buddy and it hops. New players hatch their egg from here. The menu works with the mouse, touch, keys and the
-    /// gamepad cursor; short windows get a more compact name and menu so nothing is cut off.
+    /// buddy and it hops. New players hatch their egg from here. "Play offline" plays on this PC with no network (and is
+    /// offered when the server can't be reached); "Play online" goes back. The menu works with the mouse, touch, keys and
+    /// the gamepad cursor; short windows get a more compact name and menu so nothing is cut off.
     /// </summary>
     public sealed class TitleScreen : MonoBehaviour
     {
@@ -19,19 +20,22 @@ namespace BookBuddies.UI
         const float CompactHeight = 760;      // shorter screens get the compact name and menu
         const float MenuWidth = 380, MenuGap = 28;
         const float StageHeight = 460;        // your buddy, its books and the nameplate, top to bottom
+        const float Recheck = 30;             // seconds between quiet server checks while the title is up
 
         TownCamera cam;
         System.Action enterTown, watchIntro;
-        RectTransform root, logo, menu, stage, footer;
+        RectTransform root, logo, menu, stage, footer, status;
         CanvasGroup group;
-        Image pet, glow, serverDot, wash;
-        Text tagline, logoName, townName, plateName, plateSub, serverText, playLabel;
+        Image pet, glow, statusDot, wash;
+        Text tagline, logoName, townName, plateName, plateSub, statusText, statusHost, playLabel, modeLabel;
         Button play, signIn, switchPet;
-        Sheet start, naming;
+        Sheet start, naming, unreachable;
+        static bool offeredOffline; // the "can't reach the server" card shows once a launch
         InputField nameField;
         Text nameError, nameNote, hatchLabel;
-        bool canHatch, busy;
-        float shownAt, lastW, lastH, idleAt, animAt;
+        bool canHatch, busy, checking;
+        bool? online;                // the last server check: null while unknown
+        float shownAt, lastW, lastH, idleAt, animAt, checkAt;
         string anim;
         Vector2 camFrom;
         float zoomFrom, distanceFrom;
@@ -75,9 +79,10 @@ namespace BookBuddies.UI
             UiKit.Hug(menu, false, true);
             play = MenuButton(UiKit.Primary(menu, "Play", OnPlay, null, 56));
             playLabel = play.GetComponentInChildren<Text>();
+            modeLabel = MenuButton(UiKit.Secondary(menu, "Play offline", SwitchMode, null, 56)).GetComponentInChildren<Text>();
             signIn = MenuButton(UiKit.Secondary(menu, "I have a recovery code", () => ShowSignIn(null), null, 56));
             switchPet = MenuButton(UiKit.Secondary(menu, "Switch pet", () => PetsScreen.Open(null, Refresh), "🐾", 56)); // before spawning in
-            MenuButton(UiKit.Secondary(menu, "Settings", () => SettingsPanel.Open(() => { Refresh(); CheckServer(); }), "⚙️", 56));
+            MenuButton(UiKit.Secondary(menu, "Settings", () => SettingsPanel.Open(() => { if (this) { Refresh(); CheckServer(); } }), "⚙️", 56));
             MenuButton(UiKit.Secondary(menu, "Watch the intro", () => Leave(watchIntro), null, 56));
             if (!Application.isMobilePlatform && Application.platform != RuntimePlatform.WebGLPlayer)
                 MenuButton(UiKit.Secondary(menu, "Quit", Application.Quit, null, 56));
@@ -111,16 +116,26 @@ namespace BookBuddies.UI
             plateSub = UiKit.Label(plate, "", UiKit.SmallSize + 1, Palette.InkSoft, UiKit.Body, TextAnchor.MiddleCenter);
             plateSub.horizontalOverflow = HorizontalWrapMode.Overflow;
 
-            // version and server
+            // the version
             footer = UiKit.Node("footer", root);
             UiKit.Row(footer, 8);
             UiKit.Hug(footer);
             var version = UiKit.Label(footer, "v" + Settings.Version, UiKit.SmallSize, Palette.InkSoft, UiKit.Bold);
             version.horizontalOverflow = HorizontalWrapMode.Overflow;
-            serverDot = UiKit.Panel(footer, "status", Palette.Amber, 5);
-            UiKit.Size(serverDot, 10, 10);
-            serverText = UiKit.Label(footer, "", UiKit.SmallSize, Palette.InkSoft);
-            serverText.horizontalOverflow = HorizontalWrapMode.Overflow;
+
+            // the server: a small pill in the corner, green when connected; tap it to check again
+            var pill = UiKit.Button(root, "server", Palette.Cream, CheckServer, 16);
+            pill.navigation = new Navigation { mode = Navigation.Mode.None }; // the gamepad stays on the menu
+            status = (RectTransform)pill.transform;
+            UiKit.Row(status, 8, new RectOffset(14, 16, 7, 8));
+            UiKit.Hug(status);
+            UiKit.Shadow(status, 16, 10, 3, .2f);
+            statusDot = UiKit.Panel(status, "dot", Palette.Amber, 5);
+            statusDot.raycastTarget = false;
+            UiKit.Size(statusDot, 10, 10);
+            statusText = UiKit.Label(status, "", UiKit.SmallSize + 1, Palette.Ink, UiKit.Bold);
+            statusHost = UiKit.Label(status, "", UiKit.SmallSize, Palette.InkSoft);
+            foreach (var t in new[] { statusText, statusHost }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.raycastTarget = false; }
 
             BuildStartCards();
             shownAt = Time.unscaledTime;
@@ -143,7 +158,7 @@ namespace BookBuddies.UI
         {
             start = Card("Hatch your egg", "Your egg is ready. Give it a name tag and it will hatch into a buddy that’s all yours.");
             start.First = UiKit.Primary(start.Card, "Hatch my egg", () => { start.Close(); naming.Open(); FocusName(); }, null, 52);
-            UiKit.Secondary(start.Card, "I already have a buddy", () => { start.Close(); ShowSignIn(null); });
+            UiKit.Secondary(start.Card, "I already have a buddy", () => { start.Close(); SignInOnline(); });
             UiKit.TextButton(start.Card, "Just look around", null, Palette.Cream, Palette.InkSoft, () => { start.Close(); Leave(enterTown); });
 
             naming = Card("What should we call you?", "This name shows above your buddy in town. Pick a nickname, not your real name.");
@@ -158,6 +173,11 @@ namespace BookBuddies.UI
             hatchLabel = go.GetComponentInChildren<Text>();
             UiKit.Secondary(naming.Card, "Back", () => { naming.Close(); start.Open(); });
             naming.First = nameField;
+
+            unreachable = Card("Can’t reach the server", "The online town isn’t answering right now. You can play offline on this PC instead: coins you find there go to your online wallet once you’re back online.");
+            unreachable.First = UiKit.Primary(unreachable.Card, "Play offline", () => { unreachable.Close(); SwitchMode(); }, null, 52);
+            UiKit.Secondary(unreachable.Card, "Try again", () => { unreachable.Close(); offeredOffline = false; CheckServer(); });
+            UiKit.TextButton(unreachable.Card, "Not now", null, Palette.Cream, Palette.InkSoft, unreachable.Close);
         }
 
         Sheet Card(string title, string body)
@@ -195,7 +215,7 @@ namespace BookBuddies.UI
                     var account = await BBApi.Register(name, look);
                     name = account.Str("name", name);
                     look = account.Str("pet", look);
-                    recovery = account.Str("recovery");
+                    if (!Settings.IsLocal) recovery = account.Str("recovery"); // offline there's nothing to recover on another device
                 }
                 catch (BBApi.ApiError e) when (e.Status > 0)
                 {
@@ -252,6 +272,36 @@ namespace BookBuddies.UI
             Leave(enterTown);
         }
 
+        // "Play offline" or "Play online": switch (the first time offline brings your online buddy and pets along), then play
+        async void SwitchMode()
+        {
+            if (busy) return;
+            busy = true;
+            modeLabel.text = "Getting ready…";
+            await BBApi.UseServer(Settings.IsLocal ? Settings.OnlineServer : Settings.Local);
+            if (!this) return;
+            busy = false;
+            Refresh();
+            CheckServer();
+            OnPlay();
+        }
+
+        // recovery codes belong to online accounts, so signing in offline goes online first
+        async void SignInOnline()
+        {
+            if (Settings.IsLocal)
+            {
+                if (busy) return;
+                busy = true;
+                await BBApi.UseServer(Settings.OnlineServer);
+                if (!this) return;
+                busy = false;
+                Refresh();
+                CheckServer();
+            }
+            ShowSignIn(null);
+        }
+
         /// <summary>The title fades out, then "then" runs (into town, or the intro).</summary>
         void Leave(System.Action then)
         {
@@ -275,23 +325,57 @@ namespace BookBuddies.UI
             pet.sprite = PetSprites.For(Buddy.ShownLook);
             bool hatched = Buddy.Hatched;
             plateName.text = hatched ? (Buddy.Name.Length > 0 ? Buddy.Name : "Your buddy") : "Your egg";
-            plateSub.text = hatched ? (Settings.SignedIn ? "Ready for Pawtopia" : "Exploring on this device") : "It’s warm. Give it a tap!";
+            plateSub.text = !hatched ? "It’s warm. Give it a tap!" : Settings.IsLocal ? "Playing offline on this PC" : Settings.SignedIn ? "Ready for Pawtopia" : "Exploring on this device";
             playLabel.text = hatched || Settings.SignedIn ? "Play" : "Hatch your egg";
-            UiKit.Show(signIn, !Settings.SignedIn);
+            modeLabel.text = Settings.IsLocal ? "Play online" : "Play offline";
+            UiKit.Show(signIn, !Settings.SignedIn && !Settings.IsLocal);
             UiKit.Show(switchPet, hatched);
             lastW = 0; // the menu may have changed length
         }
 
+        /// <summary>Asks the server if it's there, and shows the answer on the pill. Runs again every half minute.</summary>
         async void CheckServer()
         {
-            serverText.text = Settings.ServerHost + " · checking…";
-            serverDot.color = Palette.Amber;
-            bool online;
-            try { canHatch = await BBApi.CanHatch(); online = true; }
-            catch (System.Exception) { canHatch = false; online = false; }
+            if (checking) { checkAt = 0; return; } // once this check is back, check again
+            checkAt = Time.unscaledTime + Recheck;
+            if (Settings.IsLocal)
+            {
+                canHatch = true;
+                online = null;
+                ShowStatus(Palette.Sky, "Offline", "playing on this PC");
+                return;
+            }
+            string server = Settings.Server;
+            if (online != true) ShowStatus(Palette.Amber, "Connecting…", Settings.ServerHost); // a quiet recheck keeps "Connected" up
+            checking = true;
+            bool ok;
+            try { canHatch = await BBApi.CanHatch(); ok = true; }
+            catch (System.Exception) { canHatch = false; ok = false; }
+            checking = false;
             if (!this) return;
-            serverText.text = Settings.ServerHost + (online ? " · online" : " · can’t reach the server");
-            serverDot.color = online ? Palette.Leaf : Palette.Rose;
+            if (Settings.Server != server) { checkAt = 0; return; } // switched servers meanwhile
+            online = ok;
+            if (ok) ShowStatus(Palette.Leaf, "Connected", Settings.ServerHost);
+            else
+            {
+                ShowStatus(Palette.Rose, "Can’t connect", "tap to try again");
+                OfferOffline();
+            }
+        }
+
+        void ShowStatus(Color dot, string text, string host)
+        {
+            statusDot.color = dot;
+            statusText.text = text;
+            statusHost.text = host;
+        }
+
+        // once a launch, when nothing else is on screen: play offline instead?
+        void OfferOffline()
+        {
+            if (offeredOffline || busy || !gameObject.activeSelf || UiStack.Any) return;
+            offeredOffline = true;
+            unreachable.Open();
         }
 
         // ---- every frame ----
@@ -302,6 +386,8 @@ namespace BookBuddies.UI
             if (!Mathf.Approximately(root.rect.width, lastW) || !Mathf.Approximately(root.rect.height, lastH)) Fit();
             Drift();
             AnimatePet();
+            if (checking && online != true) statusDot.color = Palette.Amber.WithAlpha(.4f + .6f * Mathf.PingPong(Time.unscaledTime * 1.6f, 1)); // a soft pulse while connecting
+            else if (!checking && Time.unscaledTime >= checkAt) CheckServer();
         }
 
         // the camera floats slowly around the town square
@@ -403,12 +489,13 @@ namespace BookBuddies.UI
         // name at the top, buddy in the middle, menu at the bottom
         void FitTall(float logoHeight, float menuHeight)
         {
-            logo.Pin(new Vector2(.5f, 1), new Vector2(0, -40), new Vector2(lastW - 32, 10));
+            status.Pin(new Vector2(.5f, 1), new Vector2(0, -16), status.sizeDelta);
+            logo.Pin(new Vector2(.5f, 1), new Vector2(0, -68), new Vector2(lastW - 32, 10));
             logo.localScale = Vector3.one;
             menu.Pin(new Vector2(.5f, 0), new Vector2(0, 56), new Vector2(Mathf.Min(MenuWidth, lastW - 40), 10));
             menu.localScale = Vector3.one;
             footer.Pin(new Vector2(.5f, 0), new Vector2(0, 16), new Vector2(10, 22));
-            float top = lastH - 40 - logoHeight, bottom = 56 + menuHeight;
+            float top = lastH - 68 - logoHeight, bottom = 56 + menuHeight;
             stage.anchorMin = stage.anchorMax = new Vector2(.5f, 0);
             stage.anchoredPosition = new Vector2(0, (top + bottom) / 2);
             stage.localScale = Vector3.one * Mathf.Clamp((top - bottom) / StageHeight, .5f, 1);
@@ -428,6 +515,7 @@ namespace BookBuddies.UI
             menu.pivot = new Vector2(0, 1);
             menu.localScale = Vector3.one * k;
             footer.Pin(Vector2.zero, new Vector2(left, 18), new Vector2(10, 22));
+            status.Pin(Vector2.one, new Vector2(-24, -20), status.sizeDelta);
             stage.anchorMin = stage.anchorMax = new Vector2(.7f, .5f);
             stage.anchoredPosition = new Vector2(0, 10);
             stage.localScale = Vector3.one * Mathf.Min(1.25f, (lastH - 140) / StageHeight);

@@ -60,7 +60,7 @@ namespace BookBuddies.Tales
             {
                 var row = UiKit.Node("reset", rightContent);
                 UiKit.Row(row, 0, new RectOffset(0, 0, 8, 0)).childForceExpandWidth = false;
-                UiKit.Secondary(row, "Reset to starting moves", () => { HeroFactory.ResetKit(save, h.Cls); flash.Show("Loadout reset"); Fill(); }, null, 44);
+                UiKit.Secondary(row, "Reset to starting moves", () => { HeroFactory.ResetKit(save, h.Cls); AutoSave.Now("moves"); flash.Show("Loadout reset"); Fill(); }, null, 44);
             }
         }
 
@@ -80,6 +80,7 @@ namespace BookBuddies.Tales
         {
             string why = HeroFactory.ToggleEquip(save, cls, k);
             if (why != null) { Sound.Play("boop"); flash.Show(why); return; }
+            AutoSave.Now("moves");
             Sound.Play("pop");
             Fill();
         }
@@ -178,6 +179,7 @@ namespace BookBuddies.Tales
         void Become(ClassDef to, TownBook.Town home)
         {
             if (!HeroFactory.SetClass(save, to.Key)) return;
+            AutoSave.Now("class");
             if (save.Unseen.Remove("cls:" + to.Key)) save.Touch();
             Close();
             int lv = HeroFactory.PetLvIn(save, to.Key);

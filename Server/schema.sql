@@ -39,6 +39,15 @@ CREATE TABLE IF NOT EXISTS fair_tx (id INTEGER PRIMARY KEY AUTOINCREMENT, player
 
 CREATE UNIQUE INDEX IF NOT EXISTS fair_tx_once_idx ON fair_tx (player_id, kind, ref);
 
+-- Coins banked from the game's offline play (POST /api/wallet/bank in src/wallet.js): what each session banked (a session
+-- banks once; its coins are one coin_tx row, kind 'bank', ref 'sess:<id>'), and how many finds were banked for each day,
+-- which count toward that day's find cap with the town's finds.
+CREATE TABLE IF NOT EXISTS bank_sessions (player_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE, id TEXT NOT NULL,
+  banked INTEGER NOT NULL, refused INTEGER NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (player_id, id));
+
+CREATE TABLE IF NOT EXISTS bank_days (player_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE, day TEXT NOT NULL,
+  finds INTEGER NOT NULL, PRIMARY KEY (player_id, day));
+
 CREATE TABLE IF NOT EXISTS econ_state (player_id TEXT PRIMARY KEY REFERENCES players(id) ON DELETE CASCADE, pity INTEGER NOT NULL,
   balls INTEGER NOT NULL, tix INTEGER NOT NULL, drops INTEGER NOT NULL, fish_at INTEGER NOT NULL, ups TEXT NOT NULL, freecap TEXT);
 

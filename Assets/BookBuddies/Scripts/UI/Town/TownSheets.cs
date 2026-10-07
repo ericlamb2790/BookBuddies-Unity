@@ -141,6 +141,7 @@ namespace BookBuddies.UI
         static void Ride(string key)
         {
             var at = TownBook.ArrivalByTrain(key);
+            AutoSave.Now("train");
             Boot.Travel(key, at != null ? new Vector2Int(at[0], at[1]) : (Vector2Int?)null, null, true);
         }
 

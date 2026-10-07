@@ -46,6 +46,11 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS fair_tx (id INTEGER PRIMARY KEY AUTOINCREMENT, player_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
      kind TEXT NOT NULL, ref TEXT NOT NULL, amount INTEGER NOT NULL, day TEXT NOT NULL, created_at INTEGER NOT NULL)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS fair_tx_once_idx ON fair_tx (player_id, kind, ref)`,
+  // coins banked from offline play (wallet.js bank): what each session banked (it banks once), and the finds banked per day
+  `CREATE TABLE IF NOT EXISTS bank_sessions (player_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE, id TEXT NOT NULL,
+     banked INTEGER NOT NULL, refused INTEGER NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (player_id, id))`,
+  `CREATE TABLE IF NOT EXISTS bank_days (player_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE, day TEXT NOT NULL,
+     finds INTEGER NOT NULL, PRIMARY KEY (player_id, day))`,
   // the rooms each player joined lately: the admin tools tell only these (36 places × 6 rooms is too many to call)
   `CREATE TABLE IF NOT EXISTS rooms_seen (player_id TEXT NOT NULL, room TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (player_id, room))`,
   `CREATE TABLE IF NOT EXISTS econ_state (player_id TEXT PRIMARY KEY REFERENCES players(id) ON DELETE CASCADE, pity INTEGER NOT NULL,
