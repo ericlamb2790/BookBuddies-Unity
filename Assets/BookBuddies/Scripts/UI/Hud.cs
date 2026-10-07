@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using BookBuddies.Economy;
 using BookBuddies.Live;
+using BookBuddies.Local;
 using BookBuddies.Pets;
 using BookBuddies.Tales;
 using BookBuddies.World;
@@ -12,7 +13,8 @@ namespace BookBuddies.UI
 {
     /// <summary>
     /// Everything on screen over the town, laid out for 1920×1080 and kept tidy down to small windows: your pet's card
-    /// (top left, the road's objective card under it), controls help, the menu, the minimap and where you are (top right),
+    /// (top left, the road's objective card under it), controls help, the menu, the minimap and where you are (top right,
+    /// with your world's join code while you host),
     /// toasts and chapter titles (top centre), the dock of emotes, tricks, pets, bag, hero and map (bottom centre), the
     /// chat box with recent chat over it (bottom left), and the card for the place you're standing at (over the dock).
     /// Also the emote, trick, pet, coins and town menus. Photo mode (H hides it all, P takes a picture) lives here too,
@@ -53,9 +55,9 @@ namespace BookBuddies.UI
         Overlays labels;
         Notices notices;
 
-        RectTransform where, hint, dock, chatBox, logLines;
+        RectTransform where, hint, dock, chatBox, logLines, hosting;
         Image liveDot;
-        Text placeText, detailText, chatHint;
+        Text placeText, detailText, chatHint, hostingText;
         Button playHere, send;
         Image hintIcon; Text hintName, hintSub, hintLater, verbLabel; Button verb; Image verbKey; Text verbKeyText;
         CanvasGroup log; float lastLineAt = -99;
@@ -66,7 +68,7 @@ namespace BookBuddies.UI
         Minimap minimap;
         CanvasGroup photoHint;
         Vector2 laidOut;
-        float shownAt, photoHintAt = -99, dockTop, chatRest, chatOpen;
+        float shownAt, photoHintAt = -99, dockTop, chatRest, chatOpen, hostingAt;
         bool narrowChat;
 
         /// <summary>Builds the HUD over the town. "toTitle" goes back to the title screen (from the menu, or after signing out).</summary>
@@ -188,6 +190,14 @@ namespace BookBuddies.UI
             detailText = UiKit.Label(status, "", UiKit.SmallSize, Palette.InkSoft);
             detailText.horizontalOverflow = HorizontalWrapMode.Overflow;
             playHere = Quiet(UiKit.Primary(where, "Play here", () => world.Net.Start(), null, 44));
+
+            // while you host: your world's join code and how many friends are visiting
+            hosting = UiKit.Node("hosting", where);
+            UiKit.Row(hosting, 6, null, TextAnchor.MiddleCenter);
+            UiKit.Icon(hosting, "🏡", 18);
+            hostingText = UiKit.Label(hosting, "", UiKit.SmallSize, UiKit.LeafInk, UiKit.Bold);
+            hostingText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            UiKit.Show(hosting, false);
         }
 
         // Over the dock: a card for the place you're standing at, with its action when it has one.
@@ -312,7 +322,21 @@ namespace BookBuddies.UI
             ShowTiles();
             FitChat();
             FitWhere();
+            ShowHosting();
             Animate();
+        }
+
+        // the join code line on the "where" card, looked at twice a second
+        void ShowHosting()
+        {
+            if (Time.unscaledTime < hostingAt) return;
+            hostingAt = Time.unscaledTime + .5f;
+            bool on = LocalHost.Running;
+            UiKit.Show(hosting, on);
+            if (!on) return;
+            string code = LocalHost.Code;
+            string text = (code != null ? "Join code " + code : "Hosting") + " · " + WorldsSheet.VisitorCount(LocalHost.Visitors);
+            if (hostingText.text != text) hostingText.text = text;
         }
 
         void HandleKeys()

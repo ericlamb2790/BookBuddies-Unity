@@ -1,4 +1,5 @@
 using System.Collections;
+using BookBuddies.Local;
 using BookBuddies.Net;
 using BookBuddies.Pets;
 using BookBuddies.World;
@@ -11,8 +12,9 @@ namespace BookBuddies.UI
     /// The title screen over a slowly drifting Pawtopia: the BookBuddies name, the main menu, and your egg
     /// (or the buddy that hatched from it) sitting on a stack of books. Tap the egg and it wobbles; tap your
     /// buddy and it hops. New players hatch their egg from here. "Play offline" plays on this PC with no network (and is
-    /// offered when the server can't be reached); "Play online" goes back. The menu works with the mouse, touch, keys and
-    /// the gamepad cursor; short windows get a more compact name and menu so nothing is cut off.
+    /// offered when the server can't be reached); "Play online" goes back. "Host or join a world" opens your offline world
+    /// to friends on your network, or visits theirs (WorldsSheet); "Leave this world" comes home. The menu works with the
+    /// mouse, touch, keys and the gamepad cursor; short windows get a more compact name and menu so nothing is cut off.
     /// </summary>
     public sealed class TitleScreen : MonoBehaviour
     {
@@ -21,6 +23,7 @@ namespace BookBuddies.UI
         const float MenuWidth = 380, MenuGap = 28;
         const float StageHeight = 460;        // your buddy, its books and the nameplate, top to bottom
         const float Recheck = 30;             // seconds between quiet server checks while the title is up
+        const float HostCheck = .5f;          // seconds between looks at your visitors while you host
 
         TownCamera cam;
         System.Action enterTown, watchIntro;
@@ -29,13 +32,14 @@ namespace BookBuddies.UI
         Image pet, glow, statusDot, wash;
         Text tagline, logoName, townName, plateName, plateSub, statusText, statusHost, playLabel, modeLabel;
         Button play, signIn, switchPet;
-        Sheet start, naming, unreachable;
-        static bool offeredOffline; // the "can't reach the server" card shows once a launch
+        Sheet start, naming, unreachable, lost, worlds;
+        static bool offeredOffline; // the "can't reach the server" (or "this world") card shows once a launch
         InputField nameField;
         Text nameError, nameNote, hatchLabel;
-        bool canHatch, busy, checking;
+        bool canHatch, busy, checking, hosting;
         bool? online;                // the last server check: null while unknown
-        float shownAt, lastW, lastH, idleAt, animAt, checkAt;
+        string checkedServer;        // the server that check was for
+        float shownAt, lastW, lastH, idleAt, animAt, checkAt, hostAt;
         string anim;
         Vector2 camFrom;
         float zoomFrom, distanceFrom;
@@ -80,6 +84,8 @@ namespace BookBuddies.UI
             play = MenuButton(UiKit.Primary(menu, "Play", OnPlay, null, 56));
             playLabel = play.GetComponentInChildren<Text>();
             modeLabel = MenuButton(UiKit.Secondary(menu, "Play offline", SwitchMode, null, 56)).GetComponentInChildren<Text>();
+            if (!Application.isMobilePlatform && Application.platform != RuntimePlatform.WebGLPlayer) // worlds are PC to PC
+                MenuButton(UiKit.Secondary(menu, "Host or join a world", OpenWorlds, "🏡", 56));
             signIn = MenuButton(UiKit.Secondary(menu, "I have a recovery code", () => ShowSignIn(null), null, 56));
             switchPet = MenuButton(UiKit.Secondary(menu, "Switch pet", () => PetsScreen.Open(null, Refresh), "🐾", 56)); // before spawning in
             MenuButton(UiKit.Secondary(menu, "Settings", () => SettingsPanel.Open(() => { if (this) { Refresh(); CheckServer(); } }), "⚙️", 56));
@@ -178,6 +184,11 @@ namespace BookBuddies.UI
             unreachable.First = UiKit.Primary(unreachable.Card, "Play offline", () => { unreachable.Close(); SwitchMode(); }, null, 52);
             UiKit.Secondary(unreachable.Card, "Try again", () => { unreachable.Close(); offeredOffline = false; CheckServer(); });
             UiKit.TextButton(unreachable.Card, "Not now", null, Palette.Cream, Palette.InkSoft, unreachable.Close);
+
+            lost = Card("Can’t reach this world", "Its host may have closed it, or you’re not on the same network any more. Your buddy can head home any time.");
+            lost.First = UiKit.Primary(lost.Card, "Leave this world", () => { lost.Close(); SwitchMode(); }, null, 52);
+            UiKit.Secondary(lost.Card, "Try again", () => { lost.Close(); offeredOffline = false; CheckServer(); });
+            UiKit.TextButton(lost.Card, "Not now", null, Palette.Cream, Palette.InkSoft, lost.Close);
         }
 
         Sheet Card(string title, string body)
@@ -272,24 +283,40 @@ namespace BookBuddies.UI
             Leave(enterTown);
         }
 
-        // "Play offline" or "Play online": switch (the first time offline brings your online buddy and pets along), then play
+        // "Play offline" or "Play online": switch (the first time offline brings your online buddy and pets along), then play.
+        // "Leave this world" goes home to your online server and stays here.
         async void SwitchMode()
         {
             if (busy) return;
             busy = true;
-            modeLabel.text = "Getting ready…";
-            await BBApi.UseServer(Settings.IsLocal ? Settings.OnlineServer : Settings.Local);
+            bool leaving = Settings.IsWorld;
+            modeLabel.text = leaving ? "Heading home…" : "Getting ready…";
+            await BBApi.UseServer(Settings.IsLocal || leaving ? Settings.OnlineServer : Settings.Local);
             if (!this) return;
             busy = false;
             Refresh();
             CheckServer();
-            OnPlay();
+            if (!leaving) OnPlay();
         }
 
-        // recovery codes belong to online accounts, so signing in offline goes online first
+        void OpenWorlds()
+        {
+            if (worlds == null) worlds = WorldsSheet.Create(root, Joined, () => { Refresh(); CheckServer(); });
+            worlds.Open();
+        }
+
+        // switched to a friend's world from the Worlds card: show it, then walk in as Play does
+        void Joined()
+        {
+            Refresh();
+            CheckServer();
+            if (gameObject.activeSelf && !UiStack.Any) OnPlay();
+        }
+
+        // recovery codes belong to online accounts, so signing in offline or in a friend's world goes online first
         async void SignInOnline()
         {
-            if (Settings.IsLocal)
+            if (Settings.IsLocal || Settings.IsWorld)
             {
                 if (busy) return;
                 busy = true;
@@ -325,12 +352,29 @@ namespace BookBuddies.UI
             pet.sprite = PetSprites.For(Buddy.ShownLook);
             bool hatched = Buddy.Hatched;
             plateName.text = hatched ? (Buddy.Name.Length > 0 ? Buddy.Name : "Your buddy") : "Your egg";
-            plateSub.text = !hatched ? "It’s warm. Give it a tap!" : Settings.IsLocal ? "Playing offline on this PC" : Settings.SignedIn ? "Ready for Pawtopia" : "Exploring on this device";
+            plateSub.text = Subtitle(hatched);
             playLabel.text = hatched || Settings.SignedIn ? "Play" : "Hatch your egg";
-            modeLabel.text = Settings.IsLocal ? "Play online" : "Play offline";
-            UiKit.Show(signIn, !Settings.SignedIn && !Settings.IsLocal);
+            modeLabel.text = Settings.IsWorld ? "Leave this world" : Settings.IsLocal ? "Play online" : "Play offline";
+            UiKit.Show(signIn, !Settings.SignedIn && !Settings.IsLocal && !Settings.IsWorld);
             UiKit.Show(switchPet, hatched);
             lastW = 0; // the menu may have changed length
+        }
+
+        // under your buddy's name: hosting (with your visitors), visiting a friend's world, offline or online
+        static string Subtitle(bool hatched) =>
+            LocalHost.Running ? "Hosting your world · " + WorldsSheet.VisitorCount(LocalHost.Visitors)
+            : !hatched ? "It’s warm. Give it a tap!"
+            : Settings.IsWorld ? "Visiting " + Settings.WorldName
+            : Settings.IsLocal ? "Playing offline on this PC" : Settings.SignedIn ? "Ready for Pawtopia" : "Exploring on this device";
+
+        // while you host, the nameplate keeps count of your visitors, and the pill notices the world opening or closing
+        void ShowHosting()
+        {
+            hostAt = Time.unscaledTime + HostCheck;
+            plateSub.text = Subtitle(Buddy.Hatched);
+            if (LocalHost.Running == hosting) return;
+            hosting = LocalHost.Running;
+            CheckServer();
         }
 
         /// <summary>Asks the server if it's there, and shows the answer on the pill. Runs again every half minute.</summary>
@@ -342,11 +386,14 @@ namespace BookBuddies.UI
             {
                 canHatch = true;
                 online = null;
-                ShowStatus(Palette.Sky, "Offline", "playing on this PC");
+                if (LocalHost.Running) ShowStatus(Palette.Leaf, "Hosting", LocalHost.Code ?? "your world is open");
+                else ShowStatus(Palette.Sky, "Offline", "playing on this PC");
                 return;
             }
-            string server = Settings.Server;
-            if (online != true) ShowStatus(Palette.Amber, "Connecting…", Settings.ServerHost); // a quiet recheck keeps "Connected" up
+            string server = Settings.Server, where = Settings.IsWorld ? Settings.WorldName : Settings.ServerHost;
+            if (server != checkedServer) online = null; // a new server starts from "Connecting…"
+            checkedServer = server;
+            if (online != true) ShowStatus(Palette.Amber, "Connecting…", where); // a quiet recheck keeps "Connected" up
             checking = true;
             bool ok;
             try { canHatch = await BBApi.CanHatch(); ok = true; }
@@ -355,7 +402,7 @@ namespace BookBuddies.UI
             if (!this) return;
             if (Settings.Server != server) { checkAt = 0; return; } // switched servers meanwhile
             online = ok;
-            if (ok) ShowStatus(Palette.Leaf, "Connected", Settings.ServerHost);
+            if (ok) ShowStatus(Palette.Leaf, "Connected", where);
             else
             {
                 ShowStatus(Palette.Rose, "Can’t connect", "tap to try again");
@@ -370,12 +417,12 @@ namespace BookBuddies.UI
             statusHost.text = host;
         }
 
-        // once a launch, when nothing else is on screen: play offline instead?
+        // once a launch, when nothing else is on screen: play offline instead? (or, in a friend's world, head home?)
         void OfferOffline()
         {
             if (offeredOffline || busy || !gameObject.activeSelf || UiStack.Any) return;
             offeredOffline = true;
-            unreachable.Open();
+            (Settings.IsWorld ? lost : unreachable).Open();
         }
 
         // ---- every frame ----
@@ -388,6 +435,7 @@ namespace BookBuddies.UI
             AnimatePet();
             if (checking && online != true) statusDot.color = Palette.Amber.WithAlpha(.4f + .6f * Mathf.PingPong(Time.unscaledTime * 1.6f, 1)); // a soft pulse while connecting
             else if (!checking && Time.unscaledTime >= checkAt) CheckServer();
+            if (Time.unscaledTime >= hostAt) ShowHosting();
         }
 
         // the camera floats slowly around the town square

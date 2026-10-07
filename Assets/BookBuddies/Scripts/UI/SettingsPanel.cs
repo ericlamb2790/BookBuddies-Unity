@@ -140,6 +140,7 @@ namespace BookBuddies.UI
             bool signedIn = Settings.SignedIn;
             string name = Buddy.Name.Length > 0 ? Buddy.Name : "a reader";
             if (Settings.IsLocal) OfflineAccount(signedIn, name);
+            else if (Settings.IsWorld) Note($"Visiting {Settings.WorldName} as {name}. Coins you find there stay in that world. Choose “Leave this world” on the title screen to head home.");
             else OnlineAccount(signedIn, name);
 
             // where your buddy lives: the main server, the dev one, an address of your own (typed below) or this PC
@@ -155,10 +156,10 @@ namespace BookBuddies.UI
             Row("Address", "Type a server address for Custom. Each server keeps its own sign-in.", r =>
             {
                 address = UiKit.Input(r, "https://…", UiKit.SmallSize + 1);
-                address.text = Settings.OnlineServer;
+                address.text = ShownAddress;
                 address.interactable = Settings.ServerChoice == 2;
                 UiKit.Size(address, 260, UiKit.ButtonHeight);
-                address.onEndEdit.AddListener(v => { Switch(v); address.text = Settings.OnlineServer; });
+                address.onEndEdit.AddListener(v => { Switch(v); address.text = ShownAddress; });
                 return address;
             });
         }
@@ -198,6 +199,9 @@ namespace BookBuddies.UI
         }
 
         static readonly string[] ServerNames = { "Main", "Dev", "Custom", "Offline (this PC)" };
+
+        // the address box: a friend's world you're visiting (shown as Custom), else your online server
+        static string ShownAddress => Settings.IsWorld ? Settings.Server : Settings.OnlineServer;
 
         // another server, or offline play; the first time offline it brings your online buddy along, so it can take a moment
         async void Switch(string url)

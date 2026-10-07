@@ -7,18 +7,20 @@ namespace BookBuddies
     /// that account is a town admin. The default server comes from Resources/BookBuddies/Data/config.json, so pointing a
     /// build at your own Worker is a one-line change. Players can still pick another server in Settings → Account, or
     /// play offline: the "local" server is the game's own backend on this PC (Local/LocalServer.cs). Each server keeps its
-    /// own sign-in, so switching to offline and back never signs you out online.
+    /// own sign-in, so switching to offline and back never signs you out online. A friend's world (a game hosted on another
+    /// PC, see Local/LocalHost) is a server too, remembered by name; visiting one is never the "online" server.
     /// </summary>
     public static class Settings
     {
         /// <summary>The server for offline play: the Local backend inside the game, saved on this PC.</summary>
         public const string Local = "local";
         const string ServerKey = "bb.server";
-        const string OnlineKey = "bb.online"; // the last server that wasn't this PC
+        const string OnlineKey = "bb.online"; // the last server that wasn't this PC or a friend's world
         // per server: "bb.token|https://…"; the bare keys are from before servers kept their own sign-in
         const string TokenKey = "bb.token";
         const string AdminKey = "bb.admin";
         const string AccountKey = "bb.account";
+        const string WorldKey = "bb.world"; // per server: the name of the world a friend hosts there
         static string configServer, devServer, version;
         static bool migrated;
 
@@ -43,7 +45,8 @@ namespace BookBuddies
                 if (to == from) return;
                 Migrate(); // the old keys belong to the server we're leaving
                 PlayerPrefs.SetString(ServerKey, to);
-                PlayerPrefs.SetString(OnlineKey, to != Local ? to : from);
+                if (IsOnline(to)) PlayerPrefs.SetString(OnlineKey, to);
+                else if (IsOnline(from)) PlayerPrefs.SetString(OnlineKey, from);
                 PlayerPrefs.Save();
                 ServerChanged?.Invoke();
             }
@@ -52,8 +55,38 @@ namespace BookBuddies
         /// <summary>Playing offline: every call goes to the backend on this PC and the live town runs inside the game.</summary>
         public static bool IsLocal => Server == Local;
 
-        /// <summary>The online server: the one in use, or while offline the last one used (the main one when none was).</summary>
-        public static string OnlineServer => IsLocal ? Address(PlayerPrefs.GetString(OnlineKey, DefaultServer)) : Server;
+        /// <summary>Visiting a friend's world: a game hosted on another PC, on your network or at a forwarded address.</summary>
+        public static bool IsWorld => !IsLocal && WorldNameOf(Server).Length > 0;
+
+        /// <summary>The name of the world you're visiting ("Damp’s world"), empty when you aren't.</summary>
+        public static string WorldName => IsLocal ? "" : WorldNameOf(Server);
+
+        /// <summary>The name a server's world had when you last joined it, empty when it isn't a world.</summary>
+        public static string WorldNameOf(string server) => PlayerPrefs.GetString(Key(WorldKey, Address(server)), "");
+
+        /// <summary>Remembers that a server is a friend's world (its /api/health says "world"), and its name. Call it before switching there.</summary>
+        public static void RememberWorld(string server, string name)
+        {
+            PlayerPrefs.SetString(Key(WorldKey, Address(server)), string.IsNullOrWhiteSpace(name) ? "a friend’s world" : name.Trim());
+            PlayerPrefs.Save();
+        }
+
+        /// <summary>
+        /// The online server: the one in use, or while offline or visiting a world the last one used (the main one when
+        /// none was). Offline coins are banked there.
+        /// </summary>
+        public static string OnlineServer
+        {
+            get
+            {
+                if (!IsLocal && !IsWorld) return Server;
+                string last = Address(PlayerPrefs.GetString(OnlineKey, DefaultServer));
+                return IsOnline(last) ? last : DefaultServer; // an address typed in Settings that turned out to be a world
+            }
+        }
+
+        // a server of your own: not this PC and not a friend's world
+        static bool IsOnline(string server) => server != Local && WorldNameOf(server).Length == 0;
 
         /// <summary>The sign-in token saved for a server (empty when not signed in there).</summary>
         public static string TokenFor(string server) => PlayerPrefs.GetString(Key(TokenKey, server), "");

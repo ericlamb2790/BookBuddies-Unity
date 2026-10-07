@@ -19,7 +19,8 @@ namespace BookBuddies
     /// and back to the title from the town menu. Travel moves you between the towns on Bramble Road, the road's
     /// links and the Inkwell Caves, and the place you were last in is where you come back to.
     /// Offline play ends its session (and banks its coins, see CoinBank) back on the title and when the game quits.
-    /// It adds itself to whatever scene is open, so an empty scene works.
+    /// A friend's world isn't remembered across launches: the game starts back on your own server, and never reopens
+    /// a world you hosted (HostRunner). It adds itself to whatever scene is open, so an empty scene works.
     /// </summary>
     public sealed class Boot : MonoBehaviour
     {
@@ -61,6 +62,8 @@ namespace BookBuddies
 
         IEnumerator Start()
         {
+            // back from a friend's world to your own server, before anything signs in (your buddy comes home meanwhile)
+            var home = Settings.IsWorld ? BBApi.UseServer(Settings.OnlineServer) : Task.CompletedTask;
             GameSettings.Apply();
             Sound.Init();
             UiKit.EnsureEventSystem();
@@ -86,6 +89,8 @@ namespace BookBuddies
             loading.Stage("Waking the villagers…");
             folk = Townsfolk.Spawn(map);
             yield return new WaitForSecondsRealtime(.5f);
+
+            while (!home.IsCompleted) yield return null;
 
             // the next screen waits underneath, so the loading screen fades straight into it
             if (GameSettings.IntroSeen)
@@ -138,7 +143,7 @@ namespace BookBuddies
                 {
                     Buddy.Forget();
                     yield return loading.Hide();
-                    ShowTitle(Settings.IsLocal ? null : "Your sign-in has run out. Please sign in again."); // offline, the egg hatches again
+                    ShowTitle(Settings.IsLocal || Settings.IsWorld ? null : "Your sign-in has run out. Please sign in again."); // offline or in a world, the egg hatches again
                     yield break;
                 }
                 if (me.Status == System.Threading.Tasks.TaskStatus.RanToCompletion)

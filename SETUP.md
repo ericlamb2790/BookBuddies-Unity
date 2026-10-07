@@ -68,6 +68,22 @@ Open any scene (the default `SampleScene` is fine) and press **Play**. The game 
 
 **To test offline:** turn off the network (or pick **Offline (this PC)** in Settings), press **Play offline**, pick up some coins in Pawtopia, then go back to the title. With the network on and an online account, the coins sheet then says how many coins were banked, and your online wallet lists them as *Banked from offline play*.
 
+## Hosting and joining worlds
+
+**Hosting.** On the title screen, choose **Host or join a world**, then **Open my world**. Your offline world is the one friends visit, so the game switches to offline play first if it needs to. The card then shows your **join code** (like `K7QF-2M9A`) and how many friends are visiting. While the world is open, the title's connection pill shows the code and your buddy's nameplate counts visitors, and in town the HUD's "where" card shows both. **Close my world** sends visitors home. The world also closes when you switch to online play, and when you quit. It never reopens by itself at the next launch.
+
+**Joining.** On the other PC, open the same card and type the code into **Join a world**, or pick the world from **Worlds on your network**. The first visit makes your profile in that world from your buddy and pets. Coins you find there stay in that world and aren't banked online. **Leave this world** on the title screen takes you home, and the game always starts on your own server at the next launch. You need a hatched buddy to join, and you can't visit while your own world is open. Hosting and joining are for PCs, so the card isn't shown on phones or in WebGL.
+
+**The join code** is the host's home-network IPv4 address (and its port, when that isn't 7790) in 8 or 12 letters and digits, with a check letter that catches typos. It needs no internet, and nothing goes through bookbuddies.pet. The Join box also takes a plain address: `192.168.1.5`, `192.168.1.5:7790`, `damp-pc.local` or `http://…`.
+
+**Ports.** A world answers on **TCP 7790** (the same `/api` routes as the Worker, plus the live town's WebSocket). The "Worlds on your network" list uses **UDP 7791**. To play over the internet, the host forwards TCP 7790 on their router to their PC, and friends type the host's public address as `ip:7790`. Up to 16 friends can be in town at once, and each PC can make up to 10 new profiles each time the world opens.
+
+**Firewall.** The first time a world opens, Windows asks whether BookBuddies may use networks. Choose **Private networks**. If friends can't connect later, check **Windows Security → Firewall & network protection → Allow an app through firewall**. macOS may ask too: choose **Allow**.
+
+**Plain http.** Worlds talk plain `http://` on your own network, so **Project Settings → Player → Other Settings → Allow downloads over HTTP** is set to **Always allowed**. Keep it that way, or joining fails.
+
+**To test on one PC:** run the Editor and one built copy (**File → Build Profiles**, then **Build**). Host in one and join from the other with the code, from the list, or by typing `127.0.0.1`. Don't use two built copies: they share PlayerPrefs, so each one's sign-ins and server would overwrite the other's. On Windows the Editor keeps its own PlayerPrefs. On macOS the Editor and builds share them, so test with two Macs. Both copies also share the offline save (`offline/world.json`), so only the hosting copy should play offline.
+
 ## Controls
 
 | | Mouse and touch | Keyboard | Gamepad |
@@ -103,7 +119,7 @@ Everything is saved on the device:
 - **Sound:** music and effects volume.
 - **Graphics:** quality, frame rate, VSync, fullscreen and butterflies.
 - **Controls:** the list above.
-- **Account:** show your recovery code, sign out, delete your pet and account, and the server address.
+- **Account:** show your recovery code, sign out, delete your pet and account, and the server address. In a friend's world it says whose world you're visiting.
 
 ## Sound and music
 
@@ -143,8 +159,8 @@ If art looks stretched or blurry after a swap, right-click `Resources/BookBuddie
 | Folder | What's in it |
 |---|---|
 | `Scripts/Core` | Startup and screen flow (`Boot.cs`), input for every device, settings, sound and music, your buddy, art loading, colours, JSON |
-| `Scripts/Net` | The Worker's HTTP API, the live WebSocket and banking offline coins (`CoinBank.cs`) |
-| `Scripts/Local` | The offline backend: the Worker's account, pet, wallet and town routes and the live town rooms in plain C#, saved to one file |
+| `Scripts/Net` | The Worker's HTTP API, the live WebSocket, banking offline coins (`CoinBank.cs`), plain-http requests to a friend's world (`PlainHttp.cs`) and keeping your world open while you host (`HostRunner.cs`) |
+| `Scripts/Local` | The offline backend: the Worker's account, pet, wallet and town routes and the live town rooms in plain C#, saved to one file. Hosting it for friends: the HTTP and WebSocket server (`LocalHost.cs`, `HostSocket.cs`), join codes (`JoinCode.cs`) and the network list (`LocalBeacon.cs`) |
 | `Scripts/Live` | The live town: connection, players, chat, emotes, tricks and interactions |
 | `Scripts/World` | The town map, camera, villagers and ambient life |
 | `Scripts/Pets` | Pet looks, the pet drawing (a port of build 551's `petSVG`), DNA rolls, your pets list and pets walking around |

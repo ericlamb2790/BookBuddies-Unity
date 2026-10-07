@@ -7,7 +7,8 @@ Your pet, Pawtopia and the live Plaza, ported from website build 530 to Unity, w
 ```
 Assets/BookBuddies/
   Scripts/    C# (Core, Net, Live, World, Pets, UI)
-    Local/    the offline backend: the Worker's routes and town rooms in plain C#, saved to one file on the PC
+    Local/    the offline backend: the Worker's routes and town rooms in plain C#, saved to one file on the PC,
+              and hosting it for friends on your network (LocalHost, join codes, the network list)
   Editor/     art import settings
   Resources/BookBuddies/
     Data/     server address (config.json), town layout, art index, pet parts

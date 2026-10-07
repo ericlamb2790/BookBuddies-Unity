@@ -13,6 +13,7 @@ namespace BookBuddies.Net
     /// The BookBuddies Cloudflare Worker's HTTP API (the same /api routes the website uses).
     /// Signed-in calls send "Authorization: Bearer &lt;token&gt;". Playing offline (Settings.IsLocal) the same calls go to
     /// the backend inside the game (Local/LocalServer.cs) instead, with the same replies and errors, and no network.
+    /// A friend's world (Settings.IsWorld) is that same backend on their PC, reached over plain http (see PlainHttp).
     /// </summary>
     public static class BBApi
     {
@@ -163,15 +164,34 @@ namespace BookBuddies.Net
         // ---- switching servers ----
 
         /// <summary>
+        /// Looks for a friend's world at a server ("http://192.168.1.5:7790"): its /api/health (with "name", "players" and
+        /// "max") when it is one, remembered so UseServer treats it as a world; null when the server answers but isn't one.
+        /// Throws ApiError (status 0) when it can't be reached within a few seconds.
+        /// </summary>
+        public static async Task<Dictionary<string, object>> WorldAt(string server)
+        {
+            Dictionary<string, object> health;
+            try { health = await SendTo(server, null, "GET", "/health", null, QuickTimeout); }
+            catch (ApiError e) when (e.Status >= 400) { return null; }
+            if (!health.Truthy("world")) return null;
+            Settings.RememberWorld(server, health.Str("name"));
+            return health;
+        }
+
+        /// <summary>
         /// Switches to another server, or to offline play on this PC (Settings.Local). Leaving offline play ends its session
         /// and banks the coins (CoinBank). The first time offline, the offline profile is made from your online account:
         /// its name and pets (or, when it can't be reached, the buddy and pets this device remembers); with neither, the
-        /// egg hatches as usual. Then your buddy comes from the new server (kept as it is when that can't be reached).
+        /// egg hatches as usual. The first time in a friend's world (found with WorldAt first), your profile there is made
+        /// the same way from the one you're leaving. Then your buddy comes from the new server (kept as it is when that
+        /// can't be reached, or when you leave a world for a server you aren't signed in to).
         /// </summary>
         public static async Task UseServer(string server)
         {
             string from = Settings.Server;
-            var remembered = server == Settings.Local ? DeviceAccount() : null; // before the pets list follows the new account
+            bool fromWorld = Settings.WorldNameOf(from).Length > 0;
+            bool seeded = server == Settings.Local || Settings.WorldNameOf(server).Length > 0;
+            var device = seeded ? DeviceAccount() : null; // before the pets list follows the new account
             Settings.Server = server;
             server = Settings.Server;
             if (server == from) return;
@@ -182,8 +202,11 @@ namespace BookBuddies.Net
             }
             try
             {
-                var me = Settings.IsLocal ? await LocalProfile(from, remembered) : await OnlineProfile();
-                if (Settings.Server != server) return;
+                // offline the profile comes from your online account; in a friend's world from wherever you just were
+                var me = Settings.IsLocal ? await SeededProfile(Settings.OnlineServer, device)
+                    : Settings.IsWorld ? await SeededProfile(from, device)
+                    : await OnlineProfile();
+                if (Settings.Server != server || (me == null && fromWorld)) return; // home from a world with no account here: your buddy stays
                 Buddy.Forget();
                 if (me != null) Buddy.Save(me.Str("name"), me.Str("pet"));
             }
@@ -198,23 +221,28 @@ namespace BookBuddies.Net
             catch (ApiError e) when (e.Status == 401) { return null; }
         }
 
-        // your offline profile (null when there's none), made the first time from your online account or what this device remembers of it
-        static async Task<Dictionary<string, object>> LocalProfile(string online, Dictionary<string, object> remembered)
+        // your profile offline or in a friend's world (null when there's none), made the first time from your account on
+        // another server ("from") or, when that can't be had, what this device remembers of it
+        static async Task<Dictionary<string, object>> SeededProfile(string from, Dictionary<string, object> remembered)
         {
             if (Settings.SignedIn)
             {
                 try { return await Me(); }
                 catch (ApiError e) when (e.Status == 401) { } // the profile is gone: make it again
             }
-            string token = Settings.TokenFor(online);
-            if (token.Length > 0)
-            {
-                try { remembered = await SendTo(online, token, "GET", "/me", null, QuickTimeout); }
-                catch (ApiError) { } // no network: what this device remembers will do
-            }
-            if (remembered == null) return null;
-            try { return await Register(remembered.Str("name"), remembered.Str("pet"), SeedPets(remembered)); }
+            var seed = await ProfileOn(from) ?? remembered;
+            if (seed == null) return null;
+            try { return await Register(seed.Str("name"), seed.Str("pet"), SeedPets(seed)); }
             catch (ApiError) { return null; }
+        }
+
+        // your account on another server, with that server's sign-in (null when signed out there or it can't be reached)
+        static async Task<Dictionary<string, object>> ProfileOn(string server)
+        {
+            string token = Settings.TokenFor(server);
+            if (token.Length == 0) return null;
+            try { return server == Settings.Local ? await SendLocal("GET", "/me", null, token) : await SendTo(server, token, "GET", "/me", null, QuickTimeout); }
+            catch (ApiError) { return null; } // no network: what this device remembers will do
         }
 
         // your buddy and pets as this device knows them, shaped like /me (null before your egg hatches)
@@ -260,34 +288,43 @@ namespace BookBuddies.Net
         /// <summary>
         /// A request to a given online server with a given token (null for none), whichever server is in use; CoinBank
         /// banks offline coins with it. Throws ApiError (status 0 when the server can't be reached); a 401 signs out of that server.
+        /// https goes through UnityWebRequest; plain http (a friend's world, a test server) through PlainHttp, which Unity allows.
         /// </summary>
         public static async Task<Dictionary<string, object>> SendTo(string server, string token, string method, string path, Dictionary<string, object> body, int seconds = TimeoutSeconds)
         {
-            using (var req = new UnityWebRequest(server + "/api" + path, method))
+            string url = server + "/api" + path, json = body != null ? Json.Write(body) : null;
+            var (status, text, error) = url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                ? await PlainHttp.Send(url, method, json, token, seconds)
+                : await UnitySend(url, method, json, token, seconds);
+
+            Dictionary<string, object> reply = null;
+            try { reply = Json.ParseObject(text); } catch (FormatException) { }
+
+            if (error != null || status >= 400)
+            {
+                if (status == 0) throw new ApiError("Can’t reach " + Settings.HostOf(server) + ". Check your connection and try again.", 0);
+                if (status == 401 && !string.IsNullOrEmpty(token)) Settings.SignOut(server);
+                if (status == 403 && path.StartsWith("/admin") && server == Settings.Server) Settings.IsAdmin = false;
+                throw new ApiError(reply.Str("error", error ?? "Something went wrong"), status);
+            }
+            return reply ?? new Dictionary<string, object>();
+        }
+
+        // one request through Unity: the status (0 when the server couldn't be reached), the reply's text and what went wrong (null when nothing did)
+        static async Task<(long status, string text, string error)> UnitySend(string url, string method, string json, string token, int seconds)
+        {
+            using (var req = new UnityWebRequest(url, method))
             {
                 req.downloadHandler = new DownloadHandlerBuffer();
-                if (body != null)
+                if (json != null)
                 {
-                    req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(Json.Write(body)));
+                    req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
                     req.SetRequestHeader("Content-Type", "application/json");
                 }
                 if (!string.IsNullOrEmpty(token)) req.SetRequestHeader("Authorization", "Bearer " + token);
                 req.timeout = seconds;
                 await req.SendWebRequest();
-
-                string text = req.downloadHandler.text;
-                Dictionary<string, object> json = null;
-                try { json = Json.ParseObject(text); } catch (FormatException) { }
-
-                if (req.result != UnityWebRequest.Result.Success || req.responseCode >= 400)
-                {
-                    if (req.responseCode == 0) throw new ApiError("Can’t reach " + Settings.HostOf(server) + ". Check your connection and try again.", 0);
-                    if (req.responseCode == 401 && !string.IsNullOrEmpty(token)) Settings.SignOut(server);
-                    if (req.responseCode == 403 && path.StartsWith("/admin") && server == Settings.Server) Settings.IsAdmin = false;
-                    string why = json.Str("error", req.error ?? "Something went wrong");
-                    throw new ApiError(why, req.responseCode);
-                }
-                return json ?? new Dictionary<string, object>();
+                return (req.responseCode, req.downloadHandler.text ?? "", req.result == UnityWebRequest.Result.Success ? null : req.error);
             }
         }
     }

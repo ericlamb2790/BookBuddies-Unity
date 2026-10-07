@@ -111,7 +111,8 @@ namespace BookBuddies.Economy
         public static bool OfflinePurse => Settings.IsLocal;
 
         static bool Mine => Settings.SignedIn && account == Settings.AccountId;
-        static string Key => Settings.IsLocal ? SavedKey + ".local" : SavedKey;
+        // the offline purse and each friend's world keep their own numbers apart from your online wallet's
+        static string Key => Settings.IsLocal ? SavedKey + ".local" : Settings.IsWorld ? SavedKey + "|" + Settings.Server : SavedKey;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void Init()

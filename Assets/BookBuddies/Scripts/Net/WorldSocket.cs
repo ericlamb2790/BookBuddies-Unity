@@ -35,6 +35,8 @@ namespace BookBuddies.Net
         {
             try
             {
+                // a friend's world (ws://) is on your network or a forwarded port: straight there, never through a proxy (as PlainHttp)
+                if (url.StartsWith("ws://", StringComparison.OrdinalIgnoreCase)) ws.Options.Proxy = null;
                 await ws.ConnectAsync(new Uri(url), stop.Token).ConfigureAwait(false);
                 _ = ReceiveLoop();
             }
