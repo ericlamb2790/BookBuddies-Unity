@@ -64,6 +64,7 @@ namespace BookBuddies.Local
         readonly List<Item> items = new List<Item>();
         readonly (int w, int h, bool life, bool finds) place;
         int seq;
+        string foeLead; // whose game runs the road's foes for everyone here: the host when they're in, else whoever came first
         double tickAt;    // when the next turn is due; 0 while the room sleeps
         double idleSince; // when the last player left
 
@@ -159,6 +160,7 @@ namespace BookBuddies.Local
             other.Link.Drop(4000);
             players.Remove(other);
             Broadcast(new Msg { ["t"] = "bye", ["id"] = other.Id });
+            LeadFoes();
         }
 
         /// <summary>A player's link closed (town.js leave): the others see them go, and the room sleeps once it's empty.</summary>
@@ -169,6 +171,7 @@ namespace BookBuddies.Local
             players.Remove(pl);
             lastSpot[pl.Pid] = (pl.Tx, pl.Ty);
             Broadcast(new Msg { ["t"] = "bye", ["id"] = pl.Id });
+            LeadFoes();
             if (players.Count > 0) return;
             tickAt = 0;
             folk.Clear();
@@ -289,6 +292,7 @@ namespace BookBuddies.Local
             if (t == "leave") { Broadcast(new Msg { ["t"] = "leave", ["id"] = pl.Id }, pl); return; }
             if (t == "hi") { Hello(pl, m); return; }
             if (pl.Look.Length == 0) return;
+            if (t == "wf") { Foes(pl, m); return; } // the road's foes have their own pace (a few lists a second)
 
             pl.Burst.RemoveAll(at => now - at >= 10e3);   // at most 40 messages in 10 seconds
             if (pl.Burst.Count > 40) return;
@@ -321,6 +325,29 @@ namespace BookBuddies.Local
             pl.Y = pl.Ty = ClampY(Js.Get(m, "y"));
             if (!first) { Broadcast(new Msg { ["t"] = "look", ["id"] = pl.Id, ["look"] = pl.Look }, pl); return; }
             foreach (var p in players) if (p != pl) Send(p, new Msg { ["t"] = "join", ["p"] = Info(pl, p.Admin == 1) });
+            if (!LeadFoes()) Send(pl, new Msg { ["t"] = "wl", ["id"] = foeLead ?? "" });
+        }
+
+        // ---- the road's foes: one player's game runs them and the room shares what it sees ----
+
+        // picks who runs the foes; true when that changed (everyone was told)
+        bool LeadFoes()
+        {
+            var lead = players.Find(p => p.Look.Length > 0 && p.Pid == LocalParty.Leader) ?? players.Find(p => p.Look.Length > 0);
+            if (lead?.Id == foeLead) return false;
+            foeLead = lead?.Id;
+            Broadcast(new Msg { ["t"] = "wl", ["id"] = foeLead ?? "" });
+            return true;
+        }
+
+        // "wf" passes to everyone else here, marked with the sender; only the leader's lists and fights count
+        void Foes(Player pl, Msg m)
+        {
+            string k = m.Str("k");
+            if ((k == "s" || k == "fight") && pl.Id != foeLead) return;
+            if (k != "s" && k != "fight" && k != "end") return;
+            m["id"] = pl.Id;
+            Broadcast(m, pl);
         }
 
         void Walk(Player pl, Msg m, double now)

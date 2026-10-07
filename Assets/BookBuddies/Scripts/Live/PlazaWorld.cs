@@ -43,6 +43,8 @@ namespace BookBuddies.Live
         public TownMap.Spot Hint { get; private set; }
         /// <summary>The villains, on the road and in the caves (null in town).</summary>
         public RoadFoes Road { get; private set; }
+        /// <summary>In a hosted world, the pet whose game runs the road's foes for this room (null online: each game runs its own).</summary>
+        public string FoeLead { get; private set; }
         /// <summary>What the mouse is on (a pet, seat, place or foe), or null.</summary>
         public Usable Hover { get; private set; }
         /// <summary>What E or A would use right now (the thing your pet stands next to), or null.</summary>
@@ -616,6 +618,9 @@ namespace BookBuddies.Live
         void Send(string type, string key, object value) => Send(new Dictionary<string, object> { ["t"] = type, [key] = value });
         void Send(Dictionary<string, object> m) => Net?.Send(m);
 
+        /// <summary>The road's foes to the rest of the room (RoadFoes, in a hosted world).</summary>
+        public void ShareFoes(Dictionary<string, object> m) => Send(m);
+
         void SendGo()
         {
             goOwed = false;
@@ -719,6 +724,12 @@ namespace BookBuddies.Live
                     break;
                 case "party":
                     PartyChanged?.Invoke();
+                    break;
+                case "wl":
+                    FoeLead = m.Str("id").Length > 0 ? m.Str("id") : null;
+                    break;
+                case "wf":
+                    if (e != null && e != Me && Road != null) Road.Hear(e, m);
                     break;
                 case "item":
                     AddItem(m.Obj("it"));

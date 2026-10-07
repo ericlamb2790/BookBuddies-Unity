@@ -14,11 +14,12 @@ namespace BookBuddies.Road
     /// in tall grass, wander near home, chase you when you come close (passive ones don't) and start a fight on
     /// contact. Tall grass rustles as you push through it, and now and then something jumps out. The cave
     /// guardian waits in its lair and comes back 30 minutes after it's beaten.
-    /// Foes are local to this player, like the site's. The road's clock stands still while a fight, the bag or a
-    /// reward is open, so nothing moves or jumps when you come back.
+    /// Online, foes are local to this player, like the site's, and the road's clock stands still while a fight, the bag
+    /// or a reward is open, so nothing moves or jumps when you come back. In a hosted world one game runs them for
+    /// everyone in the room (RoadFoesParty.cs).
     /// </summary>
     [DefaultExecutionOrder(10)]
-    public sealed class RoadFoes : MonoBehaviour
+    public sealed partial class RoadFoes : MonoBehaviour
     {
         // the site's numbers (tiles, tiles per second, seconds)
         const float Despawn = 34, Contact = .78f, Repath = .45f, Leash = 2.4f, PackRange = 3.4f;
@@ -29,7 +30,7 @@ namespace BookBuddies.Road
         static readonly Vector2Int[] AmbushSpots = { new(1, 0), new(-1, 0), new(0, 1), new(0, -1), new(1, 1), new(-1, -1) };
 
         /// <summary>A fight from the moment a foe touches you until the battle screen hands back the outcome.</summary>
-        sealed class Fight { public List<RoadFoe> Pack; public Vector2 Screen; public float StartedAt, ClosedAt = -1; public bool SawScreen; }
+        sealed class Fight { public List<RoadFoe> Pack; public Vector2 Screen; public float StartedAt, ClosedAt = -1; public bool SawScreen; public int Shared; }
 
         PlazaWorld world;
         TownMap map;
@@ -75,11 +76,13 @@ namespace BookBuddies.Road
             var me = world.Me;
             if (me == null) return;
             float dt = Mathf.Min(Time.deltaTime, .1f);
-            if (fight == null && !Frozen)
+            if (!Leading) Follow(me, dt); // another game runs the foes here: draw what it sends
+            else if (Sharing ? OthersHere() > 0 || (fight == null && !Frozen) : fight == null && !Frozen) // shared foes don't wait for one player
             {
                 clock += dt;
                 Step(me, dt);
             }
+            if (Sharing && Leading) ShareNow(false);
             foreach (var f in foes) f.Render(clock, dt);
         }
 
@@ -92,22 +95,29 @@ namespace BookBuddies.Road
         {
             int cap = (wild.IsCave ? 9 : 6 + wild.Tier) + Mathf.Min(6, OthersHere() * 2);
             if (opening < 0) opening = cap - 2;
-            if (opening > 0) { opening--; Spawn(me); }
+            if (opening > 0) { opening--; Spawn(SomePlayer(me)); }
             if (clock > spawnAt)
             {
                 spawnAt = clock + (foes.Count < cap ? 2.6f : 6f);
-                if (foes.FindAll(f => !f.Guardian).Count < cap) Spawn(me);
+                if (foes.FindAll(f => !f.Guardian).Count < cap) Spawn(SomePlayer(me));
             }
             if (wild.IsCave && !TalesSave.Current.ChestReady && !GuardianAwake && LairReady()) Make(GuardianHome.x, GuardianHome.y, true, false);
 
             if (Busy) grace = Mathf.Max(grace, clock + 1.5f);
-            bool safe = Busy || clock < grace || SafeAt(me.Pos.x, me.Pos.y);
             foreach (var f in foes.ToArray())
-                if (Think(f, me, safe, dt)) return; // a fight started
-            Grass(me, safe);
+            {
+                if (f.Fighting) continue; // in a fight with someone
+                var who = Nearest(f, me);
+                if (Think(f, who, SafeFor(who, me), dt)) return; // a fight started
+            }
+            Grass(me, SafeFor(me, me));
         }
 
-        // one foe's turn; true when it started a fight
+        // whether foes leave this pet be: near the start or a place, in a fight, or (you) busy or just back from one
+        bool SafeFor(PetActor who, PetActor me) =>
+            who == me ? Busy || clock < grace || fight != null || SafeAt(me.Pos.x, me.Pos.y) : InFight(who.Id) || SafeAt(who.Pos.x, who.Pos.y);
+
+        // one foe's turn after the pet it's nearest to (you, or anyone here when foes are shared); true when it started a fight
         bool Think(RoadFoe f, PetActor me, bool safe, float dt)
         {
             float d = Vector2.Distance(me.Pos, f.Pos);
@@ -131,15 +141,15 @@ namespace BookBuddies.Road
                     f.Dir = me.Pos.x > f.Pos.x ? 1 : -1;
                     f.Pos += (me.Pos - f.Pos) / (d > 0 ? d : 1) * Mathf.Min(speed * dt, d);
                 }
-                if (d < Contact && clock - f.Alert > .38f) { Engage(f); return true; }
+                if (d < Contact && clock - f.Alert > .38f) return Caught(f, me);
                 return false;
             }
 
-            if (!safe && d < Contact && clock - f.Born > .6f) { Engage(f); return true; }
+            if (!safe && d < Contact && clock - f.Born > .6f) return Caught(f, me);
             if (!safe && !f.Passive && d < aggro)
             {
                 f.State = RoadFoe.Mood.Chase; f.Alert = clock; f.Path.Clear(); f.Repath = 0;
-                if (clock - cryAt > 1.5f) { cryAt = clock; Sound.Play("boop"); }
+                if (me.IsMe && clock - cryAt > 1.5f) { cryAt = clock; Sound.Play("boop"); }
                 return false;
             }
             if (f.State == RoadFoe.Mood.Home && f.Path.Count == 0) f.State = RoadFoe.Mood.Idle;
@@ -186,22 +196,22 @@ namespace BookBuddies.Road
                 grassTiles[a] = index;
                 if (!map.TallAt(t.x, t.y)) continue;
                 view.RustleAt(t.x, t.y);
-                if (a != me) continue;
-                Fx.Poof(me.Pos + new Vector2(0, .1f), .5f);
-                if (!safe && rng.Chance(AmbushChance)) Ambush(me);
+                if (a == me) Fx.Poof(me.Pos + new Vector2(0, .1f), .5f);
+                if (!Leading || !(a == me || (Sharing && !a.IsBot))) continue; // the leader rolls ambushes for everyone here
+                if (!(a == me ? safe : SafeFor(a, me)) && rng.Chance(AmbushChance)) Ambush(a);
             }
         }
 
-        void Ambush(PetActor me)
+        void Ambush(PetActor who)
         {
-            var t = me.Tile;
+            var t = who.Tile;
             foreach (var d in AmbushSpots)
             {
                 if (!map.Walkable(t.x + d.x, t.y + d.y)) continue;
                 var f = Make(t.x + d.x, t.y + d.y, false, true);
                 f.Passive = false; f.State = RoadFoe.Mood.Chase; f.Alert = clock;
-                world.Halt();
-                me.ShowEmote("❗");
+                who.ShowEmote("❗");
+                if (who.IsMe) world.Halt();
                 return;
             }
         }
@@ -223,25 +233,32 @@ namespace BookBuddies.Road
             }
         }
 
-        /// <summary>The site's mkFoe: elite and villain-elite rolls, a variant, a level, and on the road a local villain from the nearer town's genre.</summary>
-        RoadFoe Make(int x, int y, bool guardian, bool ambush)
+        /// <summary>
+        /// The site's mkFoe: elite and villain-elite rolls, a variant, a level, and on the road a local villain from the
+        /// nearer town's genre. Every roll comes from the foe's own seed, so a shared foe is rebuilt the same everywhere.
+        /// </summary>
+        RoadFoe Make(int x, int y, bool guardian, bool ambush, int seed = 0, int id = 0)
         {
+            if (seed == 0) seed = 1 + rng.Range(int.MaxValue - 1);
+            var roll = new Mulberry32(unchecked((uint)seed));
             var data = TalesData.Current;
-            bool elite = !guardian && rng.Chance(wild.IsCave ? tier.EliteChance + .12 : tier.EliteChance);
-            bool villainElite = elite && tier.Elites.Length > 0 && rng.Chance(.6);
-            var def = guardian ? rng.Pick(data.Bosses)
-                : villainElite ? data.Bosses[rng.Pick(tier.Elites) % data.Bosses.Count]
-                : data.Minions[rng.Pick(tier.Foes) % data.Minions.Count];
+            bool elite = !guardian && roll.Chance(wild.IsCave ? tier.EliteChance + .12 : tier.EliteChance);
+            bool villainElite = elite && tier.Elites.Length > 0 && roll.Chance(.6);
+            var def = guardian ? roll.Pick(data.Bosses)
+                : villainElite ? data.Bosses[roll.Pick(tier.Elites) % data.Bosses.Count]
+                : data.Minions[roll.Pick(tier.Foes) % data.Minions.Count];
             var f = new GameObject("Foe").AddComponent<RoadFoe>();
-            f.V = FoeFactory.Variant(def, guardian, elite, rng);
-            f.Id = ++lastId;
+            f.V = FoeFactory.Variant(def, guardian, elite, roll);
+            f.Id = id > 0 ? id : ++lastId;
+            lastId = Mathf.Max(lastId, f.Id);
+            f.Seed = seed;
             f.Guardian = guardian; f.Elite = elite; f.Ambusher = ambush;
-            f.Lvl = level + (guardian ? 2 : elite ? 1 : 0) + (rng.Chance(.25) ? 1 : 0);
+            f.Lvl = level + (guardian ? 2 : elite ? 1 : 0) + (roll.Chance(.25) ? 1 : 0);
             f.Pos = new Vector2(x + .5f, y + .5f); f.Home = new Vector2Int(x, y);
-            f.Dir = rng.Chance(.5) ? 1 : -1;
+            f.Dir = roll.Chance(.5) ? 1 : -1;
             f.Born = clock;
-            f.Passive = !guardian && !ambush && rng.Chance(.45);
-            if (!guardian && !elite && wild.IsRoad && !rng.Chance(.4)) LocalGenre(f, x);
+            f.Passive = !guardian && !ambush && roll.Chance(.45);
+            if (!guardian && !elite && wild.IsRoad && !roll.Chance(.4)) LocalGenre(f, x, roll);
             f.name = "Foe " + f.V.Name;
             f.Build(root);
             foes.Add(f);
@@ -249,7 +266,7 @@ namespace BookBuddies.Road
         }
 
         // foes near each end of the road come from that town's genre
-        void LocalGenre(RoadFoe f, int x)
+        void LocalGenre(RoadFoe f, int x, IRng rng)
         {
             var data = TalesData.Current;
             int link = Mathf.Clamp(wild.Link, 1, data.Route.Length - 1);
@@ -312,7 +329,7 @@ namespace BookBuddies.Road
             var f = FoeAt(screen);
             if (f == null) return false;
             if (fight != null) return true;
-            if (!f.Chasing) { f.State = RoadFoe.Mood.Chase; f.Alert = clock; f.Repath = 0; }
+            if (Leading && !f.Chasing) { f.State = RoadFoe.Mood.Chase; f.Alert = clock; f.Repath = 0; }
             grace = 0;
             var to = PathFinder.NearestWalkable(map, f.Tile.x, f.Tile.y);
             if (to.HasValue) world.WalkTo(to.Value.x, to.Value.y, null, true);
@@ -321,14 +338,29 @@ namespace BookBuddies.Road
 
         // ---- fights ----
 
-        void Engage(RoadFoe lead)
+        // a foe touched someone: a fight of your own, or with foes shared, one for everyone close by
+        bool Caught(RoadFoe lead, PetActor who)
         {
-            if (fight != null) return;
-            var me = world.Me;
+            if (Sharing) FightTogether(lead, who);
+            else Engage(PackOf(lead, who.Pos), 0);
+            return true;
+        }
+
+        // the foe that touched you and up to two others chasing close by (the guardian fights alone)
+        List<RoadFoe> PackOf(RoadFoe lead, Vector2 at)
+        {
             var pack = new List<RoadFoe> { lead };
             if (!lead.Guardian)
                 foreach (var o in foes)
-                    if (pack.Count < 3 && o != lead && !o.Guardian && o.Chasing && Vector2.Distance(o.Pos, me.Pos) < PackRange) pack.Add(o);
+                    if (pack.Count < 3 && o != lead && !o.Guardian && !o.Fighting && o.Chasing && Vector2.Distance(o.Pos, at) < PackRange) pack.Add(o);
+            return pack;
+        }
+
+        void Engage(List<RoadFoe> pack, int shared)
+        {
+            if (fight != null || pack.Count == 0) return;
+            var me = world.Me;
+            var lead = pack[0];
             foreach (var o in pack) { o.Path.Clear(); o.Dir = me.Pos.x > o.Pos.x ? 1 : -1; }
             me.Dir = lead.Pos.x > me.Pos.x ? 1 : -1;
             world.Halt();
@@ -336,7 +368,7 @@ namespace BookBuddies.Road
             me.ShowEmote("⚔️");
 
             Vector2 screen = cam.Cam.WorldToScreenPoint(TownMap.ToWorld(me.Pos.x, me.Pos.y) + TownCamera.Facing * Vector3.up * .6f);
-            fight = new Fight { Pack = pack, Screen = screen };
+            fight = new Fight { Pack = pack, Screen = screen, Shared = shared };
             PlazaInput.Locked = true;
             wipe = FightWipe.Play(screen);
             cam.Shake();
@@ -411,6 +443,7 @@ namespace BookBuddies.Road
             fight = null;
             PlazaInput.Locked = false;
             if (wipe) { wipe.Hide(); wipe = null; }
+            if (current.Shared > 0) Ended(current.Shared, outcome != null && outcome.Rounds > 0 && outcome.Won);
             if (outcome == null || outcome.Rounds <= 0) { Abandoned(current.Pack); return; } // the battle never got going
             RoadVitals.After(!outcome.Won, outcome);
             if (outcome.Won) Won(current.Pack);
@@ -420,7 +453,7 @@ namespace BookBuddies.Road
         void Won(List<RoadFoe> pack)
         {
             var me = world.Me;
-            for (int i = 0; i < pack.Count; i++) { Fx.Sparkle(pack[i].Pos + new Vector2(0, -.4f), i * .12f); Remove(pack[i]); }
+            for (int i = 0; i < pack.Count; i++) { Fx.Sparkle(pack[i].Pos + new Vector2(0, -.4f), i * .12f); beaten.Add(pack[i].Id); Remove(pack[i]); }
             me.Play("happy", .9f, .2f);
             me.ShowEmote("🏆");
             grace = clock + 3.5f;
@@ -439,7 +472,11 @@ namespace BookBuddies.Road
         void Lost(List<RoadFoe> pack)
         {
             grace = clock + 7;
-            foreach (var o in pack) { o.State = RoadFoe.Mood.Idle; o.Path.Clear(); o.Stun = clock + 3; }
+            foreach (var o in pack)
+            {
+                if (beaten.Contains(o.Id)) { Remove(o); continue; } // a friend beat it meanwhile
+                o.State = RoadFoe.Mood.Idle; o.Path.Clear(); o.Stun = clock + 3; o.Fighting = false;
+            }
             world.Halt();
             world.Me.ShowEmote("💫");
             // stoneWake: at your home stone, or the stone of the town behind you
@@ -452,7 +489,11 @@ namespace BookBuddies.Road
         void Abandoned(List<RoadFoe> pack)
         {
             grace = clock + 6;
-            foreach (var o in pack) { o.State = RoadFoe.Mood.Idle; o.Stun = clock + 5; }
+            foreach (var o in pack)
+            {
+                if (beaten.Contains(o.Id)) { Remove(o); continue; }
+                o.State = RoadFoe.Mood.Idle; o.Stun = clock + 5; o.Fighting = false;
+            }
         }
 
         static IEnumerator Later(float seconds, System.Action then)

@@ -26,6 +26,9 @@ namespace BookBuddies.Road
         public float Next, Alert, Stun, Repath, Born;
         public int Dir;
         public bool Hovered;                 // the pointer is on it: lifts a little
+        public int Seed;                     // what its rolls came from (a shared foe is rebuilt from it)
+        public bool Fighting;                // in a shared fight: it waits where it is
+        public Vector2 Seen;                 // shared foes run by another game: where that game last had it
 
         /// <summary>The site's size: the guardian 1.75, elites 1.2.</summary>
         public float Size => Guardian ? 1.75f : Elite ? 1.2f : 1;

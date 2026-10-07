@@ -187,12 +187,17 @@ namespace BookBuddies.UI
         void Announce(List<Member> now)
         {
             bool first = knownServer != Settings.Server || known.Count == 0;
+            if (first && now.Count > 1) // a banner the first time, so nobody wonders whether the party formed
+            {
+                var lead = now.Find(m => m.Leader);
+                world.Announce(lead == null || lead.Id == you ? "🎉 Your party is together" : $"🎉 You’re in {lead.Name}’s party", $"{now.Count} in the party · the party card shows where everyone is");
+            }
             if (!first && now.Count > 0)
             {
                 foreach (var m in now)
                 {
                     if (m.Id == you) continue;
-                    if (!known.TryGetValue(m.Id, out var was)) world.Notify($"🎉 {m.Name} joined your party");
+                    if (!known.TryGetValue(m.Id, out var was)) world.Announce($"🎉 {m.Name} joined your party", $"{now.Count} in the party");
                     else if (Here(m) && !Here(was)) world.Notify($"🐾 {m.Name} is here");
                 }
                 foreach (var was in known.Values)
