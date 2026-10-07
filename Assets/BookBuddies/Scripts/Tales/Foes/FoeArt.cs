@@ -27,7 +27,7 @@ namespace BookBuddies.Tales
         /// <summary>The ground shadow the SVG drew (rx 30, ry 5), as radii in box units. Callers draw it, unscaled by Look.Scale.</summary>
         public static readonly Vector2 ShadowSize = new Vector2(.3f, .05f);
 
-        const int TextureSize = 640;          // pixels across the box (sharp up to a 1440p boss)
+        const int TextureSize = 512;          // pixels across the box (sharp for a 1080p boss)
         const float EmojiScale = 128f / 104f; // emote PNGs hold a 104px glyph in a 128px square
         const int CacheLimit = 48;
         static readonly Vector2 ShadowDrop = new Vector2(0, -.02f);           // the emoji's drop-shadow(0 2px …)

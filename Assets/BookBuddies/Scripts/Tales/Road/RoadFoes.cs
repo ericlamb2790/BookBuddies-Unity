@@ -43,8 +43,7 @@ namespace BookBuddies.Road
         readonly Dictionary<PetActor, int> grassTiles = new Dictionary<PetActor, int>();
         readonly IRng rng = SystemRng.Shared;
         float clock, spawnAt, grace = 3.5f, cryAt = -99;
-        int lastId;
-        bool fresh = true;
+        int lastId, opening = -1; // opening: first foes still to place, one a frame (each is a fresh drawing)
         Fight fight;
         FightWipe wipe;
 
@@ -92,7 +91,8 @@ namespace BookBuddies.Road
         void Step(PetActor me, float dt)
         {
             int cap = (wild.IsCave ? 9 : 6 + wild.Tier) + Mathf.Min(6, OthersHere() * 2);
-            if (fresh) { fresh = false; for (int i = 0; i < cap - 2; i++) Spawn(me); }
+            if (opening < 0) opening = cap - 2;
+            if (opening > 0) { opening--; Spawn(me); }
             if (clock > spawnAt)
             {
                 spawnAt = clock + (foes.Count < cap ? 2.6f : 6f);
