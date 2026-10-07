@@ -271,7 +271,7 @@ namespace BookBuddies.Tales
             float colW = ColumnWidth, height = top - bottom;
             // sizes follow the height, so 1080p, 1440p and ultrawide look alike; pet art stands 1.16 of its width tall
             float heroSize = Mathf.Max(40, Mathf.Min(height * .24f, colW * .6f, 230));
-            float heroRoom = PlateHeight + 6 + heroSize * 1.2f + 18; // its plate, the art, and a gap under the foes
+            float heroTop = bottom + PlateHeight + 6 + heroSize * 1.2f; // its plate and the art (pets stand 1.16 wide)
             float heroFeet = bottom + PlateHeight + 6;
 
             foreach (var h in engine.Heroes)
@@ -288,18 +288,19 @@ namespace BookBuddies.Tales
 
             var shown = new List<BattleUnitView>();
             foreach (var f in engine.Foes) { var v = View(f.Key); if (v != null && !v.ShownKo) shown.Add(v); }
-            float foeTop = top - LabelRoom, foeBottom = bottom + heroRoom;
+            // foes keep to the top half of the column, and their plates always clear the pet's head by a good gap
+            float foeTop = top - LabelRoom, foeBottom = Mathf.Max(heroTop + Mathf.Max(48, height * .08f), top - height * .55f);
             foreach (char z in LaneKeys)
             {
                 var col = shown.FindAll(v => v.Unit.Lane == z);
                 var boss = col.Find(v => v.Unit.Boss);
                 if (boss != null) col.Remove(boss);
                 int rows = (col.Count + 1) / 2;
-                float unit = (foeTop - foeBottom) / Mathf.Max(1, rows + (boss != null ? 1.5f : 0));
+                float unit = Mathf.Min(height * .3f, (foeTop - foeBottom) / Mathf.Max(1, rows + (boss != null ? 1.5f : 0)));
                 float x0 = Band(z).x, y = foeTop;
                 if (boss != null)
                 {
-                    float room = unit * (rows > 0 ? 1.5f : 1);
+                    float room = rows > 0 ? unit * 1.5f : foeTop - foeBottom; // alone, a boss takes the whole foe space
                     float size = Mathf.Max(40, Mathf.Min(room - PlateHeight - 8, colW * .9f, height * .36f));
                     y -= room;
                     Put(boss, z, new Vector2(x0 + colW / 2, y + PlateHeight + 4), size, Mathf.Clamp(colW - 24, 150, MaxPlate), false, instant);
