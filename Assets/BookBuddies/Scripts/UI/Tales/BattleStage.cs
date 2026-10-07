@@ -197,6 +197,10 @@ namespace BookBuddies.Tales
         float ColumnWidth => Mathf.Min((Width * .96f - Gutter * 2) / 3, (Bounds().top - Bounds().bottom) * MaxColumn);
         float Left => (Width - ColumnWidth * 3 - Gutter * 2) / 2;
 
+        /// <summary>The room beside the columns on each side, and the field's top and bottom (for the side panels).</summary>
+        public float SideRoom => Left;
+        public (float top, float bottom) Field => Bounds();
+
         (float top, float bottom) Bounds()
         {
             float h = Height;

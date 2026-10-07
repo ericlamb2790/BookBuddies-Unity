@@ -46,6 +46,8 @@ namespace BookBuddies.Tales
         readonly IRng rng;
         readonly TalesSave save;                 // where your lane choice is kept (null for a ready-made hero)
         readonly List<string> queue = new List<string>();
+        /// <summary>Who acts next this round, by unit key, first to last.</summary>
+        public IReadOnlyList<string> TurnQueue => queue;
         readonly Dictionary<BattleUnit, int> buffs = new Dictionary<BattleUnit, int>();
         bool intro, mid, cheered, revived;
         int nextFate = 2, nat20s, helpers, crits, heals;

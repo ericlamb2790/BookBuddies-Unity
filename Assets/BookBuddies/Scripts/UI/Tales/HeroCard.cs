@@ -19,7 +19,7 @@ namespace BookBuddies.Tales
         const float Pad = 24, HeadHeight = 56, TabsHeight = 52;
         static readonly string[] TabKeys = { "hero", "moves", "class", "library" };
         static readonly string[] TabNames = { "Hero", "Moves", "Class", "Library" };
-        static readonly string[] LaneNames = { "Top", "Middle", "Bottom" };
+        static readonly string[] LaneNames = { "Left", "Middle", "Right" };
         static readonly string[] LaneKeys = { "l", null, "r" };
 
         TalesSave save;

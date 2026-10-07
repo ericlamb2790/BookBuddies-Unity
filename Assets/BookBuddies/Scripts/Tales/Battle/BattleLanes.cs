@@ -15,8 +15,8 @@ namespace BookBuddies.Tales
         /// <summary>"sh" (cover: 25% less damage from foes) or "bu" (bushes: foes miss 25%), or null.</summary>
         public string CoverKind { get; private set; }
 
-        /// <summary>"Top", "Middle" or "Bottom": the battle screen draws lanes l, c, r as rows.</summary>
-        public static string LaneName(char lane) => lane == 'l' ? "Top" : lane == 'r' ? "Bottom" : "Middle";
+        /// <summary>"Left", "Middle" or "Right": the battle screen draws lanes l, c, r as columns.</summary>
+        public static string LaneName(char lane) => lane == 'l' ? "Left" : lane == 'r' ? "Right" : "Middle";
 
         /// <summary>Move a hero to lane l, c or r (dodging a slam). False if not allowed.</summary>
         public bool MoveLane(BattleUnit hero, char lane)

@@ -12,7 +12,7 @@ namespace BookBuddies.Tales
         public static string Prose(string s) => s == null || s.IndexOf(" The ", System.StringComparison.Ordinal) < 0 ? s ?? "" : MidThe.Replace(s, "$1 the ");
 
         /// <summary>The lanes are rows on this screen: l is the top one, c the middle, r the bottom.</summary>
-        public static string Lane(char lane) => lane == 'l' ? "Top" : lane == 'r' ? "Bottom" : "Middle";
+        public static string Lane(char lane) => lane == 'l' ? "Left" : lane == 'r' ? "Right" : "Middle"; // lanes are columns
 
         /// <summary>Who is on which side of a log line: the party, the foes, or the story itself.</summary>
         public enum Side { Story, Pet, Foe }

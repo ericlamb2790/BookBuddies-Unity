@@ -115,6 +115,7 @@ namespace BookBuddies.Tales
             dock.Log = () => log.Open(top);
             top = UiKit.Node("sheets", content).Fill();
             log = BattleLog.Create(gameObject, engine);
+            BattleSides.Create(hud, engine, stage, log);
         }
 
         // ---- the fight ----

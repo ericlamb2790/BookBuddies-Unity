@@ -37,6 +37,12 @@ namespace BookBuddies.Tales
             if (rows.Count > MaxRows) rows.RemoveAt(0);
         }
 
+        /// <summary>The newest n rows as rich text, newest first (the side panel's "last turns").</summary>
+        public IEnumerable<string> Last(int n)
+        {
+            for (int i = rows.Count - 1; i >= 0 && n-- > 0; i--) yield return rows[i].text;
+        }
+
         /// <summary>Opens the sheet over the battle (layer is the full-screen layer it goes on).</summary>
         public void Open(RectTransform layer)
         {
