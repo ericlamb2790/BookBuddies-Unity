@@ -9,9 +9,12 @@ using UnityEngine.Rendering;
 /// Pets are drawn at runtime by Vector Graphics, which finds its shaders by name. Nothing references
 /// them, so player builds strip them and every pet falls back to a blob. Adds them to Always Included Shaders before each build.
 /// </summary>
+[InitializeOnLoad]
 public sealed class IncludeVectorShaders : IPreprocessBuildWithReport
 {
-    static readonly string[] Names = { "Unlit/Vector", "Unlit/VectorGradient", "Hidden/VectorBlendMax", "Hidden/VectorDemultiply", "Hidden/VectorExpandEdges" };
+    static readonly string[] Names = { "UI/Default", "Unlit/Vector", "Unlit/VectorGradient", "Hidden/VectorBlendMax", "Hidden/VectorDemultiply", "Hidden/VectorExpandEdges" };
+
+    static IncludeVectorShaders() => EditorApplication.delayCall += Ensure; // settle the list before any build starts
 
     public int callbackOrder => 0;
 
