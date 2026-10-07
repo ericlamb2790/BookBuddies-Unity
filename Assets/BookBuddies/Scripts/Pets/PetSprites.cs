@@ -71,12 +71,28 @@ namespace BookBuddies.Pets
             return sprite;
         }
 
+        /// <summary>
+        /// Adds two all-but-invisible specks at the viewBox's corners, so the sprite's bounds are always the whole box:
+        /// without them a drawing that doesn't reach every edge is stretched to fill the texture (squished pets, askew foes).
+        /// </summary>
+        public static string PinBox(string svg)
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(svg, "viewBox=\"([-\\d.]+) ([-\\d.]+) ([-\\d.]+) ([-\\d.]+)\"");
+            int end = svg.LastIndexOf("</svg>", System.StringComparison.Ordinal);
+            if (!m.Success || end < 0) return svg;
+            var c = System.Globalization.CultureInfo.InvariantCulture;
+            float x = float.Parse(m.Groups[1].Value, c), y = float.Parse(m.Groups[2].Value, c);
+            float r = x + float.Parse(m.Groups[3].Value, c) - .1f, b = y + float.Parse(m.Groups[4].Value, c) - .1f;
+            string speck = "<rect x=\"{0}\" y=\"{1}\" width=\".1\" height=\".1\" fill=\"#000\" fill-opacity=\".004\"/>";
+            return svg.Insert(end, string.Format(c, speck, x, y) + string.Format(c, speck, r, b));
+        }
+
         static Sprite Render(string svg, float hue)
         {
 #if BB_VECTOR
             try
             {
-                var scene = SVGParser.ImportSVG(new StringReader(svg));
+                var scene = SVGParser.ImportSVG(new StringReader(PinBox(svg)));
                 var options = new VectorUtils.TessellationOptions { StepDistance = 1f, MaxCordDeviation = .25f, MaxTanAngleDeviation = .05f, SamplingStepSize = .01f };
                 var geometry = VectorUtils.TessellateScene(scene.Scene, options, scene.NodeOpacity); // keeps opacity="…" (shading, shine, auras)
                 var vector = VectorUtils.BuildSprite(geometry, scene.SceneViewport, 100f, VectorUtils.Alignment.BottomCenter, Vector2.zero, 64, true);
