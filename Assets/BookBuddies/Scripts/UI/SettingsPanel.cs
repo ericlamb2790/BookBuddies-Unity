@@ -159,23 +159,37 @@ namespace BookBuddies.UI
                 Row("Delete account", "Removes your buddy and coins for good. A bookbuddies.pet account can only be deleted on the website.", r => UiKit.ConfirmButton(r, "Delete", "Tap again to delete forever", DeleteAccount));
             }
 
-            Row("Server", "Where your buddy lives. Leave it empty for the game’s own server.", r =>
+            // where your buddy lives: the main server, the dev one, or an address of your own (typed below)
+            InputField address = null;
+            void Switch(string url)
             {
-                var field = UiKit.Input(r, Settings.DefaultServer, UiKit.SmallSize + 1);
-                field.text = Settings.Server;
-                UiKit.Size(field, 260, UiKit.ButtonHeight);
-                field.onEndEdit.AddListener(v =>
+                if (url.Trim().TrimEnd('/') == Settings.Server) return;
+                Settings.Server = url;
+                Settings.SignOut();
+                Buddy.Forget();
+                AccountChanged();
+            }
+            Row("Server", "Main is the game’s own server, Dev the test one. Custom uses the address below.", r =>
+                UiKit.Choice(r, ServerNames, Settings.ServerChoice, i =>
                 {
-                    if (v.Trim() == Settings.Server) return;
-                    Settings.Server = v;
-                    field.text = Settings.Server;
-                    Settings.SignOut();
-                    Buddy.Forget();
-                    AccountChanged();
-                });
-                return field;
+                    address.interactable = i == 2;
+                    if (i == 2) { address.Select(); return; }
+                    string url = i == 0 ? Settings.DefaultServer : Settings.DevServer;
+                    address.text = url;
+                    Switch(url); // closes the panel when the server really changed
+                }));
+            Row("Address", "Type a server address for Custom. Switching signs you out of the old one.", r =>
+            {
+                address = UiKit.Input(r, "https://…", UiKit.SmallSize + 1);
+                address.text = Settings.Server;
+                address.interactable = Settings.ServerChoice == 2;
+                UiKit.Size(address, 260, UiKit.ButtonHeight);
+                address.onEndEdit.AddListener(v => { Switch(v); address.text = Settings.Server; });
+                return address;
             });
         }
+
+        static readonly string[] ServerNames = { "Main", "Dev", "Custom" };
 
         async void DeleteAccount()
         {

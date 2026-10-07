@@ -13,10 +13,15 @@ namespace BookBuddies
         const string TokenKey = "bb.token";
         const string AdminKey = "bb.admin";
         const string AccountKey = "bb.account";
-        static string configServer, version;
+        static string configServer, devServer, version;
 
         public static string DefaultServer => configServer ?? (configServer = Config("server", "https://bookbuddies.pet").TrimEnd('/'));
+        /// <summary>The test server (config.json "devServer"; wrangler dev's address when unset).</summary>
+        public static string DevServer => devServer ?? (devServer = Config("devServer", "http://localhost:8787").TrimEnd('/'));
         public static string Version => version ?? (version = Config("version", "0.3"));
+
+        /// <summary>Which server is in use: 0 the main one, 1 the dev one, 2 an address typed in.</summary>
+        public static int ServerChoice => Server == DefaultServer ? 0 : Server == DevServer ? 1 : 2;
 
         public static string Server
         {
