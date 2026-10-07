@@ -26,7 +26,7 @@ namespace BookBuddies.UI
         CanvasGroup group;
         Image pet, glow, serverDot, wash;
         Text tagline, logoName, townName, plateName, plateSub, serverText, playLabel;
-        Button play, signIn;
+        Button play, signIn, switchPet;
         Sheet start, naming;
         InputField nameField;
         Text nameError, nameNote, hatchLabel;
@@ -76,6 +76,7 @@ namespace BookBuddies.UI
             play = MenuButton(UiKit.Primary(menu, "Play", OnPlay, null, 56));
             playLabel = play.GetComponentInChildren<Text>();
             signIn = MenuButton(UiKit.Secondary(menu, "I have a recovery code", () => ShowSignIn(null), null, 56));
+            switchPet = MenuButton(UiKit.Secondary(menu, "Switch pet", () => PetsScreen.Open(null, Refresh), "🐾", 56)); // before spawning in
             MenuButton(UiKit.Secondary(menu, "Settings", () => SettingsPanel.Open(() => { Refresh(); CheckServer(); }), "⚙️", 56));
             MenuButton(UiKit.Secondary(menu, "Watch the intro", () => Leave(watchIntro), null, 56));
             if (!Application.isMobilePlatform && Application.platform != RuntimePlatform.WebGLPlayer)
@@ -277,6 +278,7 @@ namespace BookBuddies.UI
             plateSub.text = hatched ? (Settings.SignedIn ? "Ready for Pawtopia" : "Exploring on this device") : "It’s warm. Give it a tap!";
             playLabel.text = hatched || Settings.SignedIn ? "Play" : "Hatch your egg";
             UiKit.Show(signIn, !Settings.SignedIn);
+            UiKit.Show(switchPet, hatched);
             lastW = 0; // the menu may have changed length
         }
 

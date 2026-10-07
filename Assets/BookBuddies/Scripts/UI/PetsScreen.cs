@@ -19,6 +19,7 @@ namespace BookBuddies.UI
         const float Pad = 24, HeadHeight = 52, PictureSize = 92;
 
         PetActor me;         // your pet in town: it changes on the spot with the active pet
+        System.Action closed; // the title screen redraws its buddy once the screen is gone
         RectTransform list;
         Text count, status;
         string nextLook;     // the pet waiting in the mystery egg (the egg wears its colour)
@@ -27,12 +28,16 @@ namespace BookBuddies.UI
 
         static PetParts Parts => PetSprites.Parts;
 
-        /// <summary>Opens the pets screen. Give your pet in town so it changes at once when you switch, hatch or reroll.</summary>
-        public static void Open(PetActor me = null)
+        /// <summary>
+        /// Opens the pets screen. Give your pet in town so it changes at once when you switch, hatch or reroll;
+        /// closed runs when the screen goes away (the title screen uses it to show the new buddy).
+        /// </summary>
+        public static void Open(PetActor me = null, System.Action closed = null)
         {
             var s = Create<PetsScreen>("Pets", true);
             s.MaxSize = new Vector2(760, 940);
             s.me = me;
+            s.closed = closed;
             s.nextLook = Parts.Dna.NewLook(Buddy.Roll);
             s.Build();
             s.Fill();
@@ -61,6 +66,8 @@ namespace BookBuddies.UI
             ((RectTransform)status.transform).Pin(Vector2.zero, new Vector2(Pad, Pad - 8), new Vector2(480, 32));
             UiKit.PadHints(Card, ("A", "Select"), ("B", "Back"));
         }
+
+        protected override void OnClosed() => closed?.Invoke();
 
         protected override void Layout(Vector2 card)
         {

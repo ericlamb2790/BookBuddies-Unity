@@ -298,7 +298,7 @@ namespace BookBuddies.UI
             });
             Section(into, "Gamepad", new[]
             {
-                ("Walk", "left stick or d-pad"), ("Use or sit", "pad:A"), ("Emotes", "pad:X"), ("Tricks", "pad:Y"), ("Pets", "pad:Select"),
+                ("Walk", "left stick or d-pad"), ("Use or sit", "pad:A"), ("Emotes", "pad:X"), ("Tricks", "pad:Y"), ("Hero", "pad:Select"),
                 ("Zoom", "pad:LB/RB"), ("Map", "pad:RS"), ("Menu", "pad:Start"), ("Back", "pad:B"),
                 ("In menus", "left stick moves the cursor"), ("Click", "pad:A"), ("Scroll", "right stick"),
             });
