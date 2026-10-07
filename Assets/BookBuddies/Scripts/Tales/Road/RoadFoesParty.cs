@@ -28,7 +28,7 @@ namespace BookBuddies.Road
         const float Catchup = 12;       // how quickly a drawn foe closes on where the leader has it
 
         /// <summary>A fight the leader started for several players: its pack, who's in it, and who's reported back.</summary>
-        sealed class Together { public List<int> Pack = new List<int>(), Who = new List<int>(); public int Ended; public bool Won, Off, Guardian; public float At; }
+        sealed class Together { public List<int> Pack = new List<int>(); public List<string> Who = new List<string>(); public int Ended; public bool Won, Off, Guardian; public float At; }
 
         readonly HashSet<int> beaten = new HashSet<int>();  // foes beaten here: kept away until the leader's list drops them
         readonly Dictionary<int, Together> together = new Dictionary<int, Together>(); // the leader's shared fights
@@ -72,8 +72,7 @@ namespace BookBuddies.Road
 
         bool InFight(string id)
         {
-            if (!int.TryParse(id, out int n)) return false;
-            foreach (var t in together.Values) if (t.Who.Contains(n)) return true;
+            foreach (var t in together.Values) if (t.Who.Contains(id)) return true;
             return false;
         }
 
@@ -88,10 +87,11 @@ namespace BookBuddies.Road
             near.Insert(0, caught);
             pets.Clear();
             foreach (var a in near)
-                if (int.TryParse(a.Id, out int n) && Vector2.Distance(a.Pos, caught.Pos) < JoinRange && (a == me ? fight == null && !Busy : !InFight(a.Id)))
+                // room ids are text ("1", "a3"): a visitor who came after the first few coins has letters in theirs
+                if (!string.IsNullOrEmpty(a.Id) && Vector2.Distance(a.Pos, caught.Pos) < JoinRange && (a == me ? fight == null && !Busy : !InFight(a.Id)))
                 {
-                    t.Who.Add(n);
-                    pets.Add((double)n);
+                    t.Who.Add(a.Id);
+                    pets.Add(a.Id);
                 }
             var pack = PackOf(lead, caught.Pos, PartyBattle.Active ? t.Who.Count : 1);
             var ids = new List<object>();
@@ -100,7 +100,7 @@ namespace BookBuddies.Road
             together[id] = t;
             ShareNow(true);
             world.ShareFoes(new Dictionary<string, object> { ["t"] = "wf", ["k"] = "fight", ["f"] = (double)id, ["pack"] = ids, ["who"] = new List<object>(pets) });
-            var who = t.Who.ConvertAll(n => n.ToString());
+            var who = new List<string>(t.Who);
             if (who.Contains(me.Id)) Enter(pack, id, who);
         }
 
@@ -277,7 +277,7 @@ namespace BookBuddies.Road
             var me = world.Me;
             if (me == null) return;
             var who = new List<string>();
-            foreach (var o in m.Arr("who")) if (o is double d) who.Add(((int)d).ToString());
+            foreach (var o in m.Arr("who")) if (o is string s) who.Add(s); else if (o is double d) who.Add(((int)d).ToString());
             if (!who.Contains(me.Id)) return;
             if (fight != null || Busy) { Ended(m.Int("f"), false); return; } // can't come right now: counted out
             var pack = new List<RoadFoe>();

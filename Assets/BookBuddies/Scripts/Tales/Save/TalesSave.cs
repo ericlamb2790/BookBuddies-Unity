@@ -91,6 +91,17 @@ namespace BookBuddies.Tales
         /// <summary>Flush, with only the JSON made on the caller's thread: the file is written on a background thread.</summary>
         public static Task FlushAsync() => Snapshot() is Action write ? Task.Run(write) : Task.CompletedTask;
 
+        /// <summary>Clearing the device: the save is forgotten (the next use reads FilePath again) and a write already on its way is dropped.</summary>
+        public static void Forget()
+        {
+            lock (writing)
+            {
+                written = snapshots;
+                writtenText = null;
+                current = null;
+            }
+        }
+
         // the loaded profile as text now, and the write that puts it on disk; null when there's nothing new to write
         static Action Snapshot()
         {

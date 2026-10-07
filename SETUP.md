@@ -15,7 +15,7 @@ It's made for **Unity 6 (6000.3)** with the **Input System** package, and also w
 
 ## 1. The Unity project
 
-Your project at `D:\AI\BB-Unity\BookBuddies Unity` is already set up. To update it, close Unity, copy everything in this zip (`Assets`, `Packages`, `Server` and the two docs) into that folder, choose **Replace** for files that already exist, and reopen the project.
+Your project at `D:\AI\BB-Unity\BookBuddies Unity` is already set up. To update it, close Unity, copy everything in this zip (`Assets`, `Packages` and the two docs) into that folder, choose **Replace** for files that already exist, and reopen the project.
 
 `Packages/manifest.json` removes Unity's **Engineering** feature, whose Code Coverage, Editor Coroutines, Profile Analyzer and Settings Manager packages showed *invalid signature* errors. The game uses none of them. Visual Studio support from that feature is kept. If you'd rather keep the feature, skip that file and instead delete the project's `Library\PackageCache` folder with Unity closed, so Unity downloads fresh copies.
 
@@ -27,21 +27,9 @@ For a fresh project:
 4. Open **Window → Package Manager**, click **+ → Add package by name…**, and add `com.unity.vectorgraphics`. Without it, pets show as round placeholders.
 5. For builds only: in **Edit → Project Settings → Graphics → Always Included Shaders**, add `Unlit/Vector` and `Unlit/VectorGradient`.
 
-## 2. Set up the server (once)
+## 2. The server
 
-The game has its own Cloudflare Worker in the `Server` folder, with a new D1 database and Durable Objects for the live town. It's separate from the website's Worker and doesn't change it. Follow **`Server/README.md`**. In short:
-
-```
-cd Server
-npm install
-npx wrangler login
-npx wrangler d1 create bookbuddies-unity     (paste the database_id into wrangler.toml)
-npx wrangler deploy
-```
-
-Then open `Assets/BookBuddies/Resources/BookBuddies/Data/config.json` and set `"server"` to the address the deploy printed, such as `https://bookbuddies-unity.<you>.workers.dev`. Players can also change it in **Settings → Account → Server**.
-
-Until you do this, the game points at `bookbuddies.pet`. You can still sign in there with a website recovery code and join the website's live town, but new eggs hatch on this device only, because the website's Worker can't make accounts for Unity.
+There's nothing to set up. Since site build 567 the game uses bookbuddies.pet itself (`https://bookbuddies.pet/game`, set in `Assets/BookBuddies/Resources/BookBuddies/Data/config.json`): one account for the website and the game, the same coins and pets. The game's old Cloudflare Worker (`Server` folder) was removed from the repo; it's kept in git history under the tag `unity-server-last` (`git checkout unity-server-last -- Server` brings it back).
 
 ## 3. Press Play
 
@@ -63,8 +51,6 @@ Open any scene (the default `SampleScene` is fine) and press **Play**. The game 
 **Autosaves.** The game saves before every fight and after it, after purchases, Paw Express trips, bag and pet changes, hero class and move changes, Tales pages, camps and endings, on arriving somewhere, when the window loses focus, and every 3 minutes. A small book blinks in the bottom-right corner when a save lands. Files are written in the background (to a temp file, then swapped in), so a save never stalls the game.
 
 **Where it's saved.** The offline world is one file, `offline/world.json` in the game's data folder (on Windows: `%USERPROFILE%\AppData\LocalLow\<company>\<product>\offline\world.json`). If it ever can't be read, it's renamed to `world.json.bad` and the game starts a fresh offline world.
-
-**Redeploy the Worker** (`npx wrangler deploy` in `Server`) so it has the new `POST /api/wallet/bank` route. It makes its two new tables by itself. Until then, offline coins wait in the offline purse and upload after you deploy.
 
 **To test offline:** turn off the network (or pick **Offline (this PC)** in Settings), press **Play offline**, pick up some coins in Pawtopia, then go back to the title. With the network on and an online account, the coins sheet then says how many coins were banked, and your online wallet lists them as *Banked from offline play*.
 
@@ -171,7 +157,6 @@ If art looks stretched or blurry after a swap, right-click `Resources/BookBuddie
 | `Scripts/UI/Tales` | Battle screen, reward card, bag, hero card and reveals |
 | `Scripts/UI` | Title, intro and arrival cinematics, hatching, loading, Settings, HUD, minimap, menus, name tags, the party card in a hosted world (`Town/PartyPanel.cs`) |
 | `Editor` | Import settings for the art |
-| `Server` (next to `Assets`) | The new Cloudflare Worker |
 
 ## Not in this version yet
 
@@ -182,7 +167,5 @@ If art looks stretched or blurry after a swap, right-click `Resources/BookBuddie
 - **Emoji in chat text** only show when they come first in a message, because Unity's built-in text can't draw colour emoji.
 - **Parties with online friends:** parties only happen in hosted worlds. Inviting friends over the internet will come later through bookbuddies.pet.
 - **WebGL** would need a browser WebSocket bridge. Desktop, Android and iOS work.
-
-**After updating, redeploy the Worker** (`npx wrangler deploy` in `Server`). It adds the pets list and the admin log by itself. To become the first admin, see "Make the first admin" in `Server/README.md`.
 
 This version was checked by compiling it against Unity's libraries for both input settings with no errors or warnings. The C# tests pass: battles, loot, villains (40 of 40 match the website), and pets (1089 of 1089 match the website's drawing). The server passed its local tests (regression 21/21, admin 35/35, world 10/10, plus the pets routes). It hasn't been run inside the Unity editor yet, so if something looks off, send a screenshot or the Console error.

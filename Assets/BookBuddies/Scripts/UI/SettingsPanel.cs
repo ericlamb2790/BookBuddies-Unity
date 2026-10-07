@@ -143,6 +143,8 @@ namespace BookBuddies.UI
             else if (Settings.IsWorld) Note($"Visiting {Settings.WorldName} as {name}. Coins you find there and changes to your pets come home to your account. Choose “Leave this world” on the title screen to head home.");
             else OnlineAccount(signedIn, name);
             if (Settings.IsLocal || Settings.IsWorld) Note("To join accounts, go back online.");
+            Row("Sign out and clear this device", "Signs out everywhere and removes this device’s saves, offline world, saved drawings and settings. Coins and changes on their way to your account get sent first. Photos stay.",
+                r => UiKit.ConfirmButton(r, "Clear", "Tap again to clear everything", ClearDevice));
 
             // where your buddy lives: the main server, the dev one, an address of your own (typed below) or this PC
             InputField address = null;
@@ -181,7 +183,7 @@ namespace BookBuddies.UI
             JoinRow();
             if (Settings.IsAdmin)
                 Row("Admin tools", "Find players, mute, send home, give breaks.", r => UiKit.Secondary(r, "Open", () => AdminPanel.Open(), "🛡️"));
-            Row("Sign out", "Your buddy stays safe on the server.", r => UiKit.ConfirmButton(r, "Sign out", "Tap again to sign out", SignOut));
+            Row("Sign out", "Your buddy stays safe on the server, and this device keeps its saves.", r => UiKit.ConfirmButton(r, "Sign out", "Tap again to sign out", SignOut));
             Row("Delete account", "Removes your buddy and coins for good. A bookbuddies.pet account can only be deleted on the website.", r => UiKit.ConfirmButton(r, "Delete", "Tap again to delete forever", DeleteAccount));
         }
 
@@ -210,6 +212,17 @@ namespace BookBuddies.UI
             switching = false;
             Settings.SignOut();
             Buddy.Forget();
+            AccountChanged();
+        }
+
+        // everything this device keeps goes (DeviceWipe); the panel waits while the last coins and changes go home
+        async void ClearDevice()
+        {
+            if (switching) return;
+            switching = true;
+            Note("Sending what’s left to your account, then clearing this device…");
+            await DeviceWipe.Run();
+            switching = false;
             AccountChanged();
         }
 

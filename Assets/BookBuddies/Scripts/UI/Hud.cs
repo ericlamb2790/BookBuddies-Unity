@@ -568,7 +568,7 @@ namespace BookBuddies.UI
         /// </summary>
         System.Collections.IEnumerator OfferGift()
         {
-            var refresh = Wallet.Refresh();
+            var refresh = Wallet.RefreshIfStale();
             yield return new WaitUntil(() => refresh.IsCompleted);
             yield return new WaitForSecondsRealtime(1.2f);
             string day = Wallet.State.Day;

@@ -73,6 +73,13 @@ namespace BookBuddies.Tales
             if (pending != null && DateTime.UtcNow >= dueAt) Save(pending);
         }
 
+        /// <summary>Clearing the device: a tale waiting to be saved and the books read from disk are dropped.</summary>
+        public static void Forget()
+        {
+            pending = null;
+            books = null;
+        }
+
         /// <summary>Saves a SaveSoon tale now instead of when it's due (before a fight, when the game closes).</summary>
         public static void Flush()
         {

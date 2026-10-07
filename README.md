@@ -15,5 +15,4 @@ Assets/BookBuddies/
     Town/     ground, buildings, animations, plants, items (PNG)
     UI/       emoji images (PNG)
     Fonts/    Fredoka, Fraunces (Open Font License)
-Server/       the new Cloudflare Worker (see Server/README.md)
 ```

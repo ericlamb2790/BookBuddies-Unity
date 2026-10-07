@@ -7,7 +7,7 @@
 
 ## Repo
 - GitHub: https://github.com/ericlamb2790/BookBuddies-Unity, branch `main`.
-- `.gitignore` keeps out Library, Temp, Logs, UserSettings, the .sln and .csproj files, .vs, `Server/node_modules`, `Server/.wrangler` and secrets.
+- `.gitignore` keeps out Library, Temp, Logs, UserSettings, the .sln and .csproj files, .vs and secrets (plus `Server/node_modules` and `Server/.wrangler`, from the old Worker).
 - Unity settings: Force Text serialization and visible .meta files.
 
 ## Done

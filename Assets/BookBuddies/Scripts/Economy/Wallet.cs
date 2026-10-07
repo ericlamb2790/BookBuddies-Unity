@@ -145,15 +145,26 @@ namespace BookBuddies.Economy
         // offline coins went to the online wallet: both purses have new numbers
         static void OnBanked(int banked) => _ = Refresh();
 
+        /// <summary>Refresh, unless this account's wallet here came down in the last minute (arriving somewhere asks this way).</summary>
+        public static Task<bool> RefreshIfStale() =>
+            Settings.SignedIn && fetchedFor == Settings.Server + "|" + Settings.AccountId && Time.realtimeSinceStartup - fetchedAt < StaleAfter
+                ? Task.FromResult(true) : Refresh();
+
+        const float StaleAfter = 60;
+        static string fetchedFor; // "<server>|<account>" of the last wallet that came down, and when
+        static float fetchedAt;
+
         /// <summary>Asks the server for the wallet (the first time on an account, that adds its starter coins). False when it couldn't.</summary>
         public static async Task<bool> Refresh()
         {
             if (!Settings.SignedIn) return false;
-            string server = Settings.Server;
+            string server = Settings.Server, who = server + "|" + Settings.AccountId;
             try
             {
                 var reply = await BBApi.Wallet();
                 if (Settings.Server == server) Apply(reply); // not another server's numbers
+                fetchedFor = who;
+                fetchedAt = Time.realtimeSinceStartup;
                 return true;
             }
             catch (BBApi.ApiError) { GoneOffline(); return false; }

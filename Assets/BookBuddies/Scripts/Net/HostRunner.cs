@@ -30,9 +30,7 @@ namespace BookBuddies.Net
             }
             LocalHost.Name = name;
             HostRunner.listed = listed;
-            if (!LocalHost.Start()) return false;
-            LocalParty.Leader = Settings.AccountId; // you lead the party everyone who visits joins
-            return true;
+            return LocalHost.Start(); // you lead the party everyone who visits joins (Update keeps it so)
         }
 
         /// <summary>Closes your world: visitors are sent home, what they did is saved, the party ends, and it's no longer announced.</summary>
@@ -65,6 +63,12 @@ namespace BookBuddies.Net
         {
             if (!LocalHost.Running || !listed) StopAnnouncing();
             if (!LocalHost.Running) return;
+            string leader = Settings.AccountIdFor(Settings.Local); // you lead it, even when you signed in after it opened
+            if (LocalParty.Leader != (leader.Length > 0 ? leader : null))
+            {
+                LocalParty.Leader = leader;
+                Debug.Log(leader.Length > 0 ? "BookBuddies party: your world's party is led by " + leader : "BookBuddies party: hosting while signed out offline, so nobody leads the party yet");
+            }
             LocalHost.Pump();
             if (beacon == null && listed) beacon = LocalBeacon.Announce(LocalHost.Info); // read on the beacon's thread: a fresh copy each time
         }

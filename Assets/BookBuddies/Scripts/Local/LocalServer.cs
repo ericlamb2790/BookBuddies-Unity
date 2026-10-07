@@ -120,6 +120,17 @@ namespace BookBuddies.Local
             SaveError = null;
         }
 
+        /// <summary>Clearing the device: the store is forgotten (the next use reads FilePath again) and a write of it already on its way is dropped.</summary>
+        public static void Forget()
+        {
+            lock (writing)
+            {
+                if (store != null) Interlocked.Exchange(ref store.Written, long.MaxValue);
+                store = null;
+                SaveError = null;
+            }
+        }
+
         // the store as text now, and the write that puts it on disk; null when nothing changed since the last save
         static Action Snapshot()
         {

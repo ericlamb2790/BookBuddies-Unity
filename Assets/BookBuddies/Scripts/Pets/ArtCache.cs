@@ -40,6 +40,13 @@ namespace BookBuddies.Pets
             return null;
         }
 
+        /// <summary>Deletes every saved drawing (clearing the device); each is drawn again when it's next needed.</summary>
+        public static void Clear()
+        {
+            try { if (Directory.Exists(Dir)) Directory.Delete(Dir, true); }
+            catch (System.Exception e) { Debug.LogWarning("BookBuddies: couldn't clear the saved drawings. " + e.Message); }
+        }
+
         /// <summary>Saves a fresh drawing for next time (a failed write only means drawing it again later).</summary>
         public static void Store(Texture2D tex, string svg)
         {

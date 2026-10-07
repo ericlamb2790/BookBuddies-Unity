@@ -17,7 +17,7 @@ namespace BookBuddies.Net
     /// </summary>
     public static class PetSync
     {
-        const float Every = 10;            // seconds between pushes at save points (saves meanwhile fold into the next)
+        const float Every = 120;           // seconds between pushes at save points (saves meanwhile fold into the next)
         const string SaveKey = "bb.petsync"; // per online account: {map: {"<server>|<id>": twin id}, was: {"<server>|<id>": {name, look}}, "active|<server>": id}
 
         static Task pushing;
@@ -61,7 +61,7 @@ namespace BookBuddies.Net
 
         /// <summary>
         /// Sends the pet changes made on a server away from your online account (from: the one you're on unless named) to
-        /// your online account. One push at a time, at most every 10 s unless now: saves that come meanwhile fold into one
+        /// your online account. One push at a time, at most every 2 minutes unless now: saves that come meanwhile fold into one
         /// more push of your pets as they are then. Returns the push under way, if any. Never throws.
         /// </summary>
         public static Task Push(bool now = false, string from = null)
@@ -96,8 +96,10 @@ namespace BookBuddies.Net
             string online = Settings.OnlineServer, token = Settings.TokenFor(online), account = Settings.AccountIdFor(online);
             try
             {
-                if (!await BBApi.Up(online)) return;
                 var theirs = await BBApi.PetsOn(here); // as that server has them (MyPets may only hold a stand-in after a switch)
+                string seen = Fingerprint(theirs), seenKey = "seen|" + here;
+                if (Load().Str(seenKey) == seen) return; // nothing changed there since the last push: the online server isn't asked
+                if (!await BBApi.Up(online)) return;
                 var list = await BBApi.SendTo(online, token, "GET", "/me/pets", null);
                 if (Settings.AccountIdFor(online) != account) return; // signed in as someone else meanwhile
                 var s = Load();
@@ -147,6 +149,9 @@ namespace BookBuddies.Net
                     now[slot] = active;
                     Save(now);
                 }
+                var done = Load();
+                done[seenKey] = seen;
+                Save(done);
             }
             catch (BBApi.ApiError) { } // not now: the changes wait for the next save
             catch (Exception e) { Debug.LogException(e); }
@@ -189,6 +194,13 @@ namespace BookBuddies.Net
         }
 
         static HashSet<string> Ids(Dictionary<string, object> list) => new HashSet<string>(Pets(list).ConvertAll(p => p.Str("id")));
+
+        // a server's pets and active one as a short hash, to tell whether anything changed since the last push
+        static string Fingerprint(Dictionary<string, object> pets)
+        {
+            using (var sha = System.Security.Cryptography.SHA1.Create())
+                return Convert.ToBase64String(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(Json.Write(pets.Arr("pets")) + "|" + pets.Str("active"))));
+        }
 
         static Dictionary<string, object> Was(string name, string look) => new Dictionary<string, object> { ["name"] = name, ["look"] = look };
 

@@ -19,7 +19,7 @@ namespace BookBuddies.Net
     public static class CoinBank
     {
         const float FreshFor = 20; // seconds a finished Refresh stays good for the same sign-in
-        const float SendEvery = 10;  // seconds between sends to your account at save points (saves meanwhile fold into the next)
+        const float SendEvery = 120; // seconds between sends to your account at save points (saves meanwhile fold into the next)
         const string CarriedKey = "bb.carried"; // sessions carried home from worlds: [{world, body, banked}] (banked -1: not yet)
 
         static Task<bool> syncing;
@@ -133,7 +133,7 @@ namespace BookBuddies.Net
 
         /// <summary>
         /// A save point away from your online account (AutoSave, leaving): offline the open session ends and banks; in a
-        /// friend's world your coins there come home (Carry) and bank. One send at a time, at most every 10 s unless now:
+        /// friend's world your coins there come home (Carry) and bank. One send at a time, at most every 2 minutes unless now:
         /// saves that come meanwhile fold into one more send, made with the newest numbers. Nothing is sent while the
         /// online server is down. Never throws.
         /// </summary>

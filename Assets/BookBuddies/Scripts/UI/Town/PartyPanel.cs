@@ -175,8 +175,22 @@ namespace BookBuddies.UI
             if (!this) return;
             // no answer: a blip while the town is still connected keeps the card; a closed world takes it away
             if (Settings.Server == server && (reply != null || !net.IsLive)) Show(reply != null && reply.Truthy("party") ? reply : null);
+            Note(reply, server);
             if (again) { again = false; Fetch(); }
         }
+
+        // a line in the log whenever what the world says about the party changes (to see why one didn't form)
+        static void Note(Dictionary<string, object> reply, string server)
+        {
+            string line = reply == null ? "no answer" : !reply.Truthy("party") ? "no party"
+                : $"{reply.Arr("members").Count} in it, you {reply.Str("you")}, leader {reply.Str("leader")}";
+            line = $"BookBuddies party on {Settings.HostOf(server)}: {line}";
+            if (line == noted) return;
+            noted = line;
+            Debug.Log(line);
+        }
+
+        static string noted;
 
         void Show(Dictionary<string, object> party)
         {

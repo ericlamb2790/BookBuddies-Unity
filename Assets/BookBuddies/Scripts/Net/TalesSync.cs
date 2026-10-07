@@ -11,13 +11,13 @@ namespace BookBuddies.Net
     /// website and your other devices, and entering town settles it (Settle, see Decide): another account's save goes
     /// aside, a newer one from another device comes down, the website's Tales progress comes in once, and the saves of
     /// buddies that joined this account are folded in, asking which adventure stays when both have one. Uploads go at most
-    /// once a minute when the save changed (Push, at save points), and at once before a merge, signing out or showing the
+    /// every 2 minutes when the save changed (Push, at save points), and at once before a merge, signing out or showing the
     /// recovery code; only the save the online account owns goes, with that server's sign-in, wherever you play. A server
     /// without these routes (404 with no "why") gets none of this for the run. Main thread only.
     /// </summary>
     public static partial class TalesSync
     {
-        const float Every = 60;        // seconds between uploads at save points
+        const float Every = 120;       // seconds between uploads at save points
         const int MaxText = 64000;     // the server's limit for a save
 
         static float pushedAt = -Every;
@@ -69,7 +69,7 @@ namespace BookBuddies.Net
         };
 
         /// <summary>
-        /// AutoSave: uploads the save if it changed since the last upload, at most once a minute unless now (pausing,
+        /// AutoSave: uploads the save if it changed since the last upload, at most every 2 minutes unless now (pausing,
         /// quitting). A save point's own time stamp is in first. When the online server can't be reached it waits for the next.
         /// </summary>
         public static void Push(bool now = false)
