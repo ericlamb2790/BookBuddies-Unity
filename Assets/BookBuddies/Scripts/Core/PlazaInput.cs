@@ -127,6 +127,17 @@ namespace BookBuddies
 #endif
         }
 
+        /// <summary>Tab, even while typing (it switches the chat box between town and party chat).</summary>
+        public static bool TabPressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            var k = Keyboard.current;
+            return k != null && k.tabKey.wasPressedThisFrame;
+#else
+            return false; // the Input System only; the chat box's Party chip still switches
+#endif
+        }
+
         static bool Pressed(PlazaAction a)
         {
 #if ENABLE_INPUT_SYSTEM

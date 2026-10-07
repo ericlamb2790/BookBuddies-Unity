@@ -124,6 +124,9 @@ namespace BookBuddies
             set { PlayerPrefs.SetString(Key(AccountKey, Server), value ?? ""); PlayerPrefs.Save(); }
         }
 
+        /// <summary>Your account's id on one server (empty when signed out there or unknown).</summary>
+        public static string AccountIdFor(string server) => TokenFor(server).Length > 0 ? PlayerPrefs.GetString(Key(AccountKey, server), "") : "";
+
         /// <summary>Signs out of the server in use.</summary>
         public static void SignOut() => SignOut(Server);
 

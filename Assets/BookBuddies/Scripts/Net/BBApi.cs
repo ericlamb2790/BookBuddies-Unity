@@ -65,6 +65,13 @@ namespace BookBuddies.Net
             catch (ApiError e) when (e.Status >= 400) { return false; }
         }
 
+        /// <summary>Whether a server answers its health check, within a few seconds. Never throws.</summary>
+        public static async Task<bool> Up(string server)
+        {
+            try { await SendTo(server, null, "GET", "/health", null, QuickTimeout); return true; }
+            catch (ApiError) { return false; }
+        }
+
         /// <summary>Your account, including "pet" (your active pet's look as JSON text), "name", "is_admin" (remembered in Settings.IsAdmin) and, on the Unity server, "pets" and "active".</summary>
         public static async Task<Dictionary<string, object>> Me()
         {
@@ -128,6 +135,13 @@ namespace BookBuddies.Net
             string url = $"{ws}/api/world/live?ticket={Uri.EscapeDataString(ticket)}";
             return viaPass ? $"{url}&town={Uri.EscapeDataString(town)}&s={shard}" : url;
         }
+
+        /// <summary>
+        /// Your party in a hosted world (a friend's, or your own while it's open): "party" (false when there's none),
+        /// "leader" and "you" (account ids), "members" [{id, name, look, leader, online, town, shard}] and the last 30 "chat"
+        /// lines [{n, from, name, text, at}].
+        /// </summary>
+        public static Task<Dictionary<string, object>> Party() => Send("GET", "/party", null, true);
 
         // ---- the wallet (every reply is the whole wallet: "balance", "fair", "gift", "used", "recent"…; see Economy/Wallet) ----
 
@@ -195,11 +209,8 @@ namespace BookBuddies.Net
             Settings.Server = server;
             server = Settings.Server;
             if (server == from) return;
-            if (from == Settings.Local)
-            {
-                CoinBank.EndSession();
-                _ = CoinBank.SyncAll();
-            }
+            if (from == Settings.Local) CoinBank.EndSession(); // offline play ends: its coins are ready to bank
+            _ = CoinBank.Refresh(); // a world starting or ending: your account's coins come up to date
             try
             {
                 // offline the profile comes from your online account; in a friend's world from wherever you just were

@@ -55,6 +55,8 @@ namespace BookBuddies.Live
         public event System.Action<string> Toast;
         public event System.Action<string, string> Banner;       // title, subtitle
         public event System.Action<string, string, bool> ChatLine; // who, text, isVillager
+        public event System.Action<string, string> PartyLine;      // who, text: party chat, from any town
+        public event System.Action PartyChanged;                   // the party's members, leader or whereabouts changed
         public event System.Action<PetActor> PetTapped;
         public event System.Action Changed;                       // people count, live state or hint changed
 
@@ -511,6 +513,16 @@ namespace BookBuddies.Live
             else { Me.Say(text); ChatLine?.Invoke("You", text, false); }
         }
 
+        /// <summary>Says something to your party in a hosted world: its members hear it in whichever town they're in.</summary>
+        public void SendPartyChat(string text)
+        {
+            text = text?.Trim();
+            if (string.IsNullOrEmpty(text)) return;
+            if (text.Length > 140) text = text.Substring(0, 140);
+            if (Live) Send("psay", "text", text);
+            else Notify("You’re not connected right now, so your party can’t hear you");
+        }
+
         public void Emote(string emoji)
         {
             Me.ShowEmote(emoji);
@@ -702,6 +714,12 @@ namespace BookBuddies.Live
                     if (e != Me && !e.IsBot && Vector2.Distance(e.Pos, Me.Pos) < 12) Sound.Play("chat", .6f);
                     ChatLine?.Invoke(e == Me ? "You" : e.Name, m.Str("text"), e.IsBot);
                     break;
+                case "psay":
+                    HearParty(m.Str("from"), m.Str("name"), m.Str("text"));
+                    break;
+                case "party":
+                    PartyChanged?.Invoke();
+                    break;
                 case "item":
                     AddItem(m.Obj("it"));
                     break;
@@ -737,6 +755,21 @@ namespace BookBuddies.Live
                     Notify(m.Str("msg"));
                     break;
             }
+        }
+
+        // a party chat line from any town: over the speaker when they're in this room (party members' room messages
+        // don't carry their account id, so they're found by name), and in the chat log with its Party tag
+        void HearParty(string from, string name, string text)
+        {
+            if (text.Length == 0 || Muted.Contains(from) || Muted.Contains(name)) return;
+            bool mine = from == Settings.AccountId;
+            PetActor speaker = mine ? Me : null;
+            if (!mine)
+                foreach (var a in actors.Values)
+                    if (a != Me && !a.IsBot && !a.Gone && a.Name == name) { speaker = a; break; }
+            if (speaker != null) speaker.Say(text);
+            if (!mine) Sound.Play("chat", .6f);
+            PartyLine?.Invoke(mine ? "You" : name, text);
         }
 
         /// <summary>

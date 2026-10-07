@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using BookBuddies.Economy;
 using BookBuddies.Local;
 using UnityEngine;
 
@@ -10,12 +11,18 @@ namespace BookBuddies.Net
     /// Banks offline coins into your online wallet. A session is one stretch of offline play; when it ends (quitting, back
     /// to the title, switching to online) its total goes to the online server once (POST /wallet/bank), which checks it
     /// against that session's finds and the daily caps. Banked coins leave the offline purse; coins the server refuses stay
-    /// in it. Sessions that couldn't upload (no network, a crash) try again at the next launch online, or when the next
-    /// offline session ends. Main thread only.
+    /// in it. Sessions that couldn't upload (no network, a crash) try again at the next launch, sign-in or switch of
+    /// server, or when the title's server check turns green. Nothing is sent until the online server answers its health
+    /// check. Main thread only.
     /// </summary>
     public static class CoinBank
     {
+        const float FreshFor = 20; // seconds a finished Refresh stays good for the same sign-in
+
         static Task<bool> syncing;
+        static Task refreshing;
+        static string freshFor;    // the sign-in the last finished Refresh was for
+        static float freshAt = -99;
 
         /// <summary>Coins this launch's uploads have banked so far (the coins sheet says so).</summary>
         public static int Banked { get; private set; }
@@ -43,9 +50,31 @@ namespace BookBuddies.Net
         /// Uploads every closed session of the offline profile that isn't banked yet, with your sign-in on the online
         /// server (none there: the coins wait in the offline purse). Never throws; true when nothing is left to upload.
         /// </summary>
-        public static Task<bool> SyncAll() => syncing != null && !syncing.IsCompleted ? syncing : (syncing = Upload());
+        public static Task<bool> SyncAll() => syncing != null && !syncing.IsCompleted ? syncing : (syncing = Upload(false));
 
-        static async Task<bool> Upload()
+        /// <summary>
+        /// Brings your account's coins up to date: once the online server answers its health check, offline sessions that
+        /// aren't banked yet go up first, then the fresh balance comes down (Wallet.TakeOnline). When it's down, or there's
+        /// no online account, nothing is sent and the last balance stays. Runs at launch, sign-in and each switch of server
+        /// (a world starting or ending); never throws.
+        /// </summary>
+        public static Task Refresh() => refreshing != null && !refreshing.IsCompleted ? refreshing : (refreshing = RefreshNow());
+
+        static async Task RefreshNow()
+        {
+            if (!HasBank) return;
+            string server = Settings.OnlineServer, token = Settings.TokenFor(server);
+            if (token == freshFor && Time.realtimeSinceStartup - freshAt < FreshFor) return;
+            if (!await BBApi.Up(server)) return;
+            await (syncing != null && !syncing.IsCompleted ? syncing : (syncing = Upload(true)));
+            try { Wallet.TakeOnline(await BBApi.SendTo(server, token, "GET", "/wallet", null)); }
+            catch (BBApi.ApiError) { return; }
+            freshFor = token;
+            freshAt = Time.realtimeSinceStartup;
+        }
+
+        // up: the online server just answered its health check (otherwise it's asked before the first upload)
+        static async Task<bool> Upload(bool up)
         {
             try
             {
@@ -59,6 +88,7 @@ namespace BookBuddies.Net
                     var next = waiting.Find(s => !tried.Contains(s.Id));
                     if (next == null) return waiting.Count == 0;
                     if (token.Length == 0) return false;
+                    if (!up && !(up = await BBApi.Up(server))) return false; // down: the sessions wait, nothing is sent
                     tried.Add(next.Id);
                     int banked = await Bank(server, token, next);
                     if (banked < 0) return false;

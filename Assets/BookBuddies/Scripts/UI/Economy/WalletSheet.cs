@@ -65,7 +65,7 @@ namespace BookBuddies.UI
                 return;
             }
             if (Wallet.OfflinePurse) Line(card, CoinBank.HasBank
-                ? "Kept on this PC. What you find goes to your online wallet when you stop playing offline."
+                ? "Kept on this PC. What you find goes to your online wallet when you stop playing offline." + OnlineNote()
                 : "Kept on this PC.");
             if (notice.Length > 0) UiKit.Label(card, notice, UiKit.SmallSize + 1, UiKit.RoseInk, UiKit.Bold);
             if (!Wallet.Ready) Offline(card);
@@ -260,5 +260,12 @@ namespace BookBuddies.UI
         static void Heading(Transform card, string title) => UiKit.Label(card, title, UiKit.BodySize, UiKit.EmberInk, UiKit.Bold);
 
         static Text Line(Transform parent, string text) => UiKit.Label(parent, text, UiKit.SmallSize + 1, Palette.InkSoft);
+
+        // offline, what your online wallet held when it was last fetched
+        static string OnlineNote()
+        {
+            int n = Wallet.OnlineCoins;
+            return n < 0 ? "" : $" Your online wallet has {CoinPill.Format(n)} coin{(n == 1 ? "" : "s")}.";
+        }
     }
 }

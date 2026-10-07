@@ -74,6 +74,8 @@ Open any scene (the default `SampleScene` is fine) and press **Play**. The game 
 
 **Joining.** On the other PC, open the same card and type the code into **Join a world**, or pick the world from **Worlds on your network**. The first visit makes your profile in that world from your buddy and pets. Coins you find there stay in that world and aren't banked online. **Leave this world** on the title screen takes you home, and the game always starts on your own server at the next launch. You need a hatched buddy to join, and you can't visit while your own world is open. Hosting and joining are for PCs, so the card isn't shown on phones or in WebGL.
 
+**Parties.** Everyone in an open world is in one party, led by the host: there are no invites to send or accept. In town, the party card under the "where" card lists each member with their pet, a crown for the host, and where they are (*Here*, a place's name, *Not in town* or *Away*). **Go** takes you to a member in another place, and tapping the card's header folds it. Friends who go to the same town land in the same room. The chat box's **Party** chip (or **Tab** while typing) switches between talking to the room and talking to the party, which every member hears in whatever town they're in, with the same kindness rules and pace as town chat. A toast says when someone joins, leaves or arrives where you are, and a visitor's nameplate on the title screen says how big the party is. A visitor who hasn't been in town or done anything for 2 minutes shows as *Away*, and leaves the party 10 minutes after that (they're back in as soon as they return). The party ends when the host closes the world. The host's `/api/party` route answers it, and a `party` message in town tells each member's game to look again, at most once a second.
+
 **The join code** is the host's home-network IPv4 address (and its port, when that isn't 7790) in 8 or 12 letters and digits, with a check letter that catches typos. It needs no internet, and nothing goes through bookbuddies.pet. The Join box also takes a plain address: `192.168.1.5`, `192.168.1.5:7790`, `damp-pc.local` or `http://…`.
 
 **Ports.** A world answers on **TCP 7790** (the same `/api` routes as the Worker, plus the live town's WebSocket). The "Worlds on your network" list uses **UDP 7791**. To play over the internet, the host forwards TCP 7790 on their router to their PC, and friends type the host's public address as `ip:7790`. Up to 16 friends can be in town at once, and each PC can make up to 10 new profiles each time the world opens.
@@ -95,6 +97,7 @@ Open any scene (the default `SampleScene` is fine) and press **Play**. The game 
 | Emotes | ❤️ button | Q, or 1 to 8 | X |
 | Tricks | 🐾 button | F | Y |
 | Chat | chat box | Enter or T | Select (View) |
+| Party chat (in a hosted world) | Party chip in the chat box | Tab while typing | |
 | Zoom | scroll or pinch | + and − | LB and RB |
 | Town map | tap the minimap | M | right stick click |
 | Hide the HUD | two-finger tap | H | |
@@ -160,13 +163,13 @@ If art looks stretched or blurry after a swap, right-click `Resources/BookBuddie
 |---|---|
 | `Scripts/Core` | Startup and screen flow (`Boot.cs`), input for every device, settings, sound and music, your buddy, art loading, colours, JSON |
 | `Scripts/Net` | The Worker's HTTP API, the live WebSocket, banking offline coins (`CoinBank.cs`), plain-http requests to a friend's world (`PlainHttp.cs`) and keeping your world open while you host (`HostRunner.cs`) |
-| `Scripts/Local` | The offline backend: the Worker's account, pet, wallet and town routes and the live town rooms in plain C#, saved to one file. Hosting it for friends: the HTTP and WebSocket server (`LocalHost.cs`, `HostSocket.cs`), join codes (`JoinCode.cs`) and the network list (`LocalBeacon.cs`) |
+| `Scripts/Local` | The offline backend: the Worker's account, pet, wallet and town routes and the live town rooms in plain C#, saved to one file. Hosting it for friends: the HTTP and WebSocket server (`LocalHost.cs`, `HostSocket.cs`), join codes (`JoinCode.cs`), the network list (`LocalBeacon.cs`) and the world's party (`LocalParty.cs`) |
 | `Scripts/Live` | The live town: connection, players, chat, emotes, tricks and interactions |
 | `Scripts/World` | The town map, camera, villagers and ambient life |
 | `Scripts/Pets` | Pet looks, the pet drawing (a port of build 551's `petSVG`), DNA rolls, your pets list and pets walking around |
 | `Scripts/Tales` | Tales of Pages: data, battle engine, heroes, villains, loot, save, and Bramble Road |
 | `Scripts/UI/Tales` | Battle screen, reward card, bag, hero card and reveals |
-| `Scripts/UI` | Title, intro and arrival cinematics, hatching, loading, Settings, HUD, minimap, menus, name tags |
+| `Scripts/UI` | Title, intro and arrival cinematics, hatching, loading, Settings, HUD, minimap, menus, name tags, the party card in a hosted world (`Town/PartyPanel.cs`) |
 | `Editor` | Import settings for the art |
 | `Server` (next to `Assets`) | The new Cloudflare Worker |
 
@@ -177,6 +180,7 @@ If art looks stretched or blurry after a swap, right-click `Resources/BookBuddie
 - **Tales:** only Bramble Road link 1 and the Inkwell Caves. Rosewater and the other towns, the shop, class change, story, raids, gear reroll and ascend come later. Villains are only on your own screen, not shared with other players.
 - **Pets:** no stink or dirty mood, and no tail wag yet. Hatching and rerolling are free. Pet XP for evolution isn't tracked yet.
 - **Emoji in chat text** only show when they come first in a message, because Unity's built-in text can't draw colour emoji.
+- **Parties with online friends:** parties only happen in hosted worlds. Inviting friends over the internet will come later through bookbuddies.pet.
 - **WebGL** would need a browser WebSocket bridge. Desktop, Android and iOS work.
 
 **After updating, redeploy the Worker** (`npx wrangler deploy` in `Server`). It adds the pets list and the admin log by itself. To become the first admin, see "Make the first admin" in `Server/README.md`.

@@ -159,6 +159,26 @@ namespace BookBuddies.Economy
             catch (BBApi.ApiError) { GoneOffline(); return false; }
         }
 
+        /// <summary>Your online wallet's coins as last fetched (also while you play offline or in a world), or -1 when unknown.</summary>
+        public static int OnlineCoins
+        {
+            get
+            {
+                var saved = PlayerPrefs.GetString(SavedKey, "").Split('|');
+                string id = Settings.AccountIdFor(Settings.OnlineServer);
+                return saved.Length == 3 && id.Length > 0 && saved[0] == id && int.TryParse(saved[1], out int n) ? n : -1;
+            }
+        }
+
+        /// <summary>Takes in a reply from your online wallet wherever you play: in use online, kept for later in a world.</summary>
+        public static void TakeOnline(Dictionary<string, object> reply)
+        {
+            if (Settings.Server == Settings.OnlineServer) { Apply(reply); return; }
+            if (!reply.Has("balance")) return;
+            PlayerPrefs.SetString(SavedKey, $"{Settings.AccountIdFor(Settings.OnlineServer)}|{reply.Int("balance")}|{reply.Int("fair")}");
+            PlayerPrefs.Save();
+        }
+
         /// <summary>Takes in a wallet reply (any server reply that carries "balance").</summary>
         public static void Apply(Dictionary<string, object> reply)
         {

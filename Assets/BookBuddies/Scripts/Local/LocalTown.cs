@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using BookBuddies.Economy;
 using Msg = System.Collections.Generic.Dictionary<string, object>;
@@ -69,13 +70,21 @@ namespace BookBuddies.Local
         /// <summary>Which place the room is for ("pawtopia", a genre town, "road1"… or "caves").</summary>
         public string Town { get; }
 
+        /// <summary>Which of the place's rooms it is, 1 to LocalServer.Rooms.</summary>
+        public int Shard { get; }
+
         /// <summary>How many players are in the room (villagers and readers aren't counted).</summary>
         public int PlayerCount => players.Count;
 
+        /// <summary>No room for another player.</summary>
+        internal bool Full => players.Count >= Cap;
+
         internal LocalTown(string name, double now)
         {
-            string town = name.Split(':')[0];
+            string[] parts = name.Split(':');
+            string town = parts[0];
             Town = Places.ContainsKey(town) ? town : "pawtopia";
+            Shard = parts.Length > 1 && int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out int shard) && shard > 0 ? shard : 1;
             place = Places[Town];
             idleSince = now;
         }
@@ -164,6 +173,19 @@ namespace BookBuddies.Local
             tickAt = 0;
             folk.Clear();
             idleSince = LocalServer.Now;
+        }
+
+        /// <summary>Whether this player has a link in the room.</summary>
+        internal bool Has(string pid)
+        {
+            foreach (var p in players) if (p.Pid == pid) return true;
+            return false;
+        }
+
+        /// <summary>Sends a message (JSON text) to the players here that "to" picks by account id: the party's chat and nudges.</summary>
+        internal void Tell(Predicate<string> to, string json)
+        {
+            foreach (var p in players) if (to(p.Pid)) p.Link.Deliver(json);
         }
 
         /// <summary>How long the room has been empty, in ms (0 while someone is in it).</summary>
@@ -284,7 +306,8 @@ namespace BookBuddies.Local
                         Broadcast(new Msg { ["t"] = "emo", ["id"] = pl.Id, ["e"] = m["e"] }, pl);
                     break;
                 case "act": Act(pl, m, now); break;
-                case "say": Say(pl, m, now); break;
+                case "say": Say(pl, m, now, false); break;
+                case "psay": Say(pl, m, now, true); break;
                 case "claim": Claim(pl, m); break;
                 case "tale": Invite(pl, m, now); break;
             }
@@ -322,16 +345,21 @@ namespace BookBuddies.Local
             Broadcast(new Msg { ["t"] = "act", ["id"] = pl.Id, ["a"] = a, ["to"] = to }, pl);
         }
 
-        void Say(Player pl, Msg m, double now)
+        // "say" is heard in this room; "psay" is party chat (LocalParty), heard by the party in every town and ignored from
+        // anyone else. Party chat keeps one pace per member, so links in several rooms can't talk faster together.
+        void Say(Player pl, Msg m, double now, bool party)
         {
+            if (party && !LocalParty.Has(pl.Pid)) return;
             if (IsMuted(pl, now)) return;
-            if (now - pl.SaidAt < 1200) { Error(pl, "Slow down a little 🐢"); return; }
+            double last = party ? Math.Max(pl.SaidAt, LocalParty.SaidAt(pl.Pid)) : pl.SaidAt;
+            if (now - last < 1200) { Error(pl, "Slow down a little 🐢"); return; }
             string text = LocalSafety.CleanText(Js.Get(m, "text"), 140);
             if (text.Length == 0) return;
             if (LocalSafety.TextProblem(text) != null) { Error(pl, Unkind); return; }
             if (LocalSafety.PersonalDetails(text)) { Error(pl, "Keep phone numbers and e-mail addresses private 💛"); return; }
             pl.SaidAt = now;
-            Broadcast(new Msg { ["t"] = "say", ["id"] = pl.Id, ["text"] = text });
+            if (party) LocalParty.Say(pl.Pid, pl.Name, text);
+            else Broadcast(new Msg { ["t"] = "say", ["id"] = pl.Id, ["text"] = text });
         }
 
         // Whoever reaches a coin, bag or gift first keeps it: paid into the offline purse (and the open coin session), up

@@ -14,9 +14,10 @@ namespace BookBuddies.UI
     /// <summary>
     /// Everything on screen over the town, laid out for 1920×1080 and kept tidy down to small windows: your pet's card
     /// (top left, the road's objective card under it), controls help, the menu, the minimap and where you are (top right,
-    /// with your world's join code while you host),
+    /// with your world's join code while you host, and your party under it in a hosted world),
     /// toasts and chapter titles (top centre), the dock of emotes, tricks, pets, bag, hero and map (bottom centre), the
-    /// chat box with recent chat over it (bottom left), and the card for the place you're standing at (over the dock).
+    /// chat box with recent chat over it (bottom left; in a party, its Party chip or Tab switches to party chat), and the
+    /// card for the place you're standing at (over the dock).
     /// Also the emote, trick, pet, coins and town menus. Photo mode (H hides it all, P takes a picture) lives here too,
     /// and so do the keyboard and gamepad shortcuts.
     /// </summary>
@@ -39,10 +40,13 @@ namespace BookBuddies.UI
         const float PlaceHalf = 250, PlaceHeight = 76, ObjectiveHeight = 64, MinLane = 400;
         const int ChatLines = 6;
         const float ChatFadeAfter = 12f;
+        const float ChipWidth = 70; // the chat box's Party chip
+        static readonly string PartyInk = "#" + ColorUtility.ToHtmlStringRGB(Palette.Sky);
         const string GiftOfferedKey = "bb.giftOffered"; // the account and day the gift last opened by itself
 
         /// <summary>True while the HUD is hidden (photo mode), so the road's corner hides with it.</summary>
         public static bool Hidden { get; private set; }
+        static bool partyChat; // the chat box talks to your party (kept from town to town)
 
         /// <summary>A dock button: an icon over a word, its key or gamepad button in the corner, amber while its menu is open.</summary>
         sealed class Tile { public Button Button; public Image Back; public Text Word; public GameObject Key, Pad; public System.Func<bool> IsOpen; }
@@ -54,11 +58,13 @@ namespace BookBuddies.UI
         CanvasGroup layerGroup;
         Overlays labels;
         Notices notices;
+        PartyPanel party;
 
         RectTransform where, hint, dock, chatBox, logLines, hosting;
         Image liveDot;
-        Text placeText, detailText, chatHint, hostingText;
-        Button playHere, send;
+        Text placeText, detailText, chatHint, hostingText, chipText;
+        Button playHere, send, chip;
+        Image chatIcon;
         Image hintIcon; Text hintName, hintSub, hintLater, verbLabel; Button verb; Image verbKey; Text verbKeyText;
         CanvasGroup log; float lastLineAt = -99;
         InputField chat; float chatOpenedAt = -99;
@@ -68,8 +74,9 @@ namespace BookBuddies.UI
         Minimap minimap;
         CanvasGroup photoHint;
         Vector2 laidOut;
-        float shownAt, photoHintAt = -99, dockTop, chatRest, chatOpen, hostingAt;
+        float shownAt, photoHintAt = -99, dockTop, dockRight, chatRest, chatOpen, hostingAt;
         bool narrowChat;
+        int shownChip = -1; // the chat box's chip as last shown: 0 none (no party), 1 town chat, 2 party chat
 
         /// <summary>Builds the HUD over the town. "toTitle" goes back to the title screen (from the menu, or after signing out).</summary>
         public static Hud Create(PlazaWorld world, System.Action toTitle)
@@ -85,6 +92,7 @@ namespace BookBuddies.UI
             world.Toast += hud.ShowToast;
             world.Banner += hud.ShowBanner;
             world.ChatLine += hud.AddChatLine;
+            world.PartyLine += hud.AddPartyLine;
             world.PetTapped += hud.OpenPet;
             world.Changed += hud.Refresh;
             hud.net.StateChanged += hud.OnNetState;
@@ -102,6 +110,7 @@ namespace BookBuddies.UI
                 world.Toast -= ShowToast;
                 world.Banner -= ShowBanner;
                 world.ChatLine -= AddChatLine;
+                world.PartyLine -= AddPartyLine;
                 world.PetTapped -= OpenPet;
                 world.Changed -= Refresh;
             }
@@ -126,6 +135,7 @@ namespace BookBuddies.UI
             BuildPlaceCard();
             BuildDock();
             BuildChat();
+            party = PartyPanel.Create(layer, world);
             notices = Notices.Create(layer);
             minimap = Minimap.Create(layer, world);
             emotes = Menus.Emotes(root, world);
@@ -296,7 +306,8 @@ namespace BookBuddies.UI
             chat.onEndEdit.AddListener(OnChatEnd);
             chatBox = ((RectTransform)chat.transform).Pin(Vector2.zero, new Vector2(Margin, Margin), new Vector2(ChatWidth, ChatHeight));
             UiKit.Shadow(chatBox, (int)(ChatHeight / 2), 14, 4, .22f);
-            ((RectTransform)UiKit.Icon(chatBox, "💬", 24).transform).Pin(new Vector2(0, .5f), new Vector2(18, 0), new Vector2(24, 24));
+            chatIcon = UiKit.Icon(chatBox, "💬", 24);
+            chatIcon.rectTransform.Pin(new Vector2(0, .5f), new Vector2(18, 0), new Vector2(24, 24));
             chatHint = (Text)chat.placeholder;
             foreach (var t in new[] { chat.textComponent, chatHint })
             {
@@ -306,6 +317,14 @@ namespace BookBuddies.UI
             send = Quiet(UiKit.Button(chatBox, "Send", Palette.Amber, SendChat, 22));
             ((RectTransform)send.transform).Pin(new Vector2(1, .5f), new Vector2(-5, 0), new Vector2(44, 44));
             UiKit.Arrow(send.transform, Palette.Ink);
+
+            // in a party, the 💬 makes way for a chip that switches between town and party chat
+            chip = Quiet(UiKit.Button(chatBox, "Party chat", Palette.Paper, ToggleParty, 22));
+            ((RectTransform)chip.transform).Pin(new Vector2(0, .5f), new Vector2(5, 0), new Vector2(ChipWidth, 44));
+            UiKit.Outline(chip, Palette.Ink.WithAlpha(.12f), 22, 1);
+            chipText = UiKit.Label(chip.transform, "Party", UiKit.SmallSize, Palette.InkSoft, UiKit.Bold, TextAnchor.MiddleCenter);
+            ((RectTransform)chipText.transform).Fill();
+            UiKit.Show(chip, false);
         }
 
         // ---- every frame ----
@@ -350,6 +369,7 @@ namespace BookBuddies.UI
                 else if (!PlazaInput.Locked) Toggle(pause);
                 return;
             }
+            if (chat.isFocused && party.Showing && PlazaInput.TabPressed()) ToggleParty();
             if (PlazaInput.Typing) return;
             if (UiStack.Any && !AnySheetOpen()) return; // a full screen (settings, the bag, admin tools) has the keys
             if (PlazaInput.Down(PlazaAction.Menu)) { if (minimap.IsBig) minimap.Toggle(); Toggle(pause); return; }
@@ -430,6 +450,7 @@ namespace BookBuddies.UI
             foreach (var t in tiles) if (t.Button.gameObject.activeSelf) count++;
             float tile = wide ? TileWidth : SmallTile;
             float dockLeft = (screen.x - (count * tile + (count - 1) * TileGap + DockPad * 2)) / 2;
+            dockRight = screen.x - dockLeft;
             chatRest = Mathf.Min(ChatWidth, dockLeft - Margin - Gap);
             chatOpen = Mathf.Min(ChatOpenWidth, dockLeft - Margin - Gap);
             narrowChat = chatRest < ChatMinWidth;
@@ -469,8 +490,10 @@ namespace BookBuddies.UI
         {
             bool typing = chat.isFocused || chat.text.Length > 0 || Time.unscaledTime - chatOpenedAt < .3f;
             UiKit.Show(send, typing);
-            string hintText = typing || Application.isMobilePlatform ? "Say something…" : "Press Enter to chat";
+            bool inParty = party.Showing, toParty = inParty && partyChat;
+            string hintText = !typing && !Application.isMobilePlatform ? "Press Enter to chat" : toParty ? "Say something to your party…" : "Say something…";
             if (chatHint.text != hintText) chatHint.text = hintText;
+            ShowChip(inParty, toParty);
             if (narrowChat)
             {
                 UiKit.Show(chat, typing);
@@ -484,12 +507,36 @@ namespace BookBuddies.UI
             chatBox.sizeDelta = new Vector2(Mathf.Lerp(chatBox.sizeDelta.x, w, glide), ChatHeight);
         }
 
-        // the "where" card sits centred under the minimap (or right under the corner buttons without it)
+        // the Party chip and the 💬 trade places, and the words start after whichever is there
+        void ShowChip(bool inParty, bool toParty)
+        {
+            int state = !inParty ? 0 : toParty ? 2 : 1;
+            if (state == shownChip) return;
+            shownChip = state;
+            UiKit.Show(chip, inParty);
+            UiKit.Show(chatIcon, !inParty);
+            foreach (var t in new[] { chat.textComponent, chatHint }) t.rectTransform.offsetMin = new Vector2(inParty ? ChipWidth + 14 : 52, 0);
+            ((Image)chip.targetGraphic).color = toParty ? Palette.Sky : Palette.Paper;
+            chipText.color = toParty ? Palette.Cream : Palette.InkSoft;
+        }
+
+        // the "where" card sits centred under the minimap (or right under the corner buttons without it), the party card under it
         void FitWhere()
         {
             bool map = Minimap.ShowsSmall(laidOut.x);
-            float half = Mathf.Max(map ? Minimap.Width : 0, where.rect.width) / 2;
-            where.anchoredPosition = new Vector2(-Margin - half, -(map ? BelowCorner + Minimap.Width + Gap : BelowCorner));
+            float half = Mathf.Max(map ? Minimap.Width : 0, where.rect.width) / 2, top = map ? BelowCorner + Minimap.Width + Gap : BelowCorner;
+            where.anchoredPosition = new Vector2(-Margin - half, -top);
+            party.Fit(top + where.rect.height + Gap, PartyFloor());
+        }
+
+        // the party card stays above whatever reaches the bottom right: the dock and the place card over it, or the narrow chat box
+        float PartyFloor()
+        {
+            float left = laidOut.x - Margin - PartyPanel.Width, floor = Margin;
+            if (left < dockRight + Gap) floor = dockTop + Gap;
+            if (left < laidOut.x / 2 + PlaceHalf + Gap) floor = dockTop + Gap + PlaceHeight + Gap;
+            if (narrowChat) floor = Mathf.Max(floor, dockTop + Gap + ChatHeight + Gap);
+            return floor;
         }
 
         // ---- menus ----
@@ -606,19 +653,40 @@ namespace BookBuddies.UI
 
         void SendChat()
         {
-            world.Say(chat.text);
+            if (partyChat && party.Showing) world.SendPartyChat(chat.text);
+            else world.Say(chat.text);
             chat.text = "";
             CloseChat();
         }
 
-        void AddChatLine(string who, string text, bool villager)
+        // the Party chip or Tab: town chat or party chat, and back to typing either way
+        void ToggleParty()
+        {
+            bool refocus = !chat.isFocused && chat.text.Length > 0; // the chip took focus from a half-typed line
+            partyChat = !partyChat;
+            OpenChat();
+            if (refocus) StartCoroutine(CaretToEnd());
+        }
+
+        // focusing the box again selects all its words, so the next key would replace the line: carry on after it instead
+        System.Collections.IEnumerator CaretToEnd()
+        {
+            for (int i = 0; i < 3 && !chat.isFocused; i++) yield return null;
+            if (chat.isFocused) chat.MoveTextEnd(false);
+        }
+
+        void AddChatLine(string who, string text, bool villager) => AddLine(Escape(who), text, villager ? "#2f5fb0" : "#b4521f");
+
+        // party chat, from this town or any other: tagged and in the party's colour
+        void AddPartyLine(string who, string text) => AddLine("Party · " + Escape(who), text, PartyInk);
+
+        void AddLine(string who, string text, string colour)
         {
             string words = UiKit.SplitEmoji(text, out _);
             if (words.Length == 0) return;
             var line = UiKit.Label(logLines, "", UiKit.BodySize, Palette.Ink);
             line.supportRichText = true;
-            string colour = villager ? "#2f5fb0" : "#b4521f";
-            line.text = $"<color={colour}>{Escape(who)}</color>  {Escape(words)}";
+            line.text = $"<color={colour}>{who}</color>  {Escape(words)}";
             while (logLines.childCount > ChatLines) DestroyImmediate(logLines.GetChild(0).gameObject);
             lastLineAt = Time.unscaledTime;
         }

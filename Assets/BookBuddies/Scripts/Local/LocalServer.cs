@@ -14,6 +14,7 @@ namespace BookBuddies.Local
     /// <summary>
     /// The Unity Worker's account, pet, wallet and town-ticket routes, answered on this PC from one JSON file
     /// (LocalStore). Replies, status codes and messages match the online server's. Pure C#: Boot sets FilePath.
+    /// GET /party is offline only: the party in a hosted world (LocalParty).
     /// </summary>
     public static class LocalServer
     {
@@ -78,6 +79,7 @@ namespace BookBuddies.Local
             if (path == "/me/delete" && method == "POST") return LocalAccounts.DeleteMe(me);
             if (path == "/me/pets" || path.StartsWith("/me/pets/", StringComparison.Ordinal)) return LocalPets.Route(method, path, body, me);
             if (path == "/plaza/world/ticket" && method == "GET") return LocalAccounts.TownTicket(me, query);
+            if (path == "/party" && method == "GET") return LocalParty.Get(me);
             if (path == "/wallet" || path.StartsWith("/wallet/", StringComparison.Ordinal)) return LocalWallet.Route(method, path, body, me);
             throw new LocalProblem("Not found", 404);
         }

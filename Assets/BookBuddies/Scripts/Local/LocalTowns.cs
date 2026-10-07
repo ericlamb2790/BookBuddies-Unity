@@ -1,5 +1,6 @@
 // The offline rooms: one LocalTown per "<town>:<shard>", as the Worker keeps one Durable Object per room (db.js TOWNS).
 
+using System;
 using System.Collections.Generic;
 
 namespace BookBuddies.Local
@@ -31,6 +32,19 @@ namespace BookBuddies.Local
                 if (kv.Value.IdleFor(nowMs) > ForgetAfterMs) (idle ??= new List<string>()).Add(kv.Key);
             }
             if (idle != null) foreach (string name in idle) rooms.Remove(name);
+        }
+
+        /// <summary>The room a player's link is in; null when they aren't in town.</summary>
+        internal static LocalTown Where(string pid)
+        {
+            foreach (var room in rooms.Values) if (room.Has(pid)) return room;
+            return null;
+        }
+
+        /// <summary>Sends a message (JSON text) to the players in every room that "to" picks by account id (LocalParty).</summary>
+        internal static void Tell(Predicate<string> to, string json)
+        {
+            foreach (var room in rooms.Values) room.Tell(to, json);
         }
 
         /// <summary>Tests: forgets every room.</summary>

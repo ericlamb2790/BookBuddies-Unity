@@ -24,7 +24,8 @@ namespace BookBuddies.Local
     /// Opens this PC's offline world to friends' games. They sign up here (their own account, pets and coins in this
     /// world), use the same /api routes as the online server, and join the live rooms over a WebSocket. Start, Stop
     /// and Pump belong to the main thread, and Pump must run every frame while the world is open: requests and town
-    /// messages are only ever handled inside it, because LocalServer and LocalTowns aren't thread-safe.
+    /// messages are only ever handled inside it, because LocalServer and LocalTowns aren't thread-safe. Everyone who
+    /// visits is in the host's party (LocalParty) while the world is open.
     /// </summary>
     public static class LocalHost
     {
@@ -133,6 +134,7 @@ namespace BookBuddies.Local
             catch (SocketException) { }
             foreach (var v in r.Here) v.Link.Dispose();
             r.Here.Clear();
+            LocalParty.Reset(); // the host's own game hears the party is over
         }
 
         /// <summary>
@@ -148,6 +150,7 @@ namespace BookBuddies.Local
             {
                 while (r.Arrived.TryDequeue(out var v)) Welcome(r, v);
                 LocalTowns.Tick(LocalServer.Now);
+                LocalParty.Pump(); // who's where: nudges go out with this frame's messages
                 foreach (var v in r.Here)
                 {
                     while (v.Socket.Inbox.TryDequeue(out string text))
@@ -239,7 +242,9 @@ namespace BookBuddies.Local
             v.Link = new LocalLink();
             v.Link.OnMessage += socket.SendText;
             v.Link.OnClosed += code => socket.Close(HostSocket.Sendable(code) ? code : 1013); // "couldn't join" (1006) can't be sent: "try again later"
-            v.Link.Connect(WorldLinks.LocalScheme + Uri.EscapeDataString(v.Ticket));
+            LocalParty.Visited(Passes.Pid(v.Ticket));
+            // a pass names the room the game asked for, which may not be where its party is now
+            v.Link.Connect(WorldLinks.LocalScheme + Uri.EscapeDataString(LocalParty.Steer(v.Ticket)));
             r.Here.Add(v);
         }
 
@@ -265,6 +270,7 @@ namespace BookBuddies.Local
                     reply.TrySetResult((429, Problem("Lots of new pets from here today. Try again tomorrow.")));
                     return;
                 }
+                LocalParty.Visited(LocalServer.PidForToken(q.Token)); // signed in: in the party, before its own GET /api/party
                 var task = LocalServer.Handle(q.Method, q.Target, q.Body, q.Token);
                 // Handle answers at once (nothing in it awaits); if that ever changes, the reply is still made inside Pump
                 if (task.IsCompleted) Finish(r, q, task, reply);
@@ -278,7 +284,11 @@ namespace BookBuddies.Local
             try
             {
                 var o = task.GetAwaiter().GetResult();
-                if (q.Path == "/api/register") r.Signups[q.Address] = (r.Signups.TryGetValue(q.Address, out int n) ? n : 0) + 1;
+                if (q.Path == "/api/register")
+                {
+                    r.Signups[q.Address] = (r.Signups.TryGetValue(q.Address, out int n) ? n : 0) + 1;
+                    LocalParty.Visited(o.Str("id"));
+                }
                 if (q.Path == "/api/plaza/world/ticket") Hide(r, o);
                 reply.TrySetResult((200, Json.Write(o)));
             }
@@ -636,7 +646,7 @@ namespace BookBuddies.Local
                 return p.ticket.Substring(0, p.ticket.LastIndexOf(':') + 1) + room.ToString(CultureInfo.InvariantCulture);
             }
 
-            static string Pid(string ticket) => ticket.Substring(0, Math.Max(0, ticket.LastIndexOf('|')));
+            public static string Pid(string ticket) => ticket.Substring(0, Math.Max(0, ticket.LastIndexOf('|')));
         }
 
         sealed class Conn

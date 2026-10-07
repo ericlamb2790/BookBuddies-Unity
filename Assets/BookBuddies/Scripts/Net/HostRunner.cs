@@ -30,14 +30,16 @@ namespace BookBuddies.Net
             }
             LocalHost.Name = name;
             HostRunner.listed = listed;
-            return LocalHost.Start();
+            if (!LocalHost.Start()) return false;
+            LocalParty.Leader = Settings.AccountId; // you lead the party everyone who visits joins
+            return true;
         }
 
-        /// <summary>Closes your world: visitors are sent home, what they did is saved, and it's no longer announced.</summary>
+        /// <summary>Closes your world: visitors are sent home, what they did is saved, the party ends, and it's no longer announced.</summary>
         public static void Close()
         {
             if (LocalHost.Running) AutoSave.Now("world closed"); // visitors' changes otherwise wait for the 3-minute save
-            LocalHost.Stop();
+            LocalHost.Stop(); // the party ends with it (LocalParty.Reset)
             if (running != null) running.StopAnnouncing();
         }
 

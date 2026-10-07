@@ -77,7 +77,7 @@ namespace BookBuddies
             Sound.Music("home");
             yield return null;
             CoinBank.EndSession(); // a session a crash left open ends now
-            if (!Settings.IsLocal) _ = CoinBank.SyncAll(); // and sessions that couldn't upload try again (offline boots stay off the network)
+            _ = CoinBank.Refresh(); // then, if the online server is up, sessions that couldn't upload go up and your coins come down
 
             map = TownMap.Load(TownKey);
             loading.Stage("Painting Pawtopia…");
@@ -237,6 +237,9 @@ namespace BookBuddies
             travelling = false;
             AutoSave.Now("arrive");
         }
+
+        /// <summary>A place's name as the loading card says it: "Rosewater", "Inkwell Caves", or the road's stretch.</summary>
+        public static string PlaceName(string place) => About(place).name;
 
         // what the loading card says about a place: its icon, its name and the step line ("Romance town", "Tier I · the meadows")
         static (string icon, string name, string step) About(string place)

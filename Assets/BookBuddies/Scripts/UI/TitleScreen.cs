@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using BookBuddies.Local;
 using BookBuddies.Net;
 using BookBuddies.Pets;
@@ -11,10 +12,11 @@ namespace BookBuddies.UI
     /// <summary>
     /// The title screen over a slowly drifting Pawtopia: the BookBuddies name, the main menu, and your egg
     /// (or the buddy that hatched from it) sitting on a stack of books. Tap the egg and it wobbles; tap your
-    /// buddy and it hops. New players hatch their egg from here. "Play offline" plays on this PC with no network (and is
-    /// offered when the server can't be reached); "Play online" goes back. "Host or join a world" opens your offline world
-    /// to friends on your network, or visits theirs (WorldsSheet); "Leave this world" comes home. The menu works with the
-    /// mouse, touch, keys and the gamepad cursor; short windows get a more compact name and menu so nothing is cut off.
+    /// buddy and it hops. New players hatch their egg from here. Play opens "Where to?": Continue where you are, or go
+    /// somewhere else: Pawtopia online, My world on this PC (just you, or open to friends) or a friend's world (WorldsSheet; the nameplate then
+    /// says how big the party there is in a friend's world).
+    /// The menu works with the mouse, touch, keys and the gamepad cursor; short windows get a more compact name and menu
+    /// so nothing is cut off.
     /// </summary>
     public sealed class TitleScreen : MonoBehaviour
     {
@@ -27,20 +29,21 @@ namespace BookBuddies.UI
 
         TownCamera cam;
         System.Action enterTown, watchIntro;
-        RectTransform root, logo, menu, stage, footer, status;
-        CanvasGroup group;
-        Image pet, glow, statusDot, wash;
-        Text tagline, logoName, townName, plateName, plateSub, statusText, statusHost, playLabel, modeLabel;
-        Button play, signIn, switchPet;
-        Sheet start, naming, unreachable, lost, worlds;
+        RectTransform root, logo, menu, where, stage, footer, status;
+        CanvasGroup group, menuFade, whereFade;
+        Image pet, glow, statusDot, wash, hereIcon;
+        Text tagline, logoName, townName, plateName, plateSub, statusText, statusHost, playLabel, hereLine, homeLine, mineLine;
+        Button play, switchPet, here, home, mine, visit, recover;
+        Sheet start, naming, unreachable, lost, myWorld, joinWorld;
         static bool offeredOffline; // the "can't reach the server" (or "this world") card shows once a launch
         InputField nameField;
         Text nameError, nameNote, hatchLabel;
-        bool canHatch, busy, checking, hosting;
+        bool canHatch, busy, checking, hosting, picking; // picking: "Where to?" is showing
+        int party;                   // members in the party of the world you're visiting (0 while unknown)
         bool? online;                // the last server check: null while unknown
         string checkedServer;        // the server that check was for
-        float shownAt, lastW, lastH, idleAt, animAt, checkAt, hostAt;
-        string anim;
+        float shownAt, lastW, lastH, idleAt, animAt, checkAt, hostAt, swapAt;
+        string anim, whereShown;
         Vector2 camFrom;
         float zoomFrom, distanceFrom;
 
@@ -56,6 +59,7 @@ namespace BookBuddies.UI
             t.Build();
             t.Refresh();
             t.CheckServer();
+            t.CountParty();
             if (notice != null) t.ShowSignIn(notice);
             else VirtualCursor.FocusFirst(t.play);
             return t;
@@ -83,15 +87,11 @@ namespace BookBuddies.UI
             UiKit.Hug(menu, false, true);
             play = MenuButton(UiKit.Primary(menu, "Play", OnPlay, null, 56));
             playLabel = play.GetComponentInChildren<Text>();
-            modeLabel = MenuButton(UiKit.Secondary(menu, "Play offline", SwitchMode, null, 56)).GetComponentInChildren<Text>();
-            if (!Application.isMobilePlatform && Application.platform != RuntimePlatform.WebGLPlayer) // worlds are PC to PC
-                MenuButton(UiKit.Secondary(menu, "Host or join a world", OpenWorlds, "🏡", 56));
-            signIn = MenuButton(UiKit.Secondary(menu, "I have a recovery code", () => ShowSignIn(null), null, 56));
             switchPet = MenuButton(UiKit.Secondary(menu, "Switch pet", () => PetsScreen.Open(null, Refresh), "🐾", 56)); // before spawning in
             MenuButton(UiKit.Secondary(menu, "Settings", () => SettingsPanel.Open(() => { if (this) { Refresh(); CheckServer(); } }), "⚙️", 56));
-            MenuButton(UiKit.Secondary(menu, "Watch the intro", () => Leave(watchIntro), null, 56));
-            if (!Application.isMobilePlatform && Application.platform != RuntimePlatform.WebGLPlayer)
-                MenuButton(UiKit.Secondary(menu, "Quit", Application.Quit, null, 56));
+            if (OnPc) MenuButton(UiKit.Secondary(menu, "Quit", Application.Quit, null, 56));
+            menuFade = menu.gameObject.AddComponent<CanvasGroup>();
+            BuildWhere();
 
             // your egg or buddy on a stack of books
             stage = UiKit.Node("stage", root);
@@ -122,12 +122,13 @@ namespace BookBuddies.UI
             plateSub = UiKit.Label(plate, "", UiKit.SmallSize + 1, Palette.InkSoft, UiKit.Body, TextAnchor.MiddleCenter);
             plateSub.horizontalOverflow = HorizontalWrapMode.Overflow;
 
-            // the version
+            // the version, and the intro to watch again
             footer = UiKit.Node("footer", root);
-            UiKit.Row(footer, 8);
+            UiKit.Row(footer, 4);
             UiKit.Hug(footer);
             var version = UiKit.Label(footer, "v" + Settings.Version, UiKit.SmallSize, Palette.InkSoft, UiKit.Bold);
             version.horizontalOverflow = HorizontalWrapMode.Overflow;
+            UiKit.TextButton(footer, "Watch the intro", null, Color.clear, UiKit.EmberInk, () => Leave(watchIntro), 32);
 
             // the server: a small pill in the corner, green when connected; tap it to check again
             var pill = UiKit.Button(root, "server", Palette.Cream, CheckServer, 16);
@@ -149,6 +150,8 @@ namespace BookBuddies.UI
             cam.Directed = true;
             Sound.Music("home");
         }
+
+        static bool OnPc => !Application.isMobilePlatform && Application.platform != RuntimePlatform.WebGLPlayer; // worlds are PC to PC
 
         // a main menu button floats over the town, so it gets a soft shadow and slightly bigger words
         static Button MenuButton(Button b)
@@ -181,12 +184,12 @@ namespace BookBuddies.UI
             naming.First = nameField;
 
             unreachable = Card("Can’t reach the server", "The online town isn’t answering right now. You can play offline on this PC instead: coins you find there go to your online wallet once you’re back online.");
-            unreachable.First = UiKit.Primary(unreachable.Card, "Play offline", () => { unreachable.Close(); SwitchMode(); }, null, 52);
+            unreachable.First = UiKit.Primary(unreachable.Card, "Play offline", () => { unreachable.Close(); GoTo(Settings.Local, true, null); }, null, 52);
             UiKit.Secondary(unreachable.Card, "Try again", () => { unreachable.Close(); offeredOffline = false; CheckServer(); });
             UiKit.TextButton(unreachable.Card, "Not now", null, Palette.Cream, Palette.InkSoft, unreachable.Close);
 
             lost = Card("Can’t reach this world", "Its host may have closed it, or you’re not on the same network any more. Your buddy can head home any time.");
-            lost.First = UiKit.Primary(lost.Card, "Leave this world", () => { lost.Close(); SwitchMode(); }, null, 52);
+            lost.First = UiKit.Primary(lost.Card, "Leave this world", () => { lost.Close(); GoTo(Settings.OnlineServer, false, null); }, null, 52);
             UiKit.Secondary(lost.Card, "Try again", () => { lost.Close(); offeredOffline = false; CheckServer(); });
             UiKit.TextButton(lost.Card, "Not now", null, Palette.Cream, Palette.InkSoft, lost.Close);
         }
@@ -270,47 +273,166 @@ namespace BookBuddies.UI
             {
                 gameObject.SetActive(true);
                 Refresh();
-                if (signedIn) Leave(enterTown);
+                if (signedIn) { _ = CoinBank.Refresh(); Leave(enterTown); } // a new sign-in: its coins come up to date
                 else VirtualCursor.FocusFirst(play);
             });
         }
 
         // ---- the main menu ----
 
+        // Play: hatch your egg first, or choose where to play
         void OnPlay()
         {
             if (!Buddy.Hatched && !Settings.SignedIn) { start.Open(); return; }
+            ShowWhere(true);
+        }
+
+        // in you go, wherever you are now
+        void Enter()
+        {
+            if (!Buddy.Hatched && !Settings.SignedIn) { ShowWhere(false); start.Open(); return; }
             Leave(enterTown);
         }
 
-        // "Play offline" or "Play online": switch (the first time offline brings your online buddy and pets along), then play.
-        // "Leave this world" goes home to your online server and stays here.
-        async void SwitchMode()
+        // ---- "Where to?": Continue where you are, or Pawtopia, My world or a friend's world ----
+
+        void BuildWhere()
+        {
+            where = UiKit.Node("where to", root);
+            UiKit.Column(where, 10);
+            UiKit.Hug(where, false, true);
+            whereFade = where.gameObject.AddComponent<CanvasGroup>();
+
+            var head = UiKit.Node("header", where);
+            UiKit.Row(head, 12);
+            var back = UiKit.Secondary(head, "‹", () => ShowWhere(false), null, 48);
+            back.GetComponentInChildren<Text>().fontSize = UiKit.HeadingSize + 4;
+            UiKit.Shadow((RectTransform)back.transform, 24, 12, 4, .22f);
+            UiKit.Size(back, 48, 48);
+            var title = UiKit.Label(head, "Where to?", UiKit.TitleSize + 4, Palette.Ink, UiKit.Title);
+            title.gameObject.AddComponent<UnityEngine.UI.Shadow>().effectColor = Palette.Cream.WithAlpha(.7f);
+            UiKit.Size(title, -1, 52, 1);
+
+            here = Place(Palette.Amber, "🌍", "Continue", out hereIcon, out hereLine, Enter);
+            var or = UiKit.Label(where, "Or go somewhere else", UiKit.SmallSize + 1, UiKit.EmberInk, UiKit.Bold);
+            or.gameObject.AddComponent<UnityEngine.UI.Shadow>().effectColor = Palette.Cream.WithAlpha(.7f);
+            UiKit.Size(or, -1, 26);
+            home = Place(Palette.Cream, "🌍", "Pawtopia", out _, out homeLine, () => GoTo(Settings.OnlineServer, true, homeLine));
+            mine = Place(Palette.Cream, "🏡", "My world", out _, out mineLine, OpenMyWorld);
+            if (OnPc)
+            {
+                visit = Place(Palette.Cream, "🤝", "Join a friend", out _, out var visitLine, OpenJoin);
+                visitLine.text = "Visit a friend’s world with their join code.";
+            }
+            recover = UiKit.TextButton(where, "I have a recovery code", null, Color.clear, UiKit.EmberInk, () => { ShowWhere(false); SignInOnline(); }, 40);
+            where.gameObject.SetActive(false);
+        }
+
+        // one place to play, as one big button: its icon, its name, a line about it, and an arrow
+        Button Place(Color color, string emoji, string name, out Image icon, out Text line, System.Action onClick)
+        {
+            bool main = color == Palette.Amber;
+            var b = UiKit.Button(where, name, color, onClick, 18);
+            var r = (RectTransform)b.transform;
+            UiKit.Row(r, 14, new RectOffset(14, 16, 11, 12));
+            UiKit.Shadow(r, 18, 12, 4, .22f);
+            if (!main) UiKit.Outline(b, Palette.Ink.WithAlpha(.16f), 18);
+            icon = UiKit.Icon(r, emoji, main ? 48 : 40);
+            var words = UiKit.Node("words", r);
+            UiKit.Column(words, 0, null, TextAnchor.MiddleLeft);
+            UiKit.Size(words, -1, -1, 1);
+            UiKit.Label(words, name, UiKit.BodySize + (main ? 5 : 3), Palette.Ink, UiKit.Bold);
+            line = UiKit.Label(words, "", UiKit.SmallSize + 1, main ? Palette.Ink.WithAlpha(.75f) : Palette.InkSoft);
+            UiKit.Size(UiKit.Label(r, "›", UiKit.HeadingSize + 6, Palette.Ink.WithAlpha(main ? .6f : .4f), UiKit.Bold, TextAnchor.MiddleCenter), 14, -1);
+            return b;
+        }
+
+        void ShowWhere(bool on)
+        {
+            if (picking == on) return;
+            picking = on;
+            swapAt = Time.unscaledTime;
+            UiKit.Show(menu, !on);
+            UiKit.Show(where, on);
+            lastW = 0; // fit the column that's showing
+            if (on)
+            {
+                RefreshWhere();
+                UiStack.Push(where, () => ShowWhere(false));
+                Sound.Play("open");
+                VirtualCursor.FocusFirst(here);
+            }
+            else
+            {
+                UiStack.Remove(where);
+                VirtualCursor.FocusFirst(play);
+            }
+        }
+
+        // Continue says where you are; the places you're not in are the other choices
+        void RefreshWhere()
+        {
+            bool open = LocalHost.Running, local = Settings.IsLocal, world = Settings.IsWorld;
+            UiKit.SetIcon(hereIcon, local ? "🏡" : world ? "🤝" : "🌍");
+            hereLine.text = open ? "My world · open, " + WorldsSheet.VisitorCount(LocalHost.Visitors)
+                : local ? "My world · just you"
+                : world ? Settings.WorldName + " · visiting"
+                : "Pawtopia · online";
+            UiKit.Show(home, local || world);
+            if (!busy) homeLine.text = world ? "Leave this world and head home." : "The online town, shared with readers everywhere.";
+            UiKit.Show(mine, OnPc || !local);
+            if (!busy) mineLine.text = open ? "Open to friends. See your join code, or close it."
+                : local ? "Open it to friends, or change who can join."
+                : OnPc ? "Your world on this PC. Play alone, or open it to friends." : "Your world on this device. No network needed.";
+            UiKit.Show(recover, Settings.TokenFor(Settings.OnlineServer).Length == 0);
+            string shown = hereLine.text + homeLine.text + mineLine.text + home.gameObject.activeSelf + mine.gameObject.activeSelf + recover.gameObject.activeSelf;
+            if (shown != whereShown) { whereShown = shown; lastW = 0; } // its height may have changed
+        }
+
+        // go online, or offline to your world, bringing your buddy and pets (the first time), then maybe in you go
+        async void GoTo(string server, bool thenPlay, Text say)
         {
             if (busy) return;
             busy = true;
-            bool leaving = Settings.IsWorld;
-            modeLabel.text = leaving ? "Heading home…" : "Getting ready…";
-            await BBApi.UseServer(Settings.IsLocal || leaving ? Settings.OnlineServer : Settings.Local);
+            if (say != null) say.text = "Getting ready…";
+            await BBApi.UseServer(server);
             if (!this) return;
             busy = false;
             Refresh();
             CheckServer();
-            if (!leaving) OnPlay();
+            if (thenPlay) Enter();
         }
 
-        void OpenWorlds()
+        // My world: on a PC, a card to play alone or open your world to friends; on a phone, straight in
+        void OpenMyWorld()
         {
-            if (worlds == null) worlds = WorldsSheet.Create(root, Joined, () => { Refresh(); CheckServer(); });
-            worlds.Open();
+            if (!OnPc) { GoTo(Settings.Local, true, mineLine); return; }
+            if (myWorld == null) myWorld = Worlds(true);
+            myWorld.Open();
         }
 
-        // switched to a friend's world from the Worlds card: show it, then walk in as Play does
+        void OpenJoin()
+        {
+            if (joinWorld == null) joinWorld = Worlds(false);
+            joinWorld.Open();
+        }
+
+        Sheet Worlds(bool host)
+        {
+            var s = WorldsSheet.Create(root, host, Joined, () => { Refresh(); CheckServer(); });
+            s.Closed += () => { if (this && picking) VirtualCursor.FocusFirst(here); };
+            return s;
+        }
+
+        // into your world or a friend's from its card: show it, then walk in
         void Joined()
         {
             Refresh();
             CheckServer();
-            if (gameObject.activeSelf && !UiStack.Any) OnPlay();
+            CountParty();
+            if (!gameObject.activeSelf) return;
+            ShowWhere(false);
+            if (!UiStack.Any) Enter();
         }
 
         // recovery codes belong to online accounts, so signing in offline or in a friend's world goes online first
@@ -341,6 +463,7 @@ namespace BookBuddies.UI
         {
             group.interactable = false;
             for (float t = 0; t < .5f; t += Time.unscaledDeltaTime) { group.alpha = 1 - UiKit.Ease(t / .5f); yield return null; }
+            UiStack.Remove(where);
             Destroy(gameObject);
             then();
         }
@@ -354,24 +477,38 @@ namespace BookBuddies.UI
             plateName.text = hatched ? (Buddy.Name.Length > 0 ? Buddy.Name : "Your buddy") : "Your egg";
             plateSub.text = Subtitle(hatched);
             playLabel.text = hatched || Settings.SignedIn ? "Play" : "Hatch your egg";
-            modeLabel.text = Settings.IsWorld ? "Leave this world" : Settings.IsLocal ? "Play online" : "Play offline";
-            UiKit.Show(signIn, !Settings.SignedIn && !Settings.IsLocal && !Settings.IsWorld);
             UiKit.Show(switchPet, hatched);
+            RefreshWhere();
             lastW = 0; // the menu may have changed length
         }
 
-        // under your buddy's name: hosting (with your visitors), visiting a friend's world, offline or online
-        static string Subtitle(bool hatched) =>
+        // under your buddy's name: hosting (with your visitors), visiting a friend's world (and its party), offline or online
+        string Subtitle(bool hatched) =>
             LocalHost.Running ? "Hosting your world · " + WorldsSheet.VisitorCount(LocalHost.Visitors)
             : !hatched ? "It’s warm. Give it a tap!"
-            : Settings.IsWorld ? "Visiting " + Settings.WorldName
-            : Settings.IsLocal ? "Playing offline on this PC" : Settings.SignedIn ? "Ready for Pawtopia" : "Exploring on this device";
+            : Settings.IsWorld ? "Visiting " + Settings.WorldName + (party > 0 ? " · party of " + party : "")
+            : Settings.IsLocal ? "In your world on this PC" : Settings.SignedIn ? "Ready for Pawtopia" : "Exploring on this device";
+
+        // in a friend's world, how many are in its party, asked once as the title shows (no answer: the nameplate just says whose world)
+        async void CountParty()
+        {
+            party = 0;
+            if (!Settings.IsWorld || !Settings.SignedIn) return;
+            string server = Settings.Server;
+            Dictionary<string, object> reply;
+            try { reply = await BBApi.Party(); }
+            catch (BBApi.ApiError) { return; }
+            if (!this || Settings.Server != server) return;
+            party = reply.Truthy("party") ? reply.Arr("members").Count : 0;
+            plateSub.text = Subtitle(Buddy.Hatched);
+        }
 
         // while you host, the nameplate keeps count of your visitors, and the pill notices the world opening or closing
         void ShowHosting()
         {
             hostAt = Time.unscaledTime + HostCheck;
             plateSub.text = Subtitle(Buddy.Hatched);
+            if (picking) RefreshWhere(); // Continue counts your visitors too
             if (LocalHost.Running == hosting) return;
             hosting = LocalHost.Running;
             CheckServer();
@@ -401,6 +538,7 @@ namespace BookBuddies.UI
             checking = false;
             if (!this) return;
             if (Settings.Server != server) { checkAt = 0; return; } // switched servers meanwhile
+            if (ok && online != true && server == Settings.OnlineServer) _ = CoinBank.Refresh(); // green: your coins come up to date
             online = ok;
             if (ok) ShowStatus(Palette.Leaf, "Connected", where);
             else
@@ -436,6 +574,7 @@ namespace BookBuddies.UI
             if (checking && online != true) statusDot.color = Palette.Amber.WithAlpha(.4f + .6f * Mathf.PingPong(Time.unscaledTime * 1.6f, 1)); // a soft pulse while connecting
             else if (!checking && Time.unscaledTime >= checkAt) CheckServer();
             if (Time.unscaledTime >= hostAt) ShowHosting();
+            (picking ? whereFade : menuFade).alpha = UiKit.EaseOut((Time.unscaledTime - swapAt) / .2f); // the column that's showing fades in
         }
 
         // the camera floats slowly around the town square
@@ -525,6 +664,13 @@ namespace BookBuddies.UI
                 if (b.gameObject.activeSelf && b.TryGetComponent<Button>(out _)) { UiKit.Size(b.GetComponent<Button>(), -1, buttonHeight); buttons++; }
             menu.GetComponent<VerticalLayoutGroup>().spacing = compact ? 8 : 12;
             float menuHeight = buttons * buttonHeight + (buttons - 1) * (compact ? 8 : 12);
+            if (picking) // "Where to?" is as tall as its cards are at this width
+            {
+                where.GetComponent<VerticalLayoutGroup>().spacing = compact ? 8 : 10;
+                where.sizeDelta = new Vector2(portrait ? Mathf.Min(MenuWidth, lastW - 40) : MenuWidth, where.sizeDelta.y);
+                LayoutRebuilder.ForceRebuildLayoutImmediate(where);
+                menuHeight = LayoutUtility.GetPreferredHeight(where);
+            }
             float logoHeight = (compact ? 0 : 30) + logoName.fontSize * 1.14f + townName.fontSize * 1.2f;
 
             foreach (var t in logo.GetComponentsInChildren<Text>()) t.alignment = portrait ? TextAnchor.MiddleCenter : TextAnchor.MiddleLeft;
@@ -542,6 +688,7 @@ namespace BookBuddies.UI
             logo.localScale = Vector3.one;
             menu.Pin(new Vector2(.5f, 0), new Vector2(0, 56), new Vector2(Mathf.Min(MenuWidth, lastW - 40), 10));
             menu.localScale = Vector3.one;
+            PinWhere();
             footer.Pin(new Vector2(.5f, 0), new Vector2(0, 16), new Vector2(10, 22));
             float top = lastH - 68 - logoHeight, bottom = 56 + menuHeight;
             stage.anchorMin = stage.anchorMax = new Vector2(.5f, 0);
@@ -562,11 +709,21 @@ namespace BookBuddies.UI
             menu.Pin(new Vector2(0, .5f), new Vector2(left, top - (logoHeight + MenuGap) * k), new Vector2(MenuWidth, 10));
             menu.pivot = new Vector2(0, 1);
             menu.localScale = Vector3.one * k;
+            PinWhere();
             footer.Pin(Vector2.zero, new Vector2(left, 18), new Vector2(10, 22));
             status.Pin(Vector2.one, new Vector2(-24, -20), status.sizeDelta);
             stage.anchorMin = stage.anchorMax = new Vector2(.7f, .5f);
             stage.anchoredPosition = new Vector2(0, 10);
             stage.localScale = Vector3.one * Mathf.Min(1.25f, (lastH - 140) / StageHeight);
+        }
+
+        // "Where to?" sits just where the main menu does
+        void PinWhere()
+        {
+            where.anchorMin = menu.anchorMin; where.anchorMax = menu.anchorMax; where.pivot = menu.pivot;
+            where.anchoredPosition = menu.anchoredPosition;
+            where.sizeDelta = new Vector2(menu.sizeDelta.x, where.sizeDelta.y);
+            where.localScale = menu.localScale;
         }
 
         /// <summary>Cream on the left fading to clear, so the name stays easy to read over the town.</summary>

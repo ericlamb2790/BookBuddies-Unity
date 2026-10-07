@@ -98,13 +98,16 @@ namespace BookBuddies.Local
         /// <summary>GET /me/recovery: the recovery code again.</summary>
         internal static Dictionary<string, object> Recovery(LocalPlayer me) => new Dictionary<string, object> { ["code"] = FormatCode(me.Code) };
 
-        /// <summary>GET /plaza/world/ticket?s=&amp;town=: a ticket for room 1-6 of a place, and a pass for quick rejoins.</summary>
+        /// <summary>
+        /// GET /plaza/world/ticket?s=&amp;town=: a ticket for room 1-6 of a place, and a pass for quick rejoins. In a
+        /// hosted world a party member gets the room their party is in (LocalParty.Room), whatever room they asked for.
+        /// </summary>
         internal static Dictionary<string, object> TownTicket(LocalPlayer me, string query)
         {
             double asked = Js.ParseInt(Js.Query(query, "s"));
-            int shard = (int)Math.Max(1, Math.Min(LocalServer.Rooms, double.IsNaN(asked) || asked == 0 ? 1 : asked));
             string place = Js.Query(query, "town");
             string town = Array.IndexOf(LocalServer.Towns, place) >= 0 ? place : "pawtopia";
+            int shard = LocalParty.Room(me.Id, town, (int)Math.Max(1, Math.Min(LocalServer.Rooms, double.IsNaN(asked) || asked == 0 ? 1 : asked)));
             string ticket = $"{me.Id}|{town}:{shard}";
             me.LastSeen = LocalServer.Now;
             Db.Touch();
