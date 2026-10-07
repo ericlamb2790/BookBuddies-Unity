@@ -192,7 +192,7 @@ namespace BookBuddies.UI
         void OfflineAccount(bool signedIn, string name)
         {
             Note(!signedIn ? "Playing offline on this PC. Hatch your egg on the title screen to start."
-                : $"Playing offline as {name} on this PC. " + (CoinBank.HasBank ? "Coins you find go to your online wallet when you stop playing offline." : "Coins you find stay on this PC."));
+                : $"Playing offline as {name} on this PC. " + (CoinBank.HasBank ? "Coins you find go to your online wallet each time the game saves." : "Coins you find stay on this PC."));
             if (LocalServer.SaveError != null) Note("The offline save isn’t working right now: " + LocalServer.SaveError).color = UiKit.RoseInk;
             if (signedIn)
                 Row("Delete offline profile", "Removes your offline buddy, pets and coins from this PC. Your online account isn’t touched.", r => UiKit.ConfirmButton(r, "Delete", "Tap again to delete it", DeleteAccount));

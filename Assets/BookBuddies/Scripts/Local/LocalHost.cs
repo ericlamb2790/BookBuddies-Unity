@@ -291,6 +291,8 @@ namespace BookBuddies.Local
                     LocalParty.Visited(o.Str("id"));
                 }
                 if (q.Path == "/api/plaza/world/ticket") Hide(r, o);
+                // a visitor's coins just went home: saved now, so a crash can't reopen that session (it banks only once)
+                if (q.Path == "/api/wallet/carry") _ = LocalServer.SaveAsync();
                 reply.TrySetResult((200, Json.Write(o)));
             }
             catch (LocalProblem p)

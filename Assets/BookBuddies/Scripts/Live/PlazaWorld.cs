@@ -750,7 +750,8 @@ namespace BookBuddies.Live
                     Sound.Play(m.Str("k") == "gift" ? "rare" : "coin");
                     int coins = m.Int("coins");
                     Wallet.Credited(coins, "town find", m.Int("bal", -1));
-                    if (coins > 0 && Net.OnThisPc) AutoSave.Now("find"); // the offline purse lives in a file on this PC
+                    // the offline purse lives in a file on this PC; a friend's world's coins go home at a save
+                    if (coins > 0 && (Net.OnThisPc || Settings.IsWorld)) AutoSave.Now("find");
                     Notify(coins > 0 ? $"Found {(m.Str("k") == "bag" ? "a bag of coins" : m.Str("k") == "gift" ? "a gift box" : "a coin")}! +{coins} coins" : "Found it! You've hit today's coin limit.");
                     break;
                 case "g":

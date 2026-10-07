@@ -8,12 +8,12 @@ using UnityEngine;
 namespace BookBuddies.Net
 {
     /// <summary>
-    /// Banks offline coins into your online wallet. A session is one stretch of offline play; when it ends (quitting, back
-    /// to the title, switching to online) its total goes to the online server once (POST /wallet/bank), which checks it
-    /// against that session's finds and the daily caps. Banked coins leave the offline purse; coins the server refuses stay
-    /// in it. Sessions that couldn't upload (no network, a crash) try again at the next launch, sign-in or switch of
-    /// server, or when the title's server check turns green. Nothing is sent until the online server answers its health
-    /// check. In a friend's world your finds go into a session there; your game carries it home (Carry) and banks it the
+    /// Banks offline coins into your online wallet. A session is one stretch of offline play; when it ends (each save,
+    /// quitting, back to the title, switching to online) its total goes to the online server once (POST /wallet/bank),
+    /// which checks it against that session's finds and the daily caps. Banked coins leave the offline purse; coins the
+    /// server refuses stay in it. Sessions that couldn't upload (no network, a crash) try again at the next launch,
+    /// sign-in or switch of server, or when the title's server check turns green. Nothing is sent until the online
+    /// server answers its health check. In a friend's world your finds go into a session there; your game carries it home (Carry) and banks it the
     /// same way, then tells that world what was banked. Main thread only.
     /// </summary>
     public static class CoinBank
@@ -38,15 +38,18 @@ namespace BookBuddies.Net
         /// <summary>There's an online account for offline coins to go to (signed in on Settings.OnlineServer).</summary>
         public static bool HasBank => Settings.TokenFor(Settings.OnlineServer).Length > 0;
 
-        /// <summary>Ends the offline profile's open session (if there is one) and saves, so its total is ready to bank.</summary>
-        public static void EndSession()
+        /// <summary>
+        /// Ends the offline profile's open session (if there is one) and saves, so its total is ready to bank. Soon (a save
+        /// point while playing): no write here, so the game doesn't stall; the save's own background write, or the bank's, keeps it.
+        /// </summary>
+        public static void EndSession(bool soon = false)
         {
             try
             {
                 string pid = LocalPid();
                 if (pid == null) return;
                 LocalWallet.CloseSession(pid);
-                LocalServer.SaveNow();
+                if (!soon) LocalServer.SaveNow();
             }
             catch (Exception e) { Debug.LogException(e); }
         }
@@ -71,6 +74,7 @@ namespace BookBuddies.Net
             string server = Settings.OnlineServer, token = Settings.TokenFor(server);
             if (token == freshFor && Time.realtimeSinceStartup - freshAt < FreshFor) return;
             if (!await BBApi.Up(server)) return;
+            _ = PetSync.Push(true, Settings.Local); // offline play's pet changes go up too, wherever you are now
             await (syncing != null && !syncing.IsCompleted ? syncing : (syncing = Upload(true)));
             await BankCarried(true);
             try { Wallet.TakeOnline(await BBApi.SendTo(server, token, "GET", "/wallet", null)); }
@@ -116,11 +120,12 @@ namespace BookBuddies.Net
             catch (BBApi.ApiError) { return -1; }
         }
 
-        // the banked coins leave the offline purse (the rest stay there) and the session is done
+        // the banked coins leave the offline purse (the rest stay there) and the session is done (written in the
+        // background: quitting writes everything once more)
         static void Settle(string pid, string session, int banked)
         {
             LocalWallet.Banked(pid, session, banked);
-            LocalServer.SaveNow();
+            _ = LocalServer.SaveAsync();
             if (banked <= 0) return;
             Banked += banked;
             BankedCoins?.Invoke(banked);
@@ -151,7 +156,7 @@ namespace BookBuddies.Net
                     owed = hurry = false;
                     sentAt = Time.realtimeSinceStartup;
                     if (Settings.IsWorld && Settings.SignedIn) await Carry(Settings.Server, Settings.Token);
-                    else if (Settings.IsLocal) { EndSession(); await SyncAll(); }
+                    else if (Settings.IsLocal) { EndSession(true); await SyncAll(); }
                 }
             }
             catch (Exception e) { Debug.LogException(e); }

@@ -14,9 +14,7 @@ namespace BookBuddies.Tales
         {
             if (!u.IsFoe) return BaseTurn(u, out _);
             if (slam != null && FoeGone(slam.Value.foe)) slam = null;
-            var jump = u.S("stun") == 0 ? Jump(u) : null;
             var evs = BaseTurn(u, out var action);
-            if (jump != null) evs.Insert(0, jump);
             if (Dead(u) || u.S("stun") != 0 || action == null || action.Kind == "shield") return evs;
             // the site swaps the foe's action event for the slam one although the action still happened; we show both
             if (slam != null && slam.Value.foe == u.Key) evs.Add(GroundSlam(u));
@@ -28,7 +26,7 @@ namespace BookBuddies.Tales
 
         // foes move too (not the site's): one with no pet in its lane may jump to the lane with the most pets, and now
         // and then one hops a lane over; a boss holds the center and nobody jumps while a slam is coming. Pets left with
-        // no foe in their lane follow it.
+        // no foe in their lane follow it. Decided just before the foe's move, so one its bleed KOs or a stun holds stays put.
         BattleEvent Jump(BattleUnit u)
         {
             if (u.Boss || slam != null) return null;
@@ -71,6 +69,7 @@ namespace BookBuddies.Tales
                 return evs;
             }
             Decay(u);
+            if (u.IsFoe && Jump(u) is BattleEvent jump) evs.Insert(0, jump); // shown as the turn starts
             var c = Choose(u);
             if (c != null) evs.Add(action = Exec(u, c.Move, c.Target, c.Takeover));
             return evs;

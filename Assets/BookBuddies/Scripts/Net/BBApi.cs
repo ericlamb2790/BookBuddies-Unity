@@ -94,6 +94,13 @@ namespace BookBuddies.Net
         /// <summary>Your pets, oldest first, and which one is active.</summary>
         public static Task<Dictionary<string, object>> Pets() => Send("GET", "/me/pets", null, true);
 
+        /// <summary>Your pets on a given server (this PC's, or a friend's world), with your sign-in there, whichever server is in use (PetSync).</summary>
+        public static Task<Dictionary<string, object>> PetsOn(string server)
+        {
+            string token = Settings.TokenFor(server);
+            return server == Settings.Local ? SendLocal("GET", "/me/pets", null, token) : SendTo(server, token, "GET", "/me/pets", null, QuickTimeout);
+        }
+
         /// <summary>A new pet from an egg (name 2-14 letters, look JSON). It becomes the active pet.</summary>
         public static Task<Dictionary<string, object>> HatchPet(string name, string look) =>
             Send("POST", "/me/pets", new Dictionary<string, object> { ["name"] = name, ["look"] = look }, true);
@@ -199,13 +206,18 @@ namespace BookBuddies.Net
         /// egg hatches as usual. The first time in a friend's world (found with WorldAt first), your profile there is made
         /// the same way from the one you're leaving. Then your buddy comes from the new server (kept as it is when that
         /// can't be reached, or when you leave a world or this PC for a server you aren't signed in to). Leaving a world
-        /// first carries the coins you found there home (CoinBank.Carry).
+        /// first carries the coins you found there home (CoinBank.Carry); leaving a world or this PC sends the pet changes
+        /// made there to your online account (PetSync, which reads them from there wherever you are by then).
         /// </summary>
         public static async Task UseServer(string server)
         {
             string from = Settings.Server;
             bool fromWorld = Settings.WorldNameOf(from).Length > 0;
-            if (fromWorld && server.TrimEnd('/') != from) await CoinBank.AtSave(true);
+            if (server.TrimEnd('/') != from)
+            {
+                _ = PetSync.Push(true); // it reads them from there, so it may finish after the switch
+                if (fromWorld) await CoinBank.AtSave(true);
+            }
             bool seeded = server == Settings.Local || Settings.WorldNameOf(server).Length > 0;
             var device = seeded ? DeviceAccount() : null; // before the pets list follows the new account
             Settings.Server = server;

@@ -65,7 +65,7 @@ namespace BookBuddies.UI
                 return;
             }
             if (Wallet.OfflinePurse) Line(card, CoinBank.HasBank
-                ? "Kept on this PC. What you find goes to your online wallet when you stop playing offline." + OnlineNote()
+                ? "Kept on this PC. What you find goes to your online wallet each time the game saves." + OnlineNote()
                 : "Kept on this PC.");
             if (notice.Length > 0) UiKit.Label(card, notice, UiKit.SmallSize + 1, UiKit.RoseInk, UiKit.Bold);
             if (!Wallet.Ready) Offline(card);
@@ -233,6 +233,8 @@ namespace BookBuddies.UI
                 case "garden": return "Garden";
                 case "bank": return "Banked from offline play";
                 case "banked": return "Sent to your online wallet";
+                case "carry": return "Taken home to your online wallet";
+                case "unbanked": return "Not banked online, so back here";
                 default: return kind.Length > 0 ? char.ToUpperInvariant(kind[0]) + kind.Substring(1) : "Coins";
             }
         }

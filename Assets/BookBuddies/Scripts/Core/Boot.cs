@@ -356,20 +356,21 @@ namespace BookBuddies
             _ = CoinBank.SyncAll();
         }
 
-        // quitting ends the offline session and waits a moment for its coins to reach the bank (next launch tries again)
+        // quitting ends the offline session and waits a moment for its coins to reach the bank (next launch tries again);
+        // in a friend's world your coins there come home first, and pet changes go up
         bool WantsToQuit()
         {
             if (quitReady) return true;
             if (quitting) return false;
             CoinBank.EndSession();
-            var sync = CoinBank.SyncAll();
+            var sync = Task.WhenAll(CoinBank.SyncAll(), CoinBank.AtSave(true), PetSync.Push(true));
             if (sync.IsCompleted || Application.isEditor) return true;
             quitting = true;
             StartCoroutine(QuitAfter(sync));
             return false;
         }
 
-        IEnumerator QuitAfter(Task<bool> sync)
+        IEnumerator QuitAfter(Task sync)
         {
             float until = Time.realtimeSinceStartup + QuitWait;
             while (!sync.IsCompleted && Time.realtimeSinceStartup < until) yield return null;

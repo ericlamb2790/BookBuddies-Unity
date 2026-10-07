@@ -339,6 +339,8 @@ namespace BookBuddies.Road
         // into the captain's fight: poofed in beside them when you're in the same place, then the battle
         static void Join(PlazaWorld w, string captain, Msg m, Vector2 from, Action<BattleOutcome> done)
         {
+            string kind = m.Str("kind");
+            if (Elsewhere(w, captain, kind)) { done?.Invoke(null); return; } // in another fight: not poofed away from it
             var at = m.Obj("at");
             var to = new Vector2Int(at.Int("x") + 1, at.Int("y"));
             var spot = new Vector2(to.x + .5f, to.y + .5f);
@@ -347,7 +349,6 @@ namespace BookBuddies.Road
                 w.PoofTo(to, null);
                 from = Point(spot);
             }
-            string kind = m.Str("kind");
             var boss = kind.StartsWith("book:", StringComparison.Ordinal) ? BossBook.Current.Get(kind.Substring(5)) : null;
             if (boss != null) Loot.SetFoeTable(boss.Name, boss.Loot); // the boss's own drops, as its challenger's game has them
             Open(w, m.Str("f"), captain, kind, m.Obj("setup"), from, done);
@@ -575,6 +576,7 @@ namespace BookBuddies.Road
             int got, played, askedFor;
             float heardAt = Time.unscaledTime, sentAt = -99, askedAt = -99;
             BattleInput? owed; // your latest lane move, waiting for its turn to go
+            char lane;         // the lane you asked for last
             bool lost, closed;
 
             public Link(string f, string captain, List<PartyHero> pets)
@@ -631,7 +633,8 @@ namespace BookBuddies.Road
                 Flush();
                 bool has = steps.TryGetValue(n, out var s);
                 if (!has) Chase(n);
-                else foreach (var i in s.Ins) if (i.Hero == "h:" + You) pending.Remove(i.Act); // yours go in with this step
+                // yours go in with this step (a lane move only once your last one has: one may still be on its way)
+                else foreach (var i in s.Ins) if (i.Hero == "h:" + You && (i.Act != "lane" || owed == null && i.Lane == lane)) pending.Remove(i.Act);
                 seed = has ? s.Seed : 0;
                 ins = has ? s.Ins : null;
                 return has;
@@ -667,9 +670,14 @@ namespace BookBuddies.Road
             public void Ask(BattleInput i)
             {
                 pending[i.Act] = Time.unscaledTime;
+                if (i.Act == "lane") lane = i.Lane;
                 if (Captain) queued.Add(i);
                 else if (i.Act == "lane" && Time.unscaledTime - sentAt < LaneGap) owed = i; // goes a moment later
-                else Tell(i);
+                else
+                {
+                    if (i.Act == "lane") owed = null; // a newer move: one held back must not land after it
+                    Tell(i);
+                }
             }
 
             void Tell(BattleInput i)

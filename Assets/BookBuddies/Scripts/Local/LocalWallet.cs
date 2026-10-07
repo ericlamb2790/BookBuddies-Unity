@@ -384,12 +384,19 @@ namespace BookBuddies.Local
         public static List<LocalSession> Unsynced(string pid) =>
             LocalServer.Player(pid) is LocalPlayer p ? p.Sessions.FindAll(s => s.Closed && !s.Synced && s.Total > 0) : new List<LocalSession>();
 
-        /// <summary>The online wallet banked "banked" coins of a session: they leave the offline purse (one 'banked' row) and the session is done.</summary>
+        /// <summary>
+        /// The online wallet banked "banked" coins of a session: they leave the offline purse (one 'banked' row) and the
+        /// session is done. A session carried home from a hosted world left the purse then: what wasn't banked comes back.
+        /// </summary>
         public static void Banked(string pid, string sessionId, int banked)
         {
             if (!(LocalServer.Player(pid) is LocalPlayer p) || !(p.Sessions.Find(x => x.Id == sessionId) is LocalSession s) || s.Synced) return;
-            int amount = Math.Min(banked, Sum(p.Coins)); // coins spent here since are gone already
-            if (amount > 0 && !Has(p.Coins, "banked", sessionId)) Insert(p.Coins, "banked", sessionId, -amount);
+            if (p.Coins.Find(r => r.Kind == "carry" && r.Ref == sessionId) is LedgerRow carried) Add(p.Coins, "unbanked", sessionId, -carried.Amount - banked);
+            else
+            {
+                int amount = Math.Min(banked, Sum(p.Coins)); // coins spent here since are gone already
+                if (amount > 0 && !Has(p.Coins, "banked", sessionId)) Insert(p.Coins, "banked", sessionId, -amount);
+            }
             s.Synced = true;
             Prune(p);
             LocalServer.Store.Touch();
@@ -397,9 +404,11 @@ namespace BookBuddies.Local
 
         /// <summary>
         /// POST /wallet/carry, from a visitor's game in a hosted world: first what their game banked online from sessions it
-        /// carried before ({settled: [{session, banked}]}, those coins leave this purse, the rest stay), then their open session
-        /// closes, and the reply is the payload plus every closed session still to bank ({sessions: [{session, days, total}]}),
-        /// which their game takes home and banks with its own online sign-in, so coins found here aren't lost with the world.
+        /// carried before ({settled: [{session, banked}]}, what wasn't banked comes back to this purse), then their open
+        /// session closes, and the reply is the payload plus every closed session still to bank ({sessions: [{session, days,
+        /// total}]}), which their game takes home and banks with its own online sign-in, so coins found here aren't lost
+        /// with the world. A session's coins leave this purse (one 'carry' row) the first time it goes, so they can't be
+        /// spent here as well.
         /// </summary>
         static Dictionary<string, object> Carry(LocalPlayer me, Dictionary<string, object> body)
         {
@@ -407,8 +416,14 @@ namespace BookBuddies.Local
                 if (o is Dictionary<string, object> d && me.Sessions.Find(x => x.Id == d.Str("session")) is LocalSession s && s.Closed)
                     Banked(me.Id, s.Id, Math.Max(0, Math.Min(d.Int("banked"), s.Total)));
             CloseSession(me.Id);
+            var waiting = Unsynced(me.Id);
+            foreach (var s in waiting)
+            {
+                int take = Math.Min(s.Total, Sum(me.Coins));
+                if (take > 0 && !Has(me.Coins, "carry", s.Id)) Insert(me.Coins, "carry", s.Id, -take);
+            }
             var reply = Payload(me);
-            reply["sessions"] = Unsynced(me.Id).Select(s => (object)s.BankBody()).ToList();
+            reply["sessions"] = waiting.Select(s => (object)s.BankBody()).ToList();
             return reply;
         }
 

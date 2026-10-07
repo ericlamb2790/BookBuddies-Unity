@@ -23,7 +23,8 @@ namespace BookBuddies.Road
         const float ShareEvery = .2f;   // seconds between the leader's lists
         const float JoinRange = 7;      // tiles: everyone this close to the one caught joins the fight
         const float FightTimeout = 240; // seconds before a shared fight nobody reported back on is let go
-        const float GuardianTimeout = 900; // the guardian's: the party's ready check (a minute or more), then a long boss fight
+        const float PartyTimeout = 900; // with several pets in it (a bigger, tougher pack: often over 4 minutes), or the
+                                        // guardian's (the party's ready check, a minute or more, then a long boss fight)
         const float Catchup = 12;       // how quickly a drawn foe closes on where the leader has it
 
         /// <summary>A fight the leader started for several players: its pack, who's in it, and who's reported back.</summary>
@@ -214,7 +215,7 @@ namespace BookBuddies.Road
         void ShareNow(bool now)
         {
             foreach (var kv in new List<KeyValuePair<int, Together>>(together))
-                if (Time.unscaledTime - kv.Value.At > (kv.Value.Guardian ? GuardianTimeout : FightTimeout)) Release(kv.Key);
+                if (Time.unscaledTime - kv.Value.At > (kv.Value.Guardian || kv.Value.Who.Count > 1 ? PartyTimeout : FightTimeout)) Release(kv.Key);
             if (!now && Time.unscaledTime < shareAt) return;
             shareAt = Time.unscaledTime + ShareEvery;
             var list = new List<object>();
