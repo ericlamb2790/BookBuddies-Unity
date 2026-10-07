@@ -76,7 +76,7 @@ namespace BookBuddies.Pets
 #if BB_VECTOR
             try
             {
-                var scene = SVGParser.ImportSVG(new StringReader(svg), ViewportOptions.PreserveViewport); // the whole viewBox, not just the drawn shapes, or the art stretches
+                var scene = SVGParser.ImportSVG(new StringReader(svg));
                 var options = new VectorUtils.TessellationOptions { StepDistance = 1f, MaxCordDeviation = .25f, MaxTanAngleDeviation = .05f, SamplingStepSize = .01f };
                 var geometry = VectorUtils.TessellateScene(scene.Scene, options, scene.NodeOpacity); // keeps opacity="…" (shading, shine, auras)
                 var vector = VectorUtils.BuildSprite(geometry, scene.SceneViewport, 100f, VectorUtils.Alignment.BottomCenter, Vector2.zero, 64, true);
