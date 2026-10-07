@@ -90,6 +90,8 @@ namespace BookBuddies.Pets
         static Sprite Render(string svg, float hue)
         {
 #if BB_VECTOR
+            var saved = ArtCache.Load(svg, TextureWidth, TextureHeight);
+            if (saved) return Wrap(saved);
             try
             {
                 var scene = SVGParser.ImportSVG(new StringReader(PinBox(svg)));
@@ -102,6 +104,7 @@ namespace BookBuddies.Pets
                 Object.Destroy(vector);
                 Object.Destroy(material);
                 tex.wrapMode = TextureWrapMode.Clamp;
+                ArtCache.Store(tex, svg);
                 return Wrap(tex);
             }
             catch (System.Exception e)

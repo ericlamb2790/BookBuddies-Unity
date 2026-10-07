@@ -279,6 +279,8 @@ namespace BookBuddies.Tales
         static Sprite Render(string svg)
         {
 #if BB_VECTOR
+            var saved = BookBuddies.Pets.ArtCache.Load(svg, TextureSize, TextureSize);
+            if (saved) return Wrap(saved);
             try
             {
                 var scene = SVGParser.ImportSVG(new StringReader(BookBuddies.Pets.PetSprites.PinBox(svg)));
@@ -290,6 +292,7 @@ namespace BookBuddies.Tales
                 Object.Destroy(vector);
                 Object.Destroy(material);
                 tex.wrapMode = TextureWrapMode.Clamp;
+                BookBuddies.Pets.ArtCache.Store(tex, svg);
                 return Wrap(tex);
             }
             catch (System.Exception e)
