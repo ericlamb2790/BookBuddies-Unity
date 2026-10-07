@@ -19,6 +19,9 @@ namespace BookBuddies.Tales
         }
 
         // abCost: marg makes a pet's regular moves 1 ink cheaper (never free); ults keep their price
+        /// <summary>The ink a move costs this pet right now (the side panel's charge bars).</summary>
+        public int InkCost(BattleUnit u, MoveDef ab) => CostOf(u, ab);
+
         int CostOf(BattleUnit u, MoveDef ab) => !u.IsFoe && ab.Cost != 0 && !ab.Ult && Boon("marg") > 0 ? Math.Max(1, ab.Cost - 1) : ab.Cost;
 
         // a tale's starting ink: 1, +2 a bookmark stack, the library's Inkwell and the dungeon's extras (Setup.Ink), kept in 0..6

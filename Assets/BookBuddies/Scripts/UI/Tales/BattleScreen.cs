@@ -39,6 +39,7 @@ namespace BookBuddies.Tales
         BattleDirector director;
         BattleDock dock;
         BattleLog log;
+        BattleSides sides;
         BattleFoeCard foeCard;
         int speed;
         float cheerReadyAt;
@@ -115,7 +116,7 @@ namespace BookBuddies.Tales
             dock.Log = () => log.Open(top);
             top = UiKit.Node("sheets", content).Fill();
             log = BattleLog.Create(gameObject, engine);
-            BattleSides.Create(hud, engine, stage, log);
+            sides = BattleSides.Create(hud, engine, stage, log);
         }
 
         // ---- the fight ----
@@ -133,6 +134,7 @@ namespace BookBuddies.Tales
                 {
                     while (Paused) yield return null;
                     log.Add(e);
+                    sides.Played(e);
                     yield return director.Play(e);
                 }
                 director.Sync();

@@ -8,7 +8,7 @@ namespace BookBuddies.Tales
 {
     /// <summary>
     /// Two read-only panels in the room beside the lane columns, shown only when there's space (1080p and wider):
-    /// your pet on the left (stats, effects, moves with cooldowns, the last turns) and the foes on the right (turn
+    /// your pet on the left (stats, effects, the move list (BattleMoveList), the last turns) and the foes on the right (turn
     /// order, each foe's lane, stats, genre, special cooldown and effects). They refresh a few times a second.
     /// </summary>
     public sealed class BattleSides : MonoBehaviour
@@ -22,8 +22,12 @@ namespace BookBuddies.Tales
         BattleStage stage;
         BattleLog log;
         RectTransform left, right;
-        Text pet, moves, last, order, foes;
+        Text pet, last, order, foes;
+        BattleMoveList moves;
         float nextAt;
+
+        /// <summary>A battle event played (the move list flashes the pet's move).</summary>
+        public void Played(BattleEvent e) { if (moves) moves.Played(e); }
 
         public static BattleSides Create(RectTransform hud, BattleEngine engine, BattleStage stage, BattleLog log)
         {
@@ -33,7 +37,7 @@ namespace BookBuddies.Tales
             s.log = log;
             s.left = s.Side(hud, "your pet");
             s.pet = s.Box(s.left);
-            s.moves = s.Box(s.left);
+            s.moves = BattleMoveList.Create(s.left, engine);
             s.last = s.Box(s.left);
             s.right = s.Side(hud, "foes");
             s.order = s.Box(s.right);
@@ -79,7 +83,6 @@ namespace BookBuddies.Tales
             nextAt = Time.unscaledTime + Refresh;
             var me = engine.Heroes.Count > 0 ? engine.Heroes[0] : null;
             Show(pet, me == null ? null : PetText(me));
-            Show(moves, me == null ? null : MovesText(me));
             Show(last, LastText());
             Show(order, OrderText());
             Show(foes, FoesText());
@@ -118,22 +121,6 @@ namespace BookBuddies.Tales
         }
 
         static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
-
-        string MovesText(BattleUnit me)
-        {
-            if (me.Moves.Count == 0) return null;
-            var sb = new StringBuilder($"<size={UiKit.SmallSize + 4}>Moves</size>");
-            foreach (var m in me.Moves)
-            {
-                string name = BattleText.Prose(m.Name ?? m.Key);
-                int cd = me.Cds.TryGetValue(m.Key, out var c) ? c : 0;
-                string badge = m.Ult
-                    ? (me.Hero?.WantUlt == true ? $"<color={Gold}>next turn</color>" : $"<color={Gold}>{me.Ink}/6 ink</color>")
-                    : cd > 0 ? $"<color={Dim}>{cd} turn{(cd == 1 ? "" : "s")}</color>" : $"<color={Leaf}>ready</color>";
-                sb.Append('\n').Append(cd > 0 && !m.Ult ? $"<color={Dim}>{name}</color>" : name).Append("  ").Append(badge);
-            }
-            return sb.ToString();
-        }
 
         string LastText()
         {

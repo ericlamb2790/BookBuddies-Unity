@@ -18,7 +18,7 @@ namespace BookBuddies.Tales
         {
             var e = new BattleEvent
             {
-                Kind = "atk", Actor = u.Key, Name = NameOf(u, ab), Icon = IconOf(u, ab), Ult = ab.Ult, Uv = ab.Uv ?? "cutin", Foe = u.IsFoe, Anim = AnimOf(u, ab),
+                Kind = "atk", Actor = u.Key, Move = ab.Key, Name = NameOf(u, ab), Icon = IconOf(u, ab), Ult = ab.Ult, Uv = ab.Uv ?? "cutin", Foe = u.IsFoe, Anim = AnimOf(u, ab),
             };
             Pay(u, ab);
             if (ab.Wind && u.S("wind") == 0)

@@ -98,6 +98,7 @@ namespace BookBuddies.Tales
     public sealed class BattleEvent
     {
         public string Kind, Actor, Name, Icon;
+        public string Move;                  // atk: the move's key (the side panel flashes its row)
         public bool Ult, Aoe, Seq, Foe;
         public string Uv, Anim, Projectile;  // ult cinematic, animation kind (arc beam rain slash quake orbit burst), arc projectile kind
         public readonly List<BattleHit> Fx = new List<BattleHit>();
