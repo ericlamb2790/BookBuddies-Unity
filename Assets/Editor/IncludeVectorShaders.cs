@@ -12,7 +12,8 @@ using UnityEngine.Rendering;
 [InitializeOnLoad]
 public sealed class IncludeVectorShaders : IPreprocessBuildWithReport
 {
-    static readonly string[] Names = { "UI/Default", "Unlit/Vector", "Unlit/VectorGradient", "Hidden/VectorBlendMax", "Hidden/VectorDemultiply", "Hidden/VectorExpandEdges" };
+    static readonly string[] Names = { "UI/Default", "Unlit/Vector", "Unlit/VectorGradient", "Hidden/VectorBlendMax", "Hidden/VectorDemultiply", "Hidden/VectorExpandEdges",
+        "Hidden/VectorGraphics/VectorBlendMax", "Hidden/VectorGraphics/VectorDemultiply", "Hidden/VectorGraphics/VectorExpandEdges" }; // the last three are what Unity 6.3's built-in module looks up
 
     static IncludeVectorShaders() => EditorApplication.delayCall += Ensure; // settle the list before any build starts
 
